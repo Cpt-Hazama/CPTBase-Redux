@@ -1,0 +1,26 @@
+"UnlitGeneric"
+{
+
+	"$spriteorigin" "[ 0.50 0.50 ]"
+	"$model" "1"
+	"$basetexture" "FX/fireball/FB_fireball_"
+	"$translucent" 1
+	"$vertexcolor" 1
+	"$vertexalpha" "1"
+	"$spriteorientation"	"4"
+
+	"Proxies"
+
+	{
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$baseTexture"	
+			"animatedtextureframenumvar" "$frame"
+			"animatedtextureframerate" 25.00
+		}
+
+	}
+}
+
+
+

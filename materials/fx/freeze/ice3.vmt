@@ -1,0 +1,91 @@
+"VertexLitGeneric"
+
+{
+	
+	
+	"$baseTexture"	"FX/Freeze/iceglove"
+	"$surfaceprop" "stone"
+	"$bumpmap" "FX/Freeze/goblin_frozen_normal"
+	
+
+	"$translucent" 1
+	"$envmapcontrast" "1"
+	"$envmapsaturation" ".7"
+	
+	
+	//"$envmapmask" "FX/Freeze/iceglove_m"
+
+
+//env_cubemap de l objet
+	
+
+	"$envmap" "FX/Freeze/env_Iceglove"
+	"$envmaptint" "[1 1.5 2.3]"
+	
+
+//env_cubemap de la scene
+
+	//"$envmap" "env_cubemap"
+	//"$envmaptint" "[1.5 1.5 2]"
+	
+
+
+	
+	"Proxies"
+	{
+		"TextureScroll"
+		{
+			"texturescrollvar" "$basetexturetransform"
+			"texturescrollrate" .008
+			"texturescrollangle" -90
+		}
+
+		"TextureScroll"
+		{
+			"texturescrollvar" "$bumpmaptransform"
+			"texturescrollrate" .008
+			"texturescrollangle" -90
+		}
+		//"Sine"
+		{
+			
+			"sineperiod"	2
+
+			"sinemin"	1
+			"sinemax"	.6
+			"resultVar"	"$alpha"
+		}
+
+
+
+
+
+	}
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

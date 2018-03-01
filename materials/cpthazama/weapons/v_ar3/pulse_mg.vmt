@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "cpthazama\weapons\v_ar3\pulse_mg"
+    "$envmap" "env_cubemap"
+    "$envmapmask" "cpthazama\weapons\v_ar3\pulse_mg_ref"
+}

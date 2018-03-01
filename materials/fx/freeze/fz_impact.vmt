@@ -1,0 +1,5 @@
+"DecalModulate"
+{
+	"$basetexture" "FX/Freeze/FZ_impact"
+	"$decalscale" 0.11
+}

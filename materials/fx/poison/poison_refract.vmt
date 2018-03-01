@@ -1,0 +1,38 @@
+"Refract"
+{
+	"$model" 1
+	"$dudvmap" "FX/poison/poison_dudv"
+ 	"$normalmap" "FX/poison/poison_normal_"
+ 	"$refractamount" "-.05"
+	"$vertexalpha" "1"
+	"$vertexcolor" "1"
+	"$translucent" "1"
+	"$forcerefract" 1
+ 	"$bluramount" "1"
+	"$nofog" "1"
+	//"$additive" 1
+	
+	//"$refracttint" "[.2 .5 .3]
+
+	//"$REFRACTTINTTEXTURE" "FX/poison/poison_tint_tex"
+
+	
+	"Proxies"
+	{
+		"Sine"
+		{
+			"sineperiod"	1
+			"sinemin"	-0.002
+			"sinemax"	0.02
+			"resultVar"	"$refractamount"
+		}
+
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$normalmap"
+			"animatedtextureframenumvar" "$bumpframe"
+			"animatedtextureframerate" 25
+		}
+
+	}
+}

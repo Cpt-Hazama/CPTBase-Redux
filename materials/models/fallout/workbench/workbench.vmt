@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/fallout/workbench/workbench"
+	"$bumpmap" 	"models/fallout/workbench/workbench_n"
+}

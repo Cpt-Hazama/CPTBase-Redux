@@ -1,0 +1,47 @@
+"VertexLitGeneric"
+
+
+{
+	
+	
+	"$baseTexture"	"FX/Freeze/iceglove"
+
+	"$surfaceprop" "glass"
+	"$bumpmap" "FX/Freeze/goblin_frozen_normal"
+	
+
+	"$translucent" 1
+	"$envmapcontrast" "1"
+	"$envmapsaturation" "1"
+
+//env_cubemap de l objet
+	
+
+	"$envmap" "FX/Freeze/env_Iceglove"
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

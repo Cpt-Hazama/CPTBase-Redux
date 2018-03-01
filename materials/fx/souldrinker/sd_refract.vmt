@@ -1,0 +1,12 @@
+"Refract"
+{
+ 	
+ 	"$refractamount" ".24"
+ 	"$bluramount" "0"
+	"$scale" "[1 1]"
+ 	"$dudvmap" "FX/souldrinker/SD_refract_normal"
+ 	"$normalmap" "FX/souldrinker/SD_refract_normal"
+	"$bumpframe" "0"
+	"$translucent" "1"
+	"$ignorez" "1"
+}

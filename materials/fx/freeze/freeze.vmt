@@ -1,0 +1,16 @@
+"WizardEye"
+{
+	"$model" 1
+	"$fbtexture" "_rt_FullFrameFB"
+	"$lookuptexture" "fx/wizardeye/WizardEyeGradient"
+	"$WIZARDEYEPARAM" [0.1 0.1 0.1]
+	"%noToolTexture" 1
+}
+
+//	"$decal" 1
+//	"$baseTexture"	"arkane/magic/arkane_detect_trap"
+//	"$model"	1
+//	"$lookuptexture" "fx/freeze/freeze"
+//	"$WIZARDEYEPARAM" [0.1 0.1 0.1]
+//	"%noToolTexture" 1
+//}

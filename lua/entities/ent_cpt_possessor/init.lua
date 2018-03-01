@@ -1,0 +1,153 @@
+AddCSLuaFile("cl_init.lua")
+AddCSLuaFile("shared.lua")
+include('shared.lua')
+
+function ENT:Initialize()
+	self:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
+	self:SetMoveType(MOVETYPE_NONE)
+	self:SetSolid(SOLID_NONE)
+	self:SetNoDraw(true)
+	self:DrawShadow(false)
+	self:SetColor(Color(255,255,255,0))
+end
+
+function ENT:PossessTheNPC()
+	self.Possessor.IsPossessing = true
+	self.PossessorView = ents.Create("prop_dynamic")
+	self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+	self.PossessorView:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
+	self.PossessorView:SetParent(self.PossessedNPC)
+	self.PossessorView:SetRenderMode(RENDERMODE_TRANSALPHA)
+	self.PossessorView:Spawn()
+	self.PossessorView:SetColor(Color(0,0,0,0))
+	self.PossessorView:SetNoDraw(false)
+	self.PossessorView:DrawShadow(false)
+	self.Possessor:GodEnable()
+	self.Possessor:Spectate(OBS_MODE_CHASE)
+	self.Possessor:SpectateEntity(self.PossessorView)
+	self.Possessor:SetNoTarget(true)
+	self.Possessor:DrawShadow(false)
+	self.Possessor:SetNoDraw(true)
+	self.Possessor:SetMoveType(MOVETYPE_OBSERVER)
+	self.Possessor:DrawViewModel(false)
+	self.Possessor:DrawWorldModel(false)
+	self.Possessor.DefaultHealth = self.Possessor:Health()
+	self.Possessor.DefaultArmor = self.Possessor:Armor()
+	if (IsValid(self.Possessor:GetActiveWeapon())) then 
+		self.PossessorCurrentWeapon = self.Possessor:GetActiveWeapon():GetClass()
+	end
+	self.PossessorCurrentWeapons = {}
+	for k, v in pairs(self.Possessor:GetWeapons()) do
+		table.insert(self.PossessorCurrentWeapons,v:GetClass())
+	end
+	self.Possessor:StripWeapons()
+end
+
+function ENT:PossessedNPC(possessed)
+	self.PossessedNPC = possessed
+	self.PossessedNPC.IsPossessed = true
+	self.PossessedNPC:SetEnemy(NULL)
+	self.PossessedNPC.Possessor = self.Possessor
+	self.PossessedNPC:StopMoving()
+	self.PossessedNPC:ClearSchedule()
+end
+
+function ENT:FaceForward()
+	self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorView:GetPos() +self.Possessor:GetAimVector()*400)
+end
+
+function ENT:Think()
+	if !self:IsValid() then self:StopPossessing() return end
+	if self.PossessorView == nil then self:StopPossessing() return end
+	if (!self.PossessorView:IsValid()) then self:StopPossessing() return end
+	if !IsValid(self.PossessedNPC) then self:StopPossessing() end
+	if !IsValid(self.Possessor) or self.Possessor:KeyDown(IN_USE) or self.Possessor:Health() <= 0 or (!self.Possessor.IsPossessing) or !IsValid(self.PossessedNPC) or self.PossessedNPC:Health() <= 0 then self:StopPossessing() return end
+	if self.Possessor.IsPossessing != true then return end
+	if (self.Possessor.IsPossessing) && IsValid(self.PossessedNPC) then
+		self.PossessedNPC:Possess_Think(self.Possessor)
+		self.PossessedNPC:Possess_Commands(self.Possessor)
+		self.PossessedNPC:Possess_Move(self.Possessor)
+		if self.PossessedNPC:IsMoving() then
+			if (self.Possessor:KeyDown(IN_SPEED)) then
+				self.PossessedNPC:SetMovementAnimation("Run")
+			else
+				self.PossessedNPC:SetMovementAnimation("Walk")
+			end
+		else
+			if self.PossessedNPC:CanPerformProcess() then
+				self:FaceForward()
+			end
+		end
+	end
+	if #self.Possessor:GetWeapons() > 0 then
+		self.Possessor:StripWeapons()
+	end
+	if (self.Possessor:KeyDown(IN_USE)) then
+		self.PossessedNPC:StopMoving()
+		self:StopPossessing()
+	end
+	net.Start("cpt_ControllerView")
+	net.WriteBool(false)
+	net.WriteFloat(self.PossessedNPC:GetMaxHealth())
+	net.WriteFloat(self.PossessedNPC:Health())
+	net.WriteString(self.PossessedNPC:GetClass())
+	net.WriteString(tostring(self.PossessedNPC.HasMutated))
+	net.Send(self.Possessor)
+end
+
+function ENT:StopPossessing(remove)
+	remove = remove or true
+	if !IsValid(self.Possessor) then return end
+	if IsValid(self.Possessor) then
+		self.Possessor.IsPossessing = false
+		local playerpos = self.Possessor:GetPos()
+		self.Possessor:UnSpectate()
+		self.Possessor:KillSilent()
+		self.Possessor:Spawn()
+		if IsValid(self.PossessorView) then
+			self.Possessor:SetPos(self.PossessorView:GetPos() +self.PossessorView:GetUp()*100) else
+			self.Possessor:SetPos(playerpos)
+		end
+		for k, v in pairs(self.PossessorCurrentWeapons) do
+			self.Possessor:Give(v)
+		end
+		if (self.PossessorCurrentWeapon) then 
+			self.Possessor:SelectWeapon(self.PossessorCurrentWeapon)
+		end
+		self.Possessor:GodDisable()
+		self.Possessor:SetNoDraw(false)
+		self.Possessor:DrawShadow(true)
+		self.Possessor:SetNoTarget(false)
+		self.Possessor:DrawViewModel(true)
+		self.Possessor:DrawWorldModel(true)
+		self.Possessor:SetHealth(self.Possessor.DefaultHealth)
+		self.Possessor:SetArmor(self.Possessor.DefaultArmor)
+		for i = 0,self.Possessor:GetBoneCount() -1 do
+			ParticleEffect("vortigaunt_glow_beam_cp0",self.Possessor:GetBonePosition(i),Angle(0,0,0),nil)
+		end
+	end
+	self.Possessor = nil
+	if IsValid(self.PossessedNPC) then
+		self.PossessedNPC.IsPossessed = false
+		for i = 0,self.PossessedNPC:GetBoneCount() -1 do
+			ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
+		end
+		self.PossessedNPC:ClearSchedule()
+	end
+	-- if remove == true then
+		-- if self.PossessedNPC:IsValid() then
+			-- if self.PossessedNPC:Health() > 0 then
+				-- ParticleEffect("portal_rift_flash_01",self.PossessedNPC:GetPos() +self.PossessedNPC:OBBCenter(),Angle(0,0,0),nil)
+				-- self.PossessedNPC:Remove()
+			-- end
+		-- end
+	-- end
+	net.Start("cpt_ControllerView")
+	net.WriteBool(true)
+	net.WriteFloat(0)
+	net.WriteFloat(0)
+	net.WriteString("")
+	net.WriteString("")
+	net.Broadcast()
+	self:Remove()
+end

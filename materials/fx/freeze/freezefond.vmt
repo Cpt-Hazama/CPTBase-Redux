@@ -1,0 +1,47 @@
+ "Unlittwotexture"
+{
+	"$basetexture" "FX/Freeze/FreezeFond"
+	"$texture2" "FX/Freeze/aurora_diffuse"
+
+	"$translucent" 1
+	"$additive" 1
+
+	"$vertexalpha" 1
+	"$vertexcolor" 1
+	
+	"$nodecal" 1
+
+
+
+
+	"Proxies"
+	{
+
+		"UniformNoise"
+		{
+			"minVal" .85
+			"maxVal" 1	
+ 			//"mean" .5
+			//"halfwidth" .5
+			"resultVar" "$alpha"
+
+		}
+
+
+		"TextureScroll"
+		{
+			"texturescrollvar" "$texture2transform"
+			"texturescrollrate" 0
+			"texturescrollangle" 90
+		}
+
+		"TextureScroll"
+		{
+			"texturescrollvar" "$basetexturetransform"
+			"texturescrollrate" 0
+			"texturescrollangle" 90
+		}
+		
+
+	}
+}

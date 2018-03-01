@@ -1,0 +1,53 @@
+"Unlitgeneric"
+{
+	"$spriteorientation" "vp_parallel_oriented"
+	"$spriteorigin" "[ 0.50 0.50 ]"
+	"$spritescale" ".2"
+	"$translucent" 1
+	"$basetexture" "FX/Freeze/vapor/FZ_vapor_"
+
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+
+	//"$additive" 1
+
+	"Proxies"
+	{
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$basetexture"
+			"animatedtextureframenumvar" "$frame"
+			"animatedtextureframerate" 25
+		}
+
+		"Sine"
+
+		{
+			"sineperiod"	1
+			"resultVar" "$color[0]"
+			"sineperiod" .1
+			"sinemin" 1
+			"sinemax" 1
+		}
+		
+		"Sine"
+		{
+			"sineperiod"	.2
+			"resultVar" "$color[1]"
+			"sineperiod" .1
+			"sinemin" 1
+			"sinemax" 1
+		}
+		
+		"Sine"
+		{
+			"sineperiod"	1
+			"resultVar" "$color[2]"
+			"sineperiod" .1
+			"sinemin" 1
+			"sinemax" 1
+		}
+
+
+	}
+}
