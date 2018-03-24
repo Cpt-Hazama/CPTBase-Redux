@@ -40,7 +40,7 @@ function SWEP:ViewModelDrawn()
 	end
 end
 
-// Credit to the viewmodel lagger creator, I am not taking credit for this I just prefer his lerp better than mine :V
+// Credit to zombine, I am not taking credit for this I just prefer his viewmodel movement more than mine :v
 local function CalculateVector(start,scale,direction,dest)
 	dest.x = start.x +direction.x *scale
 	dest.y = start.y +direction.y *scale
@@ -52,33 +52,36 @@ hook.Add("CalcViewModelView","CPTBase_WeaponBase_Viewmodel",function(weapon,vm,o
 	if weapon.UseLuaMovement == false then return end
 	local Weapon_OriginalPos = Vector(pos.x,pos.y,pos.z)
 	local Weapon_OriginalAngles = Angle(ang.x,ang.y,ang.z)
+	local Scale_Forward = weapon.LuaMovementScale_Forward
+	local Scale_Right = weapon.LuaMovementScale_Right
+	local Scale_Up = weapon.LuaMovementScale_Up
+	local Shift_Speed = 8
 	vm.LastFacingAngle = vm.LastFacingAngle or ang:Forward()
 	local forward = ang:Forward()
-	if (FrameTime() != 0.0) then
+	if FrameTime() != 0 then
 		local difference = forward -vm.LastFacingAngle
-		local speed = 5.0
 		local totaldifference = difference:Length()
 		if totaldifference > 1.5 then
 			local scale = totaldifference /1.5
-			speed = speed *scale
+			Shift_Speed = Shift_Speed *scale
 		end
-		CalculateVector(vm.LastFacingAngle,speed *FrameTime(),difference,vm.LastFacingAngle)
+		CalculateVector(vm.LastFacingAngle,Shift_Speed *FrameTime(),difference,vm.LastFacingAngle)
 		vm.LastFacingAngle:Normalize()
-		CalculateVector(pos,5.0,difference *-1.0,pos)
+		CalculateVector(pos,5,difference * -1,pos)
 	end
 	local right,up
 	right = oldang:Right()
 	up = oldang:Up()
 	local pitch = oldang[1]
-	if (pitch > 180.0) then
-		pitch = pitch -360.0
-	elseif (pitch < -180.0) then
-		pitch = pitch +360.0
+	if (pitch > 180) then
+		pitch = pitch -360
+	elseif (pitch < -180) then
+		pitch = pitch +360
 	end
 
-	CalculateVector(pos,-pitch *0.035,forward,pos)
-	CalculateVector(pos,-pitch *0.03,right,pos)
-	CalculateVector(pos,-pitch *0.02,up,pos)
+	CalculateVector(pos,-pitch *Scale_Forward,forward,pos)
+	CalculateVector(pos,-pitch *Scale_Right,right,pos)
+	CalculateVector(pos,-pitch *Scale_Up,up,pos)
 end)
 
 function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
@@ -89,19 +92,59 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	local move1 = 0
 	local move2 =  0
 	if self.AdjustViewModel == true then
-		opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-		opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-		opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-		pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-		pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-		pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-		ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
-		ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
-		ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		if self:GetNWBool("cptbase_UseIronsights") == false then
+			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		end
+	else
+		if self:GetNWBool("cptbase_UseIronsights") == false then
+			opos:Add(ang:Right() *0)
+			opos:Add(ang:Forward() *0)
+			opos:Add(ang:Up() *0)
+			pos:Add(ang:Right() *0)
+			pos:Add(ang:Forward() *0)
+			pos:Add(ang:Up() *0)
+			ang:RotateAroundAxis(ang:Right(),0)
+			ang:RotateAroundAxis(ang:Up(),0)
+			ang:RotateAroundAxis(ang:Forward(),0)
+		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+			opos:Add(ang:Right() *(self.Ironsights.Pos.Right))
+			opos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
+			opos:Add(ang:Up() *(self.Ironsights.Pos.Up))
+			pos:Add(ang:Right() *(self.Ironsights.Pos.Right))
+			pos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
+			pos:Add(ang:Up() *(self.Ironsights.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.Ironsights.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.Ironsights.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.Ironsights.Ang.Forward)
+		end
 	end
-	// This is my lerp, the other one is not mine :P
+
 	if self.UseLuaMovement == true then
-		ang = ang +Angle(math.cos(CurTime() *self.LuaIdleScale) /1.5,math.cos(CurTime() *self.LuaIdleScale) /1.5,math.cos(CurTime() *self.LuaIdleScale) /2)
+		local idlescale = 1
+		if self:GetNWBool("cptbase_UseIronsights") == true then
+			idlescale = self.LuaIdleScale /2
+		else
+			idlescale = self.LuaIdleScale
+		end
+		ang = ang +Angle(math.cos(CurTime() *idlescale) /1.5,math.cos(CurTime() *idlescale) /1.5,math.cos(CurTime() *idlescale) /2)
 		if self.Owner:IsOnGround() then
 			if jump > 0 then
 				jump = jump -0.5

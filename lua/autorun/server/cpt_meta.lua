@@ -762,6 +762,12 @@ function util.ShakeWorld(pos,intensity,time,dist,usesound) -- I just find this e
 	util.ScreenShake(pos,intensity,100,time,dist)
 end
 
+function WPN_Meta:PlayerChat(text)
+	for _,v in ipairs(player.GetAll()) do
+		v:ChatPrint(text)
+	end
+end
+
 function NPC_Meta:PlayerChat(text)
 	for _,v in ipairs(player.GetAll()) do
 		v:ChatPrint(text)
@@ -913,43 +919,47 @@ end
 
 function NPC_Meta:PlaySequence(sequence,animrate)
 	if not sequence then return end
+	if self.bInSchedule then return end
+	if self.IsPlayingSequence then return end
 	self.bInSchedule = true
 	self.IsPlayingSequence = true
+	self.CanChaseEnemy = false
 	self:StopProcessing()
-	timer.Simple(0.02,function() 
+	self:SetNPCState(NPC_STATE_SCRIPT)
+	if istable(sequence) then
+		if #sequence < 1 then return end
+		sequence = tostring(table.Random(sequence))
+	end
+	print(sequence)
+	local animid = self:LookupSequence(sequence)
+	self:ResetSequence(animid)
+	self:ResetSequenceInfo()
+	self:SetCycle(0)
+	self:SetNPCState(NPC_STATE_SCRIPT)
+	if animrate then self:SetPlaybackRate(animrate) end
+	self.NextAnimT = CurTime() +self:SequenceDuration(animid)
+	self.CurrentSequence = animid
+	timer.Simple(self:SequenceDuration(animid),function()
 		if IsValid(self) then
-			self.bInSchedule = true
-			self.IsPlayingSequence = true
-			self:StopProcessing()
-			self:SetNPCState(NPC_STATE_SCRIPT)
-			if istable(sequence) then
-				if #sequence < 1 then return end
-				sequence = tostring(table.Random(sequence))
-			end
-			local animid = self:LookupSequence(sequence)
-			self:ResetSequence(animid)
-			self:ResetSequenceInfo()
-			self:SetCycle(0)
-			self:SetNPCState(NPC_STATE_SCRIPT)
-			if animrate then self:SetPlaybackRate(animrate) end
-			self.NextAnimT = CurTime() +self:SequenceDuration(animid)
-			self.CurrentSequence = animid
-			timer.Simple(self:SequenceDuration(animid),function()
-				if IsValid(self) then
-					self.bInSchedule = false
-					self.IsPlayingSequence = false
-					self:SetNPCState(NPC_STATE_NONE)
-				end
-			end)
+			self.bInSchedule = false
+			self.IsPlayingSequence = false
+			self.CanChaseEnemy = true
+			self:SetNPCState(NPC_STATE_NONE)
 		end
 	end)
 end
 
-function NPC_Meta:PlayActivity(activity,facetarget,table,usetime,resetanimation)
+function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	local fly = false
 	local usegesture = false
+	local extratime = nil
 	if usetime then
 		if CurTime() < self.NextAnimT then return end
+	end
+	if addtime == nil then
+		extratime = 0
+	else
+		extratime = addtime
 	end
 	if type(activity) == "number" then
 		activity = activity
@@ -964,12 +974,12 @@ function NPC_Meta:PlayActivity(activity,facetarget,table,usetime,resetanimation)
 	if activity == nil then return end
 	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
 	if fly == true then self:PlayActivity_Fly(activity) return end
+	self.CanChaseEnemy = false
 	local sched = ai_sched_cpt.New(activity)
 	local task = "TASK_PLAY_SEQUENCE"
 	if (self:IsMoving() or self.CurrentSchedule) then
 		self:StopMoving()
 		self:StopMoving()
-	elseif !resetanimation then
 		self:StartEngineTask(GetTaskID("TASK_RESET_ACTIVITY"),0)
 	end
 	if facetarget then
@@ -988,14 +998,12 @@ function NPC_Meta:PlayActivity(activity,facetarget,table,usetime,resetanimation)
 	self.IsPlayingActivity = true
 	self:MaintainActivity()
 	self.NextAnimT = CurTime() +self:AnimationLength(activity)
-	timer.Simple(self:AnimationLength(activity),function()
+	timer.Simple(self:AnimationLength(activity) +extratime,function()
 		if self:IsValid() then
 			self.IsPlayingActivity = false
+			self.CanChaseEnemy = true
 		end
 	end)
-	if table != nil && table == "Reload" && self:GetActiveWeapon() != nil then
-		self:GetActiveWeapon().NPC_CurrentReloadTime = self:AnimationLength(self.CurrentAnimation)
-	end
 	return activity
 end
 
@@ -1091,7 +1099,7 @@ function NPC_Meta:AttackFinish(seq)
 				self:CustomOnAttackFinish()
 			end
 		end)
-	elseif seq == true then
+	elseif seq then
 		timer.Simple(self:SequenceDuration(self.CurrentSequence) +0.02,function()
 			if self:IsValid() then
 				self.IsAttacking = false

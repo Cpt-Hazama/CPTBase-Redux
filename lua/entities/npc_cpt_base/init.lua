@@ -21,6 +21,7 @@ ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this
 ENT.ViewDistance = 7500
 ENT.ViewAngle = 75
 ENT.WanderChance = 60
+ENT.CanChaseEnemy = true
 ENT.MeleeAngle = 60
 ENT.HearingDistance = 900
 ENT.PhysicsDistance = 80
@@ -375,6 +376,33 @@ function ENT:WhileFalling() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnLand() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+/*
+	Can be called like this:
+	function ENT:Initialize() self:SetModel(self:LoadObjectData("sky","draugr").["Models"][1]) end
+	function ENT:CreateParticleOnAttack() ParticleEffect(self:LoadObjectData("sky","draugr").["Particles"][1],blah,blah,blah) end
+*/
+function ENT:LoadObjectData(datamod,dataname) // Similar to PredatorCZ's system, except in my own way :)
+	local cache = "models/cpthazama/" .. datamod .. "/" .. dataname .. ".cod"
+	local files = file.Find(cache .. "/" .. "*","GAME")
+	local objectcache = {
+		["Models"] = {},
+		["Particles"] = {},
+		["Sounds"] = {},
+	}
+	for _,data in ipairs(files) do
+		if string.find(data,".mdl") then
+			table.insert(objectcache["Models"],data)
+		end
+		if string.find(data,".pcf") then
+			table.insert(objectcache["Particles"],data)
+		end
+		if string.find(data,".wav") then
+			table.insert(objectcache["Sounds"],data)
+		end
+	end
+	return objectcache
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Initialize()
 	self:SetSpawnEffect(false)
 	self.CPTBase_NPC = true
@@ -434,7 +462,7 @@ function ENT:Initialize()
 	self.NextSwimDirection_YawT = 0
 	self.NextSwimDirection_PitchT = 0
 	self.TimeSinceLastTimeFalling = 0
-	
+
 	if table.Count(self.tbl_Capabilities) > 0 then
 		for _,cap in ipairs(self.tbl_Capabilities) do
 			if type(cap) == "number" then
@@ -446,12 +474,12 @@ function ENT:Initialize()
 	self:UpdateFriends()
 	self:UpdateEnemies()
 	self:UpdateRelations()
-	
+
 	if self.SetupSoundTables == true then
 		if self.SoundDirectory == nil then MsgN("CPTBase warning: " .. self .. " has no sound directory. Please add a sound directory.") return end
 		self:FindSounds()
 	end
-	
+
 	self:SetInit()
 	self:AfterInit()
 	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
@@ -984,7 +1012,7 @@ function ENT:SelectSchedule(bSchedule)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ChaseEnemy() // Only run this if you don't care what it's target is
-	if self:Disposition(self:GetEnemy()) != D_LI && self:CheckConfidence(self:GetEnemy()) == "attack!" then
+	if self:Disposition(self:GetEnemy()) != D_LI && self:CheckConfidence(self:GetEnemy()) == "attack!" && self.CanChaseEnemy == true then
 		self:ChaseTarget(self:GetEnemy(),false)
 	end
 end
@@ -1306,6 +1334,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			if self:GetState() == NPC_STATE_IDLE then
 				self:SetState(NPC_STATE_ALERT)
 			end
+			self:StopCompletely()
 			self:TASKFUNC_FACEPOSITION(_Pos)
 		end
 		if DoIgnore == false then
@@ -1556,7 +1585,7 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 					end
 				elseif ent:GetClass() == "npc_turret_floor" then
 					ent:Fire("selfdestruct","",0)
-					ent:GetPhysicsObject():ApplyForceCenter(self:GetForward() *10000) 
+					ent:GetPhysicsObject():ApplyForceCenter(self:GetForward() *10000)
 				end
 			end
 		end

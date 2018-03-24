@@ -16,6 +16,7 @@ SWEP.UseHands = true
 SWEP.DrawTime = 2
 SWEP.ReloadTime = false
 SWEP.WeaponWeight = 85
+SWEP.HasShells = false
 
 SWEP.Primary.TotalShots = 1
 SWEP.Primary.Spread = 0.04
@@ -25,6 +26,7 @@ SWEP.Primary.Damage = 18
 SWEP.Primary.Delay = 0.04
 SWEP.MuzzleEffect = "cpt_muzzle_energy"
 SWEP.Primary.TracerEffect = "cpt_tracer_energy"
+SWEP.MuzzleFlash_Color = Color(0,115,255)
 
 SWEP.Primary.ClipSize		= 200
 SWEP.Primary.Automatic		= true

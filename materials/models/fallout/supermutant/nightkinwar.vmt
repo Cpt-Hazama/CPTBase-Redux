@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/fallout/supermutant/nightkinwar"
+	"$bumpmap" 	"models/fallout/supermutant/nightkinwar_n"
+	"$alphatest" "1"
+}

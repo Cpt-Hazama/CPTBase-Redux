@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/fallout/supermutant/spinebreakerarmor"
+	"$bumpmap" 	"models/fallout/supermutant/spinebreakerarmor_n"
+	"$alphatest" "1"
+}

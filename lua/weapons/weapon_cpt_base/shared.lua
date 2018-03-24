@@ -8,6 +8,8 @@ SWEP.Author = "Cpt. Hazama"
 SWEP.Contact = ""
 SWEP.Purpose = ""
 SWEP.Instructions = ""
+SWEP.HUDSlot = 1
+SWEP.HUDImportance = 3
 SWEP.Category		= "CPTBase"
 SWEP.ViewModelFOV	= 70
 SWEP.ViewModelFlip	= false
@@ -18,14 +20,27 @@ SWEP.Spawnable = false
 SWEP.AdminSpawnable = false
 SWEP.UseLuaMovement = true
 SWEP.LuaIdleScale = 1
+SWEP.LuaMovementScale_Forward = 0.0400
+SWEP.LuaMovementScale_Right = 0.0084
+SWEP.LuaMovementScale_Up = 0.022
 
 SWEP.DrawTime = 0.4
 SWEP.ReloadTime = 1
 SWEP.UseSingleReload = false
 SWEP.WeaponWeight = 0
+SWEP.WeaponCanBreak = true
+SWEP.HasMuzzleFlash = true
 SWEP.MuzzleEffect = "cpt_muzzle"
 SWEP.Muzzle = "muzzle"
-SWEP.WeaponCanBreak = true
+SWEP.MuzzleFlash_Color = Color(255,93,0)
+SWEP.MuzzleFlash_Brightness = 2
+SWEP.MuzzleFlash_Distance = 150
+SWEP.HasShells = true
+SWEP.ShellModel = "models/shells/shell_large.mdl"
+SWEP.ShellTable = {
+	Pos = {Right = 3,Forward = 0,Up = -0.8},
+	Velocity = {Right = 150,Up = 50,Forward = 0}
+}
 
 SWEP.Primary.TotalShots = 1
 SWEP.Primary.Spread = 7
@@ -55,6 +70,13 @@ SWEP.WorldModelAdjust = {
 	Ang = {Right = 0,Up = 0,Forward = 0}
 }
 
+SWEP.HasIronsights = false
+SWEP.Ironsights = {
+	Pos = {Right = 0,Forward = 0,Up = 0},
+	Ang = {Right = 0,Up = 0,Forward = 0}
+}
+
+
 SWEP.tbl_Animations = {}
 SWEP.tbl_Sounds = {}
 
@@ -77,7 +99,7 @@ function SWEP:AddClip1(amount)
 	self.Weapon:SetClip1(self:Clip1() +amount)
 end
 
-function SWEP:OnPrimaryAttack() end
+function SWEP:OnPrimaryAttack(oldclip,newclip) end
 
 function SWEP:SelectFromTable(tbl)
 	if tbl == nil then return tbl end
@@ -126,15 +148,49 @@ end
 function SWEP:GetViewModelPosition(pos,ang)
 	local opos = pos *1
 	if self.AdjustViewModel == true then
-		opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-		opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-		opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-		pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-		pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-		pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-		ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
-		ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
-		ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		if self:GetNWBool("cptbase_UseIronsights") == false then
+			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
+		end
+	else
+		if self:GetNWBool("cptbase_UseIronsights") == false then
+			opos:Add(ang:Right() *0)
+			opos:Add(ang:Forward() *0)
+			opos:Add(ang:Up() *0)
+			pos:Add(ang:Right() *0)
+			pos:Add(ang:Forward() *0)
+			pos:Add(ang:Up() *0)
+			ang:RotateAroundAxis(ang:Right(),0)
+			ang:RotateAroundAxis(ang:Up(),0)
+			ang:RotateAroundAxis(ang:Forward(),0)
+		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+			opos:Add(ang:Right() *(self.Ironsights.Pos.Right))
+			opos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
+			opos:Add(ang:Up() *(self.Ironsights.Pos.Up))
+			pos:Add(ang:Right() *(self.Ironsights.Pos.Right))
+			pos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
+			pos:Add(ang:Up() *(self.Ironsights.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),self.Ironsights.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.Ironsights.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.Ironsights.Ang.Forward)
+		end
 	end
 end
 
@@ -212,9 +268,15 @@ function SWEP:CanFire(canfire)
 	end
 end
 
+function SWEP:SetWeaponSlot(hud_slot,hud_importance)
+	self.Slot = hud_slot -1 // We'll look at it this way, slot 1 is physgun and slot 6 is toolgun, instead of 0 being physgun
+	self.SlotPos = hud_importance
+end
+
 function SWEP:Initialize()
 	self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
 	self:SetNWEntity("cpt_CModel",self)
+	self:SetNWBool("cptbase_UseIronsights",false)
 	self.Weapon:SetClip1(self.Primary.ClipSize)
 	self.Primary.DefaultClip = self.Primary.ClipSize
 	self.FixClip = self.Primary.DefaultClip
@@ -226,6 +288,7 @@ function SWEP:Initialize()
 		self.Owner.ReloadingWeapon = false
 	end
 	self:SetWeaponHoldType(self.HoldType)
+	self:SetWeaponSlot(self.HUDSlot,self.HUDImportance)
 	self.DefaultHoldType = self.HoldType
 	self.CPTBase_Weapon = true
 	self.IsFiring = false
@@ -287,7 +350,9 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	self.IsFiring = true
 	self.CanUseIdle = false
 	self:PrimaryAttackCode(ShootPos,ShootDir)
+	local oldclip = self:Clip1()
 	self:AddClip1(-self.RemoveAmmoAmount)
+	local newclip = self:Clip1()
 	if self.Owner:IsPlayer() then
 		self.Owner:ViewPunch(Angle(-self.Primary.Force,math.random(-self.Primary.Force /2,self.Primary.Force /2),0))
 		self.Owner:SetAnimation(PLAYER_ATTACK1)
@@ -305,29 +370,69 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 		self.NPC_NextFireT = CurTime() +self:GetNPCFireRate()
 	end
 	if self.Owner:IsPlayer() then
-		local anim = self.FireAnimation
-		self:PlayWeaponAnimation(self.FireAnimation,1,0)
-		self:PlayThirdPersonAnim(PLAYER_ATTACK1)
-		if type(anim) == "number" then
-			self.Weapon:SendWeaponAnim(anim)
-		elseif type(anim) == "string" then
-			self:PlayWeaponSequence(anim,1,0)
-		end
+		self:DoFireAnimation()
 	end
 	self.Owner:MuzzleFlash()
 	self:CreateMuzzleFlash()
-	self:OnPrimaryAttack()
+	self:CreateShellCasings()
+	self:OnPrimaryAttack(oldclip,newclip)
 	timer.Simple(self.Primary.Delay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
 	timer.Simple(self.Primary.Delay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
 end
 
+function SWEP:DoFireAnimation()
+	local anim = self.FireAnimation
+	self:PlayWeaponAnimation(anim,1,0)
+	self:PlayThirdPersonAnim(PLAYER_ATTACK1)
+	if type(anim) == "number" then
+		self.Weapon:SendWeaponAnim(anim)
+	elseif type(anim) == "string" then
+		self:PlayWeaponSequence(anim,1,0)
+	end
+end
+
+function SWEP:CreateShellCasings()
+	if self.HasShells == false then return end
+	if SERVER then
+		local clip = ents.Create("prop_physics")
+		clip:SetModel(Model(self.ShellModel))
+		clip:SetPos(self:GetPos() +self:GetForward() *self.ShellTable.Pos.Forward +self:GetRight() *self.ShellTable.Pos.Right +self:GetUp() *self.ShellTable.Pos.Up)
+		clip:SetAngles(self:GetAngles())
+		clip:SetCollisionGroup(1)
+		clip:Spawn()
+		clip:SetCollisionGroup(1)
+		clip:Activate()
+		if clip:GetPhysicsObject():IsValid() then
+			clip:GetPhysicsObject():SetVelocity((self:GetPos() -self:LocalToWorld(Vector(0,0,0))) +self:GetForward() *self.ShellTable.Velocity.Forward +self:GetRight() *self.ShellTable.Velocity.Right +self:GetUp() *self.ShellTable.Velocity.Up)
+		end
+		timer.Simple(math.Rand(5,8),function()
+			if IsValid(clip) then
+				clip:Remove()
+			end
+		end)
+	end
+end
+
 function SWEP:CreateMuzzleFlash()
+	if self.HasMuzzleFlash == false then return end
 	local fx = EffectData()
 	fx:SetEntity(self.Weapon)
 	fx:SetOrigin(self:GetBulletPos())
 	fx:SetNormal(self.Owner:GetAimVector())
 	fx:SetAttachment(self.Weapon:LookupAttachment(self.Muzzle))
 	util.Effect(self.MuzzleEffect,fx)
+	local fx_light = ents.Create("light_dynamic")
+	fx_light:SetKeyValue("brightness",self.MuzzleFlash_Brightness)
+	fx_light:SetKeyValue("distance",self.MuzzleFlash_Distance)
+	-- fx_light:SetLocalPos(self:GetBulletPos())
+	fx_light:SetLocalPos(self.Weapon:GetAttachment(1).Pos)
+	fx_light:Fire("Color",self.MuzzleFlash_Color.r .. " " .. self.MuzzleFlash_Color.g .. " " .. self.MuzzleFlash_Color.b)
+	fx_light:SetParent(self)
+	fx_light:Spawn()
+	fx_light:Activate()
+	fx_light:Fire("TurnOn","",0)
+	fx_light:Fire("Kill","",0.1)
+	self:DeleteOnRemove(fx_light)
 end
 
 function SWEP:GetBulletPos()
@@ -365,7 +470,12 @@ end
 function SWEP:FiredBullet(attacker,tr,dmginfo) end
 
 function SWEP:SecondaryAttack()
-	return false
+	if self.HasIronsights == false then return false end
+	if self.IsFiring == false && self:GetNWBool("cptbase_UseIronsights") == false then
+		self:SetNWBool("cptbase_UseIronsights",true)
+	else
+		self:SetNWBool("cptbase_UseIronsights",false)
+	end
 end
 
 function SWEP:Think()
@@ -449,7 +559,6 @@ end
 function SWEP:OnReload() end
 
 function SWEP:Reload()
-	local reloadtime = self.ReloadTime
 	if self.Owner:GetAmmoCount(self.Primary.Ammo) <= 0 then return end
 	if !self.Owner:KeyDown(IN_RELOAD) then return end
 	if self:Clip1() == self.Primary.DefaultClip then return end
@@ -458,19 +567,7 @@ function SWEP:Reload()
 		self.CanUseIdle = false
 		self:ReloadSounds()
 		self:OnReload()
-		-- self.Weapon:SendWeaponAnim(self.ReloadAnimation)
-		local anim = self.ReloadAnimation
-		if type(anim) == "number" then
-			self.Weapon:SendWeaponAnim(anim)
-		elseif type(anim) == "string" then
-			self:PlayWeaponSequence(anim,1,0)
-		end
-		if reloadtime == false then
-			if type(anim) == "number" then
-				reloadtime = self.Weapon:AnimationLength(anim)
-			end
-		end
-		self.Owner:SetAnimation(PLAYER_RELOAD)
+		local reloadtime = self:DoReloadAnimation() // Deal with it
 		if self.UseSingleReload == true then
 			if CurTime() > self.NextReloadHintT then
 				self.Owner:ChatPrint("Hint: This weapon uses a pump action reload. Hold down your reload key to cycle reloading. Let go at any point to stop.")
@@ -484,6 +581,23 @@ function SWEP:Reload()
 		self.Weapon:SetNextPrimaryFire(reloadtime)
 	end
 	return true
+end
+
+function SWEP:DoReloadAnimation()
+	local reloadtime = self.ReloadTime
+	local anim = self.ReloadAnimation
+	if type(anim) == "number" then
+		self.Weapon:SendWeaponAnim(anim)
+	elseif type(anim) == "string" then
+		self:PlayWeaponSequence(anim,1,0)
+	end
+	if reloadtime == false then
+		if type(anim) == "number" then
+			reloadtime = self.Weapon:AnimationLength(anim)
+		end
+	end
+	self.Owner:SetAnimation(PLAYER_RELOAD)
+	return reloadtime
 end
 
 function SWEP:ReloadSounds()

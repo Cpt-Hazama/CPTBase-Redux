@@ -14,6 +14,7 @@ function ENT:GetState()
 end
 
 function ENT:SetState(state)
+	if state != NPC_STATE_SCRIPT && self:GetNPCState() == NPC_STATE_SCRIPT then return end
 	local old = self:GetNPCState()
 	self:OnStateChanged(old,state)
 	self:SetNPCState(state)

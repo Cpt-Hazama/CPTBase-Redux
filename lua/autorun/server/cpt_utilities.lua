@@ -41,10 +41,12 @@ CPTBase = {
 	AddAmmo = function(cptName,cptClass,cptAmmo,cptDamageType)
 		game.AddAmmoType({name=cptAmmo,dmgtype=cptDamageType})
 		if (CLIENT) then
-			language.Add(cptClass,cptName)
-			killicon.Add(cptClass,"HUD/killicons/default",Color(255,80,0,255))
-			language.Add("#" .. cptClass,cptName)
-			killicon.Add("#" .. cptClass,"HUD/killicons/default",Color(255,80,0,255))
+			if cptName != nil && cptClass != nil then
+				language.Add(cptClass,cptName)
+				killicon.Add(cptClass,"HUD/killicons/default",Color(255,80,0,255))
+				language.Add("#" .. cptClass,cptName)
+				killicon.Add("#" .. cptClass,"HUD/killicons/default",Color(255,80,0,255))
+			end
 		end
 	end,
 	IsInstalled = true

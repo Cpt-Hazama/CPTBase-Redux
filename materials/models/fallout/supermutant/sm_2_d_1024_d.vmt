@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/fallout/supermutant/sm_2_d_1024_d"
+	"$bumpmap" 	"models/fallout/supermutant/sm_2_n_1024_n"
+}
