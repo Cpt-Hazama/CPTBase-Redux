@@ -46,6 +46,16 @@ end
 
 function ENT:CustomEffects() end
 
+function ENT:SetImpactSound(snd,vol,pitch)
+	self.ImpactSound = snd
+	self.ImpactSoundVolume = vol
+	self.ImpactSoundPitch = pitch
+end
+
+function ENT:GetImpactSound()
+	return self.ImpactSound
+end
+
 function ENT:SetHitEntity(ent)
 	self:SetNetworkedEntity("CPTProjectile_HitEntity",ent)
 end

@@ -138,13 +138,6 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	end
 
 	if self.UseLuaMovement == true then
-		local idlescale = 1
-		if self:GetNWBool("cptbase_UseIronsights") == true then
-			idlescale = self.LuaIdleScale /2
-		else
-			idlescale = self.LuaIdleScale
-		end
-		ang = ang +Angle(math.cos(CurTime() *idlescale) /1.5,math.cos(CurTime() *idlescale) /1.5,math.cos(CurTime() *idlescale) /2)
 		if self.Owner:IsOnGround() then
 			if jump > 0 then
 				jump = jump -0.5

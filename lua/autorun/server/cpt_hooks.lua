@@ -10,6 +10,14 @@ hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 	end
 end)
 
+hook.Add("PlayerSpawnedNPC","cpt_SetOwnerNPC",function(ply,ent)
+	if ent:IsNPC() && ent.CPTBase_NPC then
+		if ent:GetOwner() == NULL then
+			ent.NPC_Owner = ply
+		end
+	end
+end)
+
 hook.Add("OnNPCKilled","cpt_KilledNPC",function(victim,inflictor,killer)
 	if killer.CPTBase_NPC then
 		if killer != victim then

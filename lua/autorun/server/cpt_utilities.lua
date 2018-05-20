@@ -9,9 +9,16 @@ CPTBase = {
 			tbl_cptMods = {}
 		end
 		if cptVersion == nil then
-			cptVersion = "1"
+			cptVersion = "0.1.0"
 		end
 		table.insert(tbl_cptMods,{name = cptName,version = cptVersion})
+	end,
+	SetSoundDuration = function(snd,dur)
+		if SNDDURATION_TABLE == nil then SNDDURATION_TABLE = {} end
+		if !table.HasValue(SNDDURATION_TABLE,snd) then
+			table.insert(SNDDURATION_TABLE,snd)
+		end
+		SNDDURATION_TABLE[snd] = dur
 	end,
 	DefineDecal = function(cptName,cptTbl)
 		game.AddDecal(cptName,cptTbl)
@@ -48,6 +55,14 @@ CPTBase = {
 				killicon.Add("#" .. cptClass,"HUD/killicons/default",Color(255,80,0,255))
 			end
 		end
+	end,
+	RegisterNPCWeapon = function(wepName,wepClass,wepIsMelee)
+		if CPTBASE_NPCWEAPON_TABLE == nil then CPTBASE_NPCWEAPON_TABLE = {} end
+		if !table.HasValue(CPTBASE_NPCWEAPON_TABLE,wepName) then
+			table.insert(CPTBASE_NPCWEAPON_TABLE,wepName)
+		end
+		CPTBASE_NPCWEAPON_TABLE[wepName].Class = wepClass
+		CPTBASE_NPCWEAPON_TABLE[wepName].wepIsMelee = wepIsMelee
 	end,
 	IsInstalled = true
 }

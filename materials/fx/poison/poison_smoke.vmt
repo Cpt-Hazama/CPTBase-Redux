@@ -1,8 +1,0 @@
-"Sprite"
-{
-	"$spriteorientation" "vp_parallel"
-	"$spriteorigin" "[ 0.50 0.50 ]"
-	"$spriteRenderMode" "1"
-	"$basetexture" "FX/poison/poison_smoke"
-	"$translucent" "1"
-}

@@ -1,0 +1,70 @@
+
+
+"unlitgeneric"
+{
+	"$spriteorientation" "4"
+	"$spriteorigin" "[ 0.50 0.50 ]"
+
+		
+	"$model"	"1"
+	"$basetexture" "cptbase/Souldrinker/SD_purple_haze_"
+	"$vertexcolor" "1"
+	"$vertexalpha" "1"
+	"$translucent" "1"
+	"$saturation" 1
+	//"$additive" 1
+	
+	"Proxies"
+	{
+		
+	
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$basetexture"
+			"animatedtextureframenumvar" "$frame"
+			"animatedtextureframerate" 25
+		}
+		"Sine"
+		{
+			"resultVar" "$alpha"
+			"sineperiod" 3
+			"sinemin" .3
+
+			"sinemax" .8
+		}
+		"Sine"
+		{
+			"resultVar" "$color[0]"
+			"sineperiod" 3
+			"sinemin" .5
+
+			"sinemax" 1
+		}
+		"Sine"
+		{
+			"resultVar" "$color[1]"
+			"sineperiod" 3
+			"sinemin" 0
+
+			"sinemax" 1
+		}
+		"Sine"
+		{
+			"resultVar" "$color[2]"
+			"sineperiod" 3
+			"sinemin" 0
+
+			"sinemax" 1
+		}
+
+
+	}
+}
+
+
+
+
+
+
+
+

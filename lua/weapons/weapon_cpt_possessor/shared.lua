@@ -108,3 +108,44 @@ function SWEP:Think() end
 function SWEP:Reload() end
 
 function SWEP:OnRemove() end
+
+if CLIENT then
+	function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
+		local opos = pos *1
+		local duck1 = 0
+		local duck2 = 0
+		local jump = 0
+		local move1 = 0
+		local move2 =  0
+		if self.Owner:IsOnGround() then
+			if jump > 0 then
+				jump = jump -0.5
+			end
+		else
+			if jump < 6 then
+				jump = jump +0.1
+			end
+		end
+		ang:RotateAroundAxis(ang:Right(),jump)
+		ang:RotateAroundAxis(ang:Up(),(jump *-0.3))
+		ang:RotateAroundAxis(ang:Forward(),0)
+		local walkspeed = self.Owner:GetVelocity():Length() 
+		if walkspeed > 0 then
+			if !self.Owner:KeyDown(IN_WALK) && !self.Owner:KeyDown(IN_SPEED) && !self.Owner:KeyDown(IN_DUCK) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+				move1 = 17
+				move2 = 3
+			elseif (self.Owner:KeyDown(IN_WALK) or self.Owner:KeyDown(IN_DUCK)) && !self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+				move1 = 15
+				move2 = 10
+			elseif self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+				move1 = 20
+				move2 = 1 +(3 /75)
+			else
+				move1 = 0
+				move2 = 100
+			end
+			ang = ang +Angle(math.cos(CurTime() *move1) /move2,math.cos(CurTime() *move1 /2) /move2,0)
+		end
+		return pos,ang
+	end
+end

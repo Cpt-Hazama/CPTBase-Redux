@@ -118,7 +118,7 @@ function ENT:HandleEvents(...)
 		return true
 	end
 	if(event == "rattack") then
-		if self:GetEnemy() == nil && self.IsPossessed == false then return true end
+		if !IsValid(self:GetEnemy()) && self.IsPossessed == false then return true end
 		local muzzle = self:GetAttachment(self:LookupAttachment(arg1 == "right" && "RightMuzzle" || "LeftMuzzle"))
 		-- if(arg1 == "left") then
 			-- muzzle = self:GetAttachment(self:LookupAttachment("LeftMuzzle"))
@@ -133,7 +133,7 @@ function ENT:HandleEvents(...)
 		if self.IsPossessed then
 			bullet.Dir = self:Possess_AimTarget() -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		else
-			if self:GetEnemy() == nil then return true end
+			if !IsValid(self:GetEnemy()) then return true end
 			bullet.Dir = (self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()) -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		end
 		bullet.Spread = spread
@@ -156,7 +156,7 @@ end
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
 	if self.IsDodging then return end
-	if !self.IsPossessed && (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 	self:StopCompletely()
 	self:PlayAnimation("Attack",2)
 	self:PlaySound("Attack")
@@ -167,7 +167,7 @@ end
 function ENT:DoRangeAttack()
 	if self:CanPerformProcess() == false then return end
 	if self.IsDodging then return end
-	if !self.IsPossessed && (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 	self:StopCompletely()
 	self:PlayAnimation("RangeAttack",2)
 	self.IsRangeAttacking = true

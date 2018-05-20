@@ -71,13 +71,13 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
-	if !self.IsPossessed && (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 	self:StopCompletely()
 	self:PlayAnimation("Attack",2)
 	self:PlaySound("Attack")
 	self.IsAttacking = true
 	timer.Simple(self.MeleeAttackHitTime,function()
-		if self:IsValid() && self:GetEnemy() != nil then
+		if self:IsValid() then
 			self:DoDamage(self.MeleeAttackDamageDistance,self.MeleeAttackDamage,self.MeleeAttackType)
 		end
 	end)
@@ -87,7 +87,7 @@ end
 function ENT:DoRangeAttack()
 	if CurTime() > self.NextRangeAttackT then
 		if self:CanPerformProcess() == false then return end
-		if !self.IsPossessed && (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+		if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 		self:StopCompletely()
 		self:PlayAnimation("RangeAttack",2)
 		self.IsRangeAttacking = true
@@ -158,13 +158,13 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	if(disp == D_HT) then
-		if dist <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
+		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
 			self:DoAttack()
 		end
-		if dist <= self.RangeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsRangeAttacking == false then
+		if nearest <= self.RangeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsRangeAttacking == false then
 			self:DoRangeAttack()
 		end
-		if dist <= 200 then self.tbl_Animations["Run"] = {ACT_RUN} else self.tbl_Animations["Run"] = {ACT_WALK} end
+		if nearest <= 200 then self.tbl_Animations["Run"] = {ACT_RUN} else self.tbl_Animations["Run"] = {ACT_WALK} end
 		if self:CanPerformProcess() then
 			self:ChaseEnemy()
 		end

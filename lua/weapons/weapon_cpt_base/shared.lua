@@ -1,8 +1,15 @@
+if !CPTBase then return end
+-------------------------------------------------------------------------------------------------------------------
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 AddCSLuaFile("viewmodel.lua")
 include("ai_translations.lua")
 include("sh_anim.lua")
+
+if SERVER then
+	util.AddNetworkString("cpt_CModelshootpos")
+	util.AddNetworkString("cpt_CModel")
+end
 
 SWEP.Author = "Cpt. Hazama"
 SWEP.Contact = ""
@@ -19,7 +26,6 @@ SWEP.AnimPrefix		= "python"
 SWEP.Spawnable = false
 SWEP.AdminSpawnable = false
 SWEP.UseLuaMovement = true
-SWEP.LuaIdleScale = 1
 SWEP.LuaMovementScale_Forward = 0.0400
 SWEP.LuaMovementScale_Right = 0.0084
 SWEP.LuaMovementScale_Up = 0.022
@@ -39,7 +45,7 @@ SWEP.HasShells = true
 SWEP.ShellModel = "models/shells/shell_large.mdl"
 SWEP.ShellTable = {
 	Pos = {Right = 3,Forward = 0,Up = -0.8},
-	Velocity = {Right = 150,Up = 50,Forward = 0}
+	Velocity = {Right = math.Rand(140,180),Up = math.Rand(40,60),Forward = 0}
 }
 
 SWEP.Primary.TotalShots = 1
@@ -83,43 +89,44 @@ SWEP.tbl_Sounds = {}
 SWEP.Weight				= 5			// Decides whether we should switch from/to this
 SWEP.AutoSwitchTo		= false		// Auto switch to if we pick it up
 SWEP.AutoSwitchFrom		= false		// Auto switch from if you pick up a better weapon
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 net.Receive("cpt_CModelshootpos",function(len,pl)
 	vec = net.ReadVector()
 	ent = net.ReadEntity()
 	ent:SetNWVector("cpt_CModel_MuzzlePos",vec)
 end)
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 net.Receive("cpt_CModel",function(len,pl)
 	ent = net.ReadEntity()
-	ent:SetNWEntity("cpt_CModel",vec)
+	self:SetNWEntity("cpt_CModel",ent)
 end)
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AddClip1(amount)
 	self.Weapon:SetClip1(self:Clip1() +amount)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnPrimaryAttack(oldclip,newclip) end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SelectFromTable(tbl)
 	if tbl == nil then return tbl end
 	return tbl[math.random(1,#tbl)]
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SoundCreate(snd,vol,pitch)
 	return sound.Play(snd,self:GetPos(),vol,pitch,1)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AnimationLength(activity)
 	return self:SequenceDuration(self:SelectWeightedSequence(activity))
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPC_FireGesture(gesture)
+	if !self.Owner:IsNPC() then return end
 	local gest = self.Owner:AddGestureSequence(self.Owner:LookupSequence(gesture))
 	self.Owner:SetLayerPriority(gest,2)
 	self.Owner:SetLayerPlaybackRate(gest,0.5)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayWeaponSound(tbl,vol,pitch,usedot)
 	if self.tbl_Sounds[tbl] == nil then return end
 	local pitch = pitch or 100
@@ -130,7 +137,7 @@ function SWEP:PlayWeaponSound(tbl,vol,pitch,usedot)
 		-- return self:CreatePlaySound(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
 	-- end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayWeaponSoundTimed(tbl,vol,time,usedot)
 	if self.tbl_Sounds[tbl] == nil then return end
 	timer.Simple(time,function()
@@ -144,7 +151,7 @@ function SWEP:PlayWeaponSoundTimed(tbl,vol,time,usedot)
 		end
 	end)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetViewModelPosition(pos,ang)
 	local opos = pos *1
 	if self.AdjustViewModel == true then
@@ -169,7 +176,7 @@ function SWEP:GetViewModelPosition(pos,ang)
 			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
 		end
-	else
+	else---------------------------------------------------------------------------------------------------------------------------------------------
 		if self:GetNWBool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *0)
 			opos:Add(ang:Forward() *0)
@@ -193,24 +200,26 @@ function SWEP:GetViewModelPosition(pos,ang)
 		end
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetWorldModelPosition()
-	if self.Weapon:IsValid() && self.Owner:IsValid() then
-		pos,ang = self.Owner:GetBonePosition(self.Owner:LookupBone(self.WorldModelAttachmentBone))
-		ang:RotateAroundAxis(ang:Right(),self.WorldModelAdjust.Ang.Right)
-		ang:RotateAroundAxis(ang:Up(),self.WorldModelAdjust.Ang.Up)
-		ang:RotateAroundAxis(ang:Forward(),self.WorldModelAdjust.Ang.Forward)
-		pos = pos +self.WorldModelAdjust.Pos.Right *ang:Right()
-		pos = pos +self.WorldModelAdjust.Pos.Forward *ang:Forward()
-		pos = pos +self.WorldModelAdjust.Pos.Up *ang:Up()
-		return {pos=pos,ang=ang}
+	if CLIENT then
+		if self.Weapon:IsValid() && self.Owner:IsValid() then
+			pos,ang = self.Owner:GetBonePosition(self.Owner:LookupBone(self.WorldModelAttachmentBone))
+			ang:RotateAroundAxis(ang:Right(),self.WorldModelAdjust.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),self.WorldModelAdjust.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),self.WorldModelAdjust.Ang.Forward)
+			pos = pos +self.WorldModelAdjust.Pos.Right *ang:Right()
+			pos = pos +self.WorldModelAdjust.Pos.Forward *ang:Forward()
+			pos = pos +self.WorldModelAdjust.Pos.Up *ang:Up()
+			return {pos=pos,ang=ang}
+		end
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AcceptInput(name,entActivator,entCaller,data)
 	return false
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayWeaponSequence(seq,speed,loop)
 	local anim = self.Owner:GetViewModel():LookupSequence(seq)
 	self.Owner:GetViewModel():ResetSequence(anim)
@@ -218,17 +227,17 @@ function SWEP:PlayWeaponSequence(seq,speed,loop)
 	self.Owner:GetViewModel():SetPlaybackRate(speed)
 	self.Owner:GetViewModel():SetCycle(loop)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayThirdPersonAnim(anim)
 	anim = anim || PLAYER_ATTACK1
 	if !game.SinglePlayer() || self.Owner:IsNPC() then self.Owner:SetAnimation(anim); return end
 	GAMEMODE:DoAnimationEvent(self.Owner,PLAYERANIMEVENT_ATTACK_PRIMARY)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:UseDefinedSequence(seq)
 	return self.Weapon:SendWeaponAnim(self:GetSequenceInfo(self:GetSequenceID(seq)).activity)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetSequenceID(sequence)
 	local tb = self:GetSequenceList()
 	local i = 0
@@ -239,26 +248,26 @@ function SWEP:GetSequenceID(sequence)
 	end
 	return i
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Equip(wepowner)
 	if self.Owner:IsPlayer() then
 		self.OriginalSpeed = self.Owner:GetWalkSpeed()
 		self.OriginalRunSpeed = self.Owner:GetRunSpeed()
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnDrop()
 	return false
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:ShouldDropOnDie()
 	return false
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPCShoot_Primary(ShootPos,ShootDir)
 	self:PrimaryAttack(ShootPos,ShootDir)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:CanFire(canfire)
 	if canfire == true then
 		self.CanNPCFire = true
@@ -267,12 +276,12 @@ function SWEP:CanFire(canfire)
 		self.CanNPCFire = false
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SetWeaponSlot(hud_slot,hud_importance)
 	self.Slot = hud_slot -1 // We'll look at it this way, slot 1 is physgun and slot 6 is toolgun, instead of 0 being physgun
 	self.SlotPos = hud_importance
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Initialize()
 	self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
 	self:SetNWEntity("cpt_CModel",self)
@@ -286,6 +295,7 @@ function SWEP:Initialize()
 	end
 	if self.Owner:IsNPC() then
 		self.Owner.ReloadingWeapon = false
+		-- self.Owner:SetCurrentWeaponProficiency(WEAPON_PROFICIENCY_PERFECT)
 	end
 	self:SetWeaponHoldType(self.HoldType)
 	self:SetWeaponSlot(self.HUDSlot,self.HUDImportance)
@@ -317,20 +327,20 @@ function SWEP:Initialize()
 	end)
 	self:OnInit()
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SetWeaponCondition(cnd)
 	self.WeaponCondition = cnd
 	if self.WeaponCondition > 100 then
 		self.WeaponCondition = 100
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DamageWeaponCondition(dmg)
 	self:SetWeaponCondition(self.WeaponCondition -dmg)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnInit() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	if !self.Owner:IsNPC() then
 		if self.IsReloading == true then return end
@@ -379,7 +389,7 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	timer.Simple(self.Primary.Delay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
 	timer.Simple(self.Primary.Delay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DoFireAnimation()
 	local anim = self.FireAnimation
 	self:PlayWeaponAnimation(anim,1,0)
@@ -390,7 +400,15 @@ function SWEP:DoFireAnimation()
 		self:PlayWeaponSequence(anim,1,0)
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:PlayWeaponAnimation(anim,speed,loop)
+	if type(anim) == "number" then
+		return self.Weapon:SendWeaponAnim(anim)
+	elseif type(anim) == "string" then
+		return self:PlayWeaponSequence(anim,speed,loop)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:CreateShellCasings()
 	if self.HasShells == false then return end
 	if SERVER then
@@ -412,7 +430,7 @@ function SWEP:CreateShellCasings()
 		end)
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:CreateMuzzleFlash()
 	if self.HasMuzzleFlash == false then return end
 	local fx = EffectData()
@@ -421,20 +439,25 @@ function SWEP:CreateMuzzleFlash()
 	fx:SetNormal(self.Owner:GetAimVector())
 	fx:SetAttachment(self.Weapon:LookupAttachment(self.Muzzle))
 	util.Effect(self.MuzzleEffect,fx)
-	local fx_light = ents.Create("light_dynamic")
-	fx_light:SetKeyValue("brightness",self.MuzzleFlash_Brightness)
-	fx_light:SetKeyValue("distance",self.MuzzleFlash_Distance)
-	-- fx_light:SetLocalPos(self:GetBulletPos())
-	fx_light:SetLocalPos(self.Weapon:GetAttachment(1).Pos)
-	fx_light:Fire("Color",self.MuzzleFlash_Color.r .. " " .. self.MuzzleFlash_Color.g .. " " .. self.MuzzleFlash_Color.b)
-	fx_light:SetParent(self)
-	fx_light:Spawn()
-	fx_light:Activate()
-	fx_light:Fire("TurnOn","",0)
-	fx_light:Fire("Kill","",0.1)
-	self:DeleteOnRemove(fx_light)
+	if SERVER then
+		local fx_light = ents.Create("light_dynamic")
+		fx_light:SetKeyValue("brightness",self.MuzzleFlash_Brightness)
+		fx_light:SetKeyValue("distance",self.MuzzleFlash_Distance)
+		if self.Weapon:GetAttachment(1) != nil then
+			fx_light:SetLocalPos(self.Weapon:GetAttachment(1).Pos)
+		else
+			fx_light:SetLocalPos(self:GetBulletPos())
+		end
+		fx_light:Fire("Color",self.MuzzleFlash_Color.r .. " " .. self.MuzzleFlash_Color.g .. " " .. self.MuzzleFlash_Color.b)
+		fx_light:SetParent(self)
+		fx_light:Spawn()
+		fx_light:Activate()
+		fx_light:Fire("TurnOn","",0)
+		fx_light:Fire("Kill","",0.1)
+		self:DeleteOnRemove(fx_light)
+	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetBulletPos()
 	if self.ExtraViewModel == nil then
 		return self.Owner:GetShootPos()
@@ -446,7 +469,7 @@ function SWEP:GetBulletPos()
 		end
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 	-- if CLIENT then return end
 	-- if SERVER then
@@ -466,9 +489,9 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		self.Owner:FireBullets(bullet)
 	-- end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:FiredBullet(attacker,tr,dmginfo) end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SecondaryAttack()
 	if self.HasIronsights == false then return false end
 	if self.IsFiring == false && self:GetNWBool("cptbase_UseIronsights") == false then
@@ -477,14 +500,16 @@ function SWEP:SecondaryAttack()
 		self:SetNWBool("cptbase_UseIronsights",false)
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Think()
 	self:WeaponConditionThink()
 	self:OnThink()
-	if self.AdjustWorldModel == true then
-		if self.Weapon:IsValid() && self.Owner:IsValid() then
-			self:SetPos(self:GetWorldModelPosition().pos)
-			self:SetAngles(self:GetWorldModelPosition().ang)
+	if CLIENT then
+		if self.AdjustWorldModel == true then
+			if self.Weapon:IsValid() && self.Owner:IsValid() then
+				self:SetPos(self:GetWorldModelPosition().pos)
+				self:SetAngles(self:GetWorldModelPosition().ang)
+			end
 		end
 	end
 	if self.HoldType != self.DefaultHoldType then
@@ -494,13 +519,13 @@ function SWEP:Think()
 		self.Primary.DefaultClip = self.FixClip
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DoAFTMChat(text)
 	if file.Exists("lua/autorun/aftm_playerhud.lua","GAME") then
 		self.Owner:aftmSendDisplayMessage(text)
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:WeaponConditionThink()
 	if self.WeaponCondition <= 50 && self.WeaponCondition > 25 then
 		if CurTime() > self.NextFixWeaponT then
@@ -524,9 +549,9 @@ function SWEP:WeaponConditionThink()
 		self:Remove()
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnThink() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DoIdleAnimation()
 	if self.IsFiring == false && self.IsReloading == false && self.CanUseIdle == true then
 		-- self.Weapon:SendWeaponAnim(self.IdleAnimation)
@@ -538,7 +563,7 @@ function SWEP:DoIdleAnimation()
 		end
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPC_Reload()
 	if self.Owner.ReloadingWeapon == false then
 		self.Owner.ReloadingWeapon = true
@@ -555,12 +580,13 @@ function SWEP:NPC_Reload()
 		end)
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Reload()
 	if self.Owner:GetAmmoCount(self.Primary.Ammo) <= 0 then return end
-	if !self.Owner:KeyDown(IN_RELOAD) then return end
+	-- if !self.Owner:KeyDown(IN_RELOAD) then return end
+	if self.Owner:KeyDown(IN_USE) then return end
 	if self:Clip1() == self.Primary.DefaultClip then return end
 	if self.IsFiring == false && self.IsReloading == false then
 		self.IsReloading = true
@@ -582,7 +608,7 @@ function SWEP:Reload()
 	end
 	return true
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DoReloadAnimation()
 	local reloadtime = self.ReloadTime
 	local anim = self.ReloadAnimation
@@ -599,11 +625,11 @@ function SWEP:DoReloadAnimation()
 	self.Owner:SetAnimation(PLAYER_RELOAD)
 	return reloadtime
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:ReloadSounds()
 	self:PlayWeaponSound("Reload",75)
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayerSpeeds(set)
 	if set == "setup" then
 		if self.Owner:IsPlayer() then
@@ -617,7 +643,7 @@ function SWEP:PlayerSpeeds(set)
 		end
 	end
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Deploy()
 	if SERVER then self:PlayWeaponSound("Equip",70) end
 	self.CanUseIdle = false
@@ -644,7 +670,7 @@ function SWEP:Deploy()
 	self.Weapon:SetNextPrimaryFire(drawtime)
 	return true
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetCapabilities()
 	return bit.bor(CAP_WEAPON_RANGE_ATTACK1,CAP_INNATE_RANGE_ATTACK1,CAP_WEAPON_RANGE_ATTACK2,CAP_INNATE_RANGE_ATTACK2)
 end
@@ -656,27 +682,31 @@ function SWEP:Holster(wep)
 	if self.CurrentSound != nil then
 		self.CurrentSound:Stop()
 	end
-	for k,v in pairs(self.LoopedSounds) do
-		v:Stop()
+	if self.LoopedSounds != nil then
+		for k,v in pairs(self.LoopedSounds) do
+			v:Stop()
+		end
 	end
 	self:OnHolster()
 	return true
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnHolster() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnDeploy() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnRemovedSelf() end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnRemove()
 	self:PlayerSpeeds("reset")
 	self:StopParticles()
 	if self.CurrentSound != nil then
 		self.CurrentSound:Stop()
 	end
-	for k,v in pairs(self.LoopedSounds) do
-		v:Stop()
+	if self.LoopedSounds != nil then
+		for k,v in pairs(self.LoopedSounds) do
+			v:Stop()
+		end
 	end
 	self:OnRemovedSelf()
 end

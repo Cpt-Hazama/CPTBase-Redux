@@ -9,9 +9,23 @@ if (SERVER) then
 	NPC_STATE_LOST = 8
 	MOVETYPE_SWIM = 12
 	DMG_FROST = 10
-	util.AddNetworkString("cpt_CModelshootpos")
-	util.AddNetworkString("cpt_CModel")
 	util.AddNetworkString("cpt_ControllerView")
+end
+
+SNDDURATION_TABLE = {}
+
+function NPC_Meta:GetNPCEnemy()
+	if self.NPC_Enemy == nil then
+		return nil
+	elseif self.NPC_Enemy != nil && self.NPC_Enemy:IsValid() then
+		return self.NPC_Enemy
+	elseif self.NPC_Enemy != nil && !self.NPC_Enemy:IsValid() then
+		return nil
+	end
+end
+
+function NPC_Meta:SetNPCEnemy(ent)
+	self.NPC_Enemy = ent
 end
 
 function util.DoFrostDamage(dmg,ent,attacker)
@@ -40,6 +54,21 @@ function util.DoFrostDamage(dmg,ent,attacker)
 		end
 	end
 	timer.Create("CPTBase_DoFrostDamage_" .. math.Rand(1,99999),1,5,function() DoDamage() end)
+end
+
+function NPC_Meta:SetArmor(amount)
+	self.Armor = amount
+end
+
+function NPC_Meta:Armor()
+	if self.Armor == nil then return 0 end
+	return self.Armor
+end
+
+if CLIENT then
+	function NPC_Meta:Nick()
+		return language.GetPhrase(self:GetClass())
+	end
 end
 
 function ENT_Meta:GetSLVBase_HitBox(name)
@@ -238,11 +267,11 @@ hook.Add("Think","CPTBase_MutationEffects",function()
 				if CurTime() > v.NextMutT then
 					v:StopParticles()
 					for i = 0, v:GetBoneCount() -1 do
-						ParticleEffect(v.MutationEmbers,v:GetBonePosition(i),Angle(0,0,0),v)
-						ParticleEffect(v.MutationGlow,v:GetBonePosition(i),Angle(0,0,0),v)
+						if v:GetBonePosition(i) != v:GetPos() then
+							ParticleEffect(v.MutationEmbers,v:GetBonePosition(i),Angle(0,0,0),v)
+							ParticleEffect(v.MutationGlow,v:GetBonePosition(i),Angle(0,0,0),v)
+						end
 					end
-					-- timer.Simple(0.3,function() if v:IsValid() then v:StopParticles() end end)
-					-- v:StopParticles()
 					v.NextMutT = CurTime() +0.4
 				end
 			end
@@ -273,6 +302,21 @@ function NPC_Meta:DoCustomTrace(enter,exit,filt,sendfulldata) -- :/
 	end
 end
 
+function util.CreateSplashDamage(pos,dmg,dmgtype,dist,attacker)
+	for _,v in ipairs(ents.FindInSphere(pos,dist)) do
+		if v:IsValid() && (v:IsNPC() || v:IsPlayer()) && attacker:Disposition(v) != D_LI && v != attacker then
+			local dmgpos = v:NearestPoint(attacker:GetPos() +attacker:OBBCenter())
+			local dmginfo = DamageInfo()
+			dmginfo:SetDamage(dmg)
+			dmginfo:SetAttacker(attacker)
+			dmginfo:SetInflictor(attacker)
+			dmginfo:SetDamageType(dmgtype)
+			dmginfo:SetDamagePosition(dmgpos)
+			v:TakeDamageInfo(dmginfo)
+		end
+	end
+end
+
 function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent)
 	local pos = pos or Vector(0,0,0)
 	local dmg = dmg or 60
@@ -294,7 +338,12 @@ function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent)
 end
 
 function ENT_Meta:GetClosestPoint(ent)
-	return ent:NearestPoint(self:GetPos() +ent:OBBCenter()):Distance(self:NearestPoint(ent:GetPos() +self:OBBCenter()))
+	local epos = ent:NearestPoint(self:GetPos() +ent:OBBCenter())
+	local spos = self:NearestPoint(ent:GetPos() +self:OBBCenter())
+	epos.z = ent:GetPos().z
+	spos.z = self:GetPos().z
+	return epos:Distance(spos)
+	-- return self:NearestPoint(ent:GetPos() +self:OBBCenter()):Distance(ent:NearestPoint(self:GetPos() +ent:OBBCenter()))
 end
 
 function NPC_Meta:PlayNPCSentence(sentence)
@@ -484,7 +533,11 @@ function NPC_Meta:GetPlayedAnimation()
 end
 
 function ENT_Meta:GetFaction()
-	return self.Faction
+	if self.Faction == nil then
+		return "NO_FACTION"
+	else
+		return self.Faction
+	end
 end
 
 hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
@@ -501,6 +554,9 @@ hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
 			canrun = true
 		elseif table.HasValue(ent:FindRebelFaction(),ent:GetClass()) then
 			ent.Faction = "FACTION_PLAYER"
+			canrun = true
+		elseif table.HasValue(ent:FindXenFaction(),ent:GetClass()) then
+			ent.Faction = "FACTION_XEN"
 			canrun = true
 		elseif table.HasValue(ent:FindZombieFaction(),ent:GetClass()) then
 			ent.Faction = "FACTION_ZOMBIE"
@@ -525,6 +581,21 @@ function NPC_Meta:SetRelationship(ent,value,isplayer)
 	if !ent:IsPlayer() then
 		ent:AddEntityRelationship(self,value,99)
 	end
+	if (value == D_HT) && self.tbl_EnemyMemory != nil && !table.HasValue(self.tbl_EnemyMemory,ent) then
+		table.insert(self.tbl_EnemyMemory,ent)
+		-- local oldcount = self.EnemyMemoryCount
+		-- local lastenemy = self:GetEnemy()
+		-- local newenemy = ent
+		-- self.EnemyMemoryCount = self.EnemyMemoryCount +1
+		-- if self.EnemyMemoryCount > 0 && lastenemy != newenemy then
+			-- self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,newenemy)
+			-- return
+		-- end
+	end
+end
+
+function NPC_Meta:FindXenFaction()
+	return {"monster_alien_slave","monster_alien_grunt","monster_alien_controller","monster_nihilanth","monster_bullchicken","monster_barnacle","monster_bloater","monster_flyer","monster_gargantua","monster_houndeye","monster_ichthyosaur","monster_snark","monster_tentacle"}
 end
 
 function NPC_Meta:FindAntlionFaction()
@@ -540,7 +611,7 @@ function NPC_Meta:FindCombineFaction()
 end
 
 function NPC_Meta:FindRebelFaction()
-	return {"npc_citizen","npc_alyx","npc_barney","npc_kleiner","npc_eli","npc_magnusson","npc_mossman","npc_vortigaunt","npc_monk","npc_dog"}
+	return {"monster_barney","monster_scientist","npc_citizen","npc_alyx","npc_barney","npc_kleiner","npc_eli","npc_magnusson","npc_mossman","npc_vortigaunt","npc_monk","npc_dog"}
 end
 
 function NPC_Meta:FindZombieFaction()
@@ -622,6 +693,10 @@ function ENT_Meta:FindDistance(ent)
 	return self:GetPos():Distance(ent:GetPos())
 end
 
+function ENT_Meta:FindDistanceToPos(startpos,endpos)
+	return startpos:Distance(endpos)
+end
+
 function ENT_Meta:FindCenterDistance(ent)
 	return self:GetPos():Distance(self:FindCenter(ent))
 end
@@ -673,6 +748,24 @@ function WPN_Meta:CreatePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
 	return __Sound
 end
 
+function NPC_Meta:SimplePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
+	local _SoundLevel = _SoundLevel or 80
+	local _SoundPitch = _SoundPitch or 100
+	if _UseDotPlay then
+		sound.Play(_Sound,self:GetPos(),_SoundLevel,_SoundPitch *GetConVarNumber("host_timescale"))
+	else
+		playsound = CreateSound(self,_Sound)
+		playsound:SetSoundLevel(_SoundLevel)
+		if self.CurrentSound != nil then
+			self.CurrentSound:Stop()
+		end
+		playsound:Play()
+		playsound:ChangePitch(_SoundPitch *GetConVarNumber("host_timescale"),0)
+		playsound:ChangeVolume(90,0)
+	end
+	self:OnPlaySound(_Sound,nil)
+end
+
 function NPC_Meta:CreatePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
 	local sndtype = type(self.tbl_Sounds[_Sound])
 	local __Sound
@@ -691,24 +784,6 @@ function NPC_Meta:CreatePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
 		final_snd = CreateSound(self,__Sound)
 	end
 	return final_snd,__Sound
-end
-
-function NPC_Meta:AutoSetupSoundTable(tbl,needles)
-	if !self.tbl_Sounds[tbl] then
-		local loops = self.CheckForLoopsInSoundDirectory
-		local dir = self.SoundDirectory
-		local foundfiles = file.Find("sound/" .. dir .. "*","GAME")
-		for _,sndfile in ipairs(foundfiles) do
-			for _,needle in ipairs(needles) do
-				if string.find(sndfile,needle) /*&& (!loops && string.find(sndfile,"lp"))*/ then
-					if !self.tbl_Sounds[tbl] then
-						self.tbl_Sounds[tbl] = {}
-					end
-					table.insert(self.tbl_Sounds[tbl],sndfile)
-				end
-			end
-		end
-	end
 end
 
 function NPC_Meta:Kill()
@@ -802,9 +877,9 @@ end
 function NPC_Meta:PlayAnimation(_Animation,facetarget,timed)
 	if !self.tbl_Animations[_Animation] then return end
 	local tbl = self:SelectFromTable(self.tbl_Animations[_Animation])
-	if string.find(tbl,"seq_") then
-		tbl = string.Replace(tbl,"seq_","")
-		self:PlaySequence(tbl,1)
+	if string.find(tbl,"cptseq_") then
+		tbl = string.Replace(tbl,"cptseq_","")
+		self:PlaySequence(tbl,facetarget)
 		return
 	end
 	if self.IsPossessed && _Animation == "Attack" then
@@ -822,6 +897,14 @@ function NPC_Meta:GetSequenceID(anim)
 		end
 	end
 	return i
+end
+
+function NPC_Meta:Alive()
+	if v:Health() < 0 then
+		return false
+	else
+		return true
+	end
 end
 
 function ENT_Meta:TranslateStringToNumber(seq)
@@ -902,14 +985,21 @@ function NPC_Meta:GiveNPCWeapon(weapon)
 end
 
 function NPC_Meta:FaceEnemy()
-	if self:GetEnemy() == nil then return end
+	if !IsValid(self:GetEnemy()) then return end
 	self:SetTarget(self:GetEnemy())
 	local _faceenemy = ai_sched_cpt.New("_faceenemy")
 	_faceenemy:EngTask("TASK_FACE_TARGET",0)
 	self:StartSchedule(_faceenemy)
 end
 
-function NPC_Meta:StopProcessing() -- Not really necessary, StopCompletely() should be used instead
+function NPC_Meta:FaceTarget(ent)
+	self:SetTarget(ent)
+	local _faceselectedtarget = ai_sched_cpt.New("_faceselectedtarget")
+	_faceselectedtarget:EngTask("TASK_FACE_TARGET",0)
+	self:StartSchedule(_faceselectedtarget)
+end
+
+function NPC_Meta:StopProcessing() -- Be careful using this
 	self.CurrentSchedule = nil
 	self.CurrentTask = nil
 	self:StopCompletely()
@@ -921,25 +1011,24 @@ function NPC_Meta:PlaySequence(sequence,animrate)
 	if not sequence then return end
 	if self.bInSchedule then return end
 	if self.IsPlayingSequence then return end
+	self:StopCompletely()
 	self.bInSchedule = true
 	self.IsPlayingSequence = true
 	self.CanChaseEnemy = false
-	self:StopProcessing()
 	self:SetNPCState(NPC_STATE_SCRIPT)
 	if istable(sequence) then
 		if #sequence < 1 then return end
 		sequence = tostring(table.Random(sequence))
 	end
-	print(sequence)
 	local animid = self:LookupSequence(sequence)
 	self:ResetSequence(animid)
 	self:ResetSequenceInfo()
 	self:SetCycle(0)
 	self:SetNPCState(NPC_STATE_SCRIPT)
 	if animrate then self:SetPlaybackRate(animrate) end
-	self.NextAnimT = CurTime() +self:SequenceDuration(animid)
+	self.NextAnimT = CurTime() +self:SequenceDuration(animid) /animrate
 	self.CurrentSequence = animid
-	timer.Simple(self:SequenceDuration(animid),function()
+	timer.Simple(self:SequenceDuration(animid) /animrate,function()
 		if IsValid(self) then
 			self.bInSchedule = false
 			self.IsPlayingSequence = false
@@ -952,6 +1041,7 @@ end
 function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	local fly = false
 	local usegesture = false
+	local usesequence = false
 	local extratime = nil
 	if usetime then
 		if CurTime() < self.NextAnimT then return end
@@ -966,11 +1056,14 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	else
 		if string.find(activity,"cptges_") then
 			usegesture = true
+		elseif string.find(activity,"cptseq_") then
+			usesequence = true
 		else
 			activity = self:TranslateStringToNumber(activity)
 		end
 	end
 	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,1) return end
+	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),1) return end
 	if activity == nil then return end
 	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
 	if fly == true then self:PlayActivity_Fly(activity) return end
@@ -1040,15 +1133,33 @@ function NPC_Meta:StopCompletely()
 	self.CurrentSchedule = nil
 end
 
-function NPC_Meta:AnimationLength(activity)
+function NPC_Meta:AnimationLength(activity,seq)
+	if type(activity) == "string" && seq != true then
+		activity = self:TranslateStringToNumber(activity)
+	end
+	if seq then
+		return self:SequenceDuration(activity)
+	end
 	return self:SequenceDuration(self:SelectWeightedSequence(activity))
 end
 
-function PLY_Meta:ViewModel_AnimationLength(activity)
+function PLY_Meta:ViewModel_AnimationLength(activity,seq)
+	if type(activity) == "string" && seq != true then
+		activity = self:TranslateStringToNumber(activity)
+	end
+	if seq then
+		return self:SequenceDuration(activity)
+	end
 	return self:GetViewModel():SequenceDuration(self:GetViewModel():SelectWeightedSequence(activity))
 end
 
-function WPN_Meta:AnimationLength(activity)
+function WPN_Meta:AnimationLength(activity,seq)
+	if type(activity) == "string" && seq != true then
+		activity = self:TranslateStringToNumber(activity)
+	end
+	if seq then
+		return self:SequenceDuration(activity)
+	end
 	return self:SequenceDuration(self:SelectWeightedSequence(activity))
 end
 
@@ -1088,9 +1199,19 @@ function NPC_Meta:PlayNPCGesture(seq,layer,playbackrate) // You should always se
 	self:SetLayerPlaybackRate(gest,playbackrate)
 end
 
-function NPC_Meta:AttackFinish(seq)
+function NPC_Meta:AttackFinish(seq,time)
 	if !seq then
-		timer.Simple(self:AnimationLength(self.CurrentAnimation) +0.02,function()
+		local anim = self.CurrentAnimation
+		local animtime
+		if anim == nil then
+			animtime = 0
+		else
+			animtime = self:AnimationLength(anim)
+		end
+		if time != nil then
+			animtime = time
+		end
+		timer.Simple(animtime +0.02,function()
 			if self:IsValid() then
 				self.IsAttacking = false
 				self.IsRangeAttacking = false
@@ -1100,7 +1221,17 @@ function NPC_Meta:AttackFinish(seq)
 			end
 		end)
 	elseif seq then
-		timer.Simple(self:SequenceDuration(self.CurrentSequence) +0.02,function()
+		local anim = self.CurrentSequence
+		local animtime
+		if anim == nil then
+			animtime = 0
+		else
+			animtime = self:SequenceDuration(anim)
+		end
+		if time != nil then
+			animtime = time
+		end
+		timer.Simple(animtime +0.02,function()
 			if self:IsValid() then
 				self.IsAttacking = false
 				self.IsRangeAttacking = false
@@ -1137,5 +1268,5 @@ function ENT_Meta:IsNextbot()
 end
 
 function ENT_Meta:IsProp()
-	if string.find(ENT_Meta:GetClass(),"prop") then return true else return false end
+	if string.find(self:GetClass(),"prop") then return true else return false end
 end

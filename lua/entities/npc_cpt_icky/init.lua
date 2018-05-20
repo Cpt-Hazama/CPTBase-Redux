@@ -47,7 +47,7 @@ function ENT:SetInit()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink()
-	if self:GetEnemy() != nil then
+	if IsValid(self:GetEnemy()) then
 		self:LookAtPosition(self:FindCenter(self:GetEnemy()),{"sidetoside","upanddown"},10)
 		self:SetMaxYawSpeed(8)
 	else
@@ -72,7 +72,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
-	if (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+	if (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 	self:StopCompletely()
 	self:PlayAnimation("Attack",2)
 	self.IsAttacking = true

@@ -21,6 +21,15 @@ function ENT:Physics()
 	end
 	self:SetNoDraw(true)
 	self:DrawShadow(false)
+	if self.ImpactSound == nil then
+		self.ImpactSound = "npc/antlion_grub/squashed.wav"
+	end
+	if self.ImpactSoundVolume == nil then
+		self.ImpactSoundVolume = 80
+	end
+	if self.ImpactSoundPitch == nil then
+		self.ImpactSoundPitch = 70
+	end
 end
 
 function ENT:OnTouch(data,phys)
@@ -42,7 +51,7 @@ function ENT:OnTouch(data,phys)
 				self:GetHitEntity().bSelfDestruct = true
 			end
 		end
-		self:EmitSound(Sound("npc/antlion_grub/squashed.wav"),80,70)
+		self:EmitSound(Sound(self:GetImpactSound()),self.ImpactSoundVolume,self.ImpactSoundPitch)
 		self:Remove()
 	end
 end

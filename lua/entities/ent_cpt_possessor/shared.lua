@@ -19,6 +19,7 @@ if (CLIENT) then
 		local class = net.ReadString()
 		local name = language.GetPhrase(class)
 		local mutated = net.ReadString()
+		local gothit = net.ReadBool()
 		local healthcolor = Color(33,255,0)
 		local mutatecolor = Color(255,0,191,math.abs(math.sin(CurTime() *2) *255))
 		hook.Add("HUDPaint","cpt_DrawNPCHealth",function()
@@ -51,6 +52,9 @@ if (CLIENT) then
 				surface.SetMaterial(Material("cptbase/mutation"))
 				surface.SetDrawColor(mutatecolor)
 				surface.DrawTexturedRect(ScrW() *0.4628,ScrH() *0.051,24,24)
+			end
+			if gothit == true then
+				draw.SimpleText("HIT!","TargetID",ScrW() *0.52,ScrH() *0.053,Color(255,255,255,255),1,1)
 			end
 			draw.SimpleText("HP: " .. hp,"TargetID",ScrW() *0.5,ScrH() *0.051,Color(255,255,255,255),1,1) // NPC Health Amount
 			draw.RoundedBox(4,ScrW() *0.5 -DisplayNameSize *0.5,ScrH() *0.06,DisplayNameSize,ScrH() *0.008333,Color(10,10,10,200)) // NPC Health Box Background

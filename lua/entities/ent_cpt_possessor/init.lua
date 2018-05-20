@@ -3,7 +3,7 @@ AddCSLuaFile("shared.lua")
 include('shared.lua')
 
 function ENT:Initialize()
-	self:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
+	self:SetModel("models/effects/teleporttrail.mdl")
 	self:SetMoveType(MOVETYPE_NONE)
 	self:SetSolid(SOLID_NONE)
 	self:SetNoDraw(true)
@@ -13,6 +13,10 @@ end
 
 function ENT:PossessTheNPC()
 	self.Possessor.IsPossessing = true
+	self.Possessor:SetNWBool("CPTBase_IsPossessing",true)
+	self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",self.PossessedNPC:GetClass())
+	self.Possessor.CurrentlyPossessedNPC = self.PossessedNPC
+	self.Possessor.Faction = "FACTION_NONE"
 	self.PossessorView = ents.Create("prop_dynamic")
 	self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
 	self.PossessorView:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
@@ -50,6 +54,10 @@ function ENT:PossessedNPC(possessed)
 	self.PossessedNPC.Possessor = self.Possessor
 	self.PossessedNPC:StopMoving()
 	self.PossessedNPC:ClearSchedule()
+	for _,v in ipairs(self.PossessedNPC.tbl_EnemyMemory) do
+		self.PossessedNPC:RemoveFromMemory(v)
+	end
+	self.PossessedNPC:StopProcessing()
 end
 
 function ENT:FaceForward()
@@ -64,9 +72,13 @@ function ENT:Think()
 	if !IsValid(self.Possessor) or self.Possessor:KeyDown(IN_USE) or self.Possessor:Health() <= 0 or (!self.Possessor.IsPossessing) or !IsValid(self.PossessedNPC) or self.PossessedNPC:Health() <= 0 then self:StopPossessing() return end
 	if self.Possessor.IsPossessing != true then return end
 	if (self.Possessor.IsPossessing) && IsValid(self.PossessedNPC) then
+		self.PossessedNPC.CanChaseEnemy = false
 		self.PossessedNPC:Possess_Think(self.Possessor)
 		self.PossessedNPC:Possess_Commands(self.Possessor)
 		self.PossessedNPC:Possess_Move(self.Possessor)
+		if self.PossessedNPC.IsLeapAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+		if self.PossessedNPC.IsRangeAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+		if self.PossessedNPC.IsAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
 		if self.PossessedNPC:IsMoving() then
 			if (self.Possessor:KeyDown(IN_SPEED)) then
 				self.PossessedNPC:SetMovementAnimation("Run")
@@ -78,6 +90,11 @@ function ENT:Think()
 				self:FaceForward()
 			end
 		end
+		-- for _,v in ipairs(self.PossessedNPC.tbl_EnemyMemory) do
+			-- if v == self.Possessor then
+				-- self.PossessedNPC:SetRelationship(v,D_LI)
+			-- end
+		-- end
 	end
 	if #self.Possessor:GetWeapons() > 0 then
 		self.Possessor:StripWeapons()
@@ -92,6 +109,7 @@ function ENT:Think()
 	net.WriteFloat(self.PossessedNPC:Health())
 	net.WriteString(self.PossessedNPC:GetClass())
 	net.WriteString(tostring(self.PossessedNPC.HasMutated))
+	net.WriteBool(self.PossessedNPC.DidGetHit)
 	net.Send(self.Possessor)
 end
 
@@ -100,10 +118,13 @@ function ENT:StopPossessing(remove)
 	if !IsValid(self.Possessor) then return end
 	if IsValid(self.Possessor) then
 		self.Possessor.IsPossessing = false
+		self.Possessor.Faction = nil
 		local playerpos = self.Possessor:GetPos()
 		self.Possessor:UnSpectate()
 		self.Possessor:KillSilent()
 		self.Possessor:Spawn()
+		self.Possessor:SetNWBool("CPTBase_IsPossessing",false)
+		self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 		if IsValid(self.PossessorView) then
 			self.Possessor:SetPos(self.PossessorView:GetPos() +self.PossessorView:GetUp()*100) else
 			self.Possessor:SetPos(playerpos)
@@ -128,6 +149,7 @@ function ENT:StopPossessing(remove)
 	end
 	self.Possessor = nil
 	if IsValid(self.PossessedNPC) then
+		self.PossessedNPC.CanChaseEnemy = true
 		self.PossessedNPC.IsPossessed = false
 		for i = 0,self.PossessedNPC:GetBoneCount() -1 do
 			ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
@@ -148,6 +170,7 @@ function ENT:StopPossessing(remove)
 	net.WriteFloat(0)
 	net.WriteString("")
 	net.WriteString("")
+	net.WriteBool(false)
 	net.Broadcast()
 	self:Remove()
 end

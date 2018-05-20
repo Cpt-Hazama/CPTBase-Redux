@@ -46,7 +46,7 @@ end
 function ENT:Think() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HaveEnemy()
-	if self:GetEnemy() != nil && self:GetEnemy():IsValid() then
+	if IsValid(self:GetEnemy()) && self:GetEnemy():IsValid() then
 		if (self:FindDistance(self:GetEnemy()) > self.ViewDistance) then
 			return self:FindEnemy()
 		elseif (self:GetEnemy():IsPlayer() && !self:GetEnemy():Alive()) then

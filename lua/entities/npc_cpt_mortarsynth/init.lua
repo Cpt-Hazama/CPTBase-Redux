@@ -50,14 +50,14 @@ function ENT:OnThink()
 	else
 		self.RangeAttackDistance = 800
 	end
-	if self.IsPossessed == false && self:GetEnemy() == nil && (self.IsStartingUp == false or self:GetVelocity():Length() < 10) then self:SetLocalVelocity(Vector(0,0,0)) end
+	if self.IsPossessed == false && !IsValid(self:GetEnemy()) && (self.IsStartingUp == false or self:GetVelocity():Length() < 10) then self:SetLocalVelocity(Vector(0,0,0)) end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Jump(possessor) self:SetLocalVelocity(Vector(0,0,0)) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
-	if !self.IsPossessed && (self:GetEnemy() != nil && !self:GetEnemy():Visible(self)) then return end
+	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
 	self:StopCompletely()
 	self:PlayAnimation("RangeAttack")
 	self:PlaySound("Charge",80,90,120)

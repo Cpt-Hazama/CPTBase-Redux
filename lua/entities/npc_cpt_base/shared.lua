@@ -1,4 +1,4 @@
-ENT.Base = "base_ai"
+ENT.Base = "base_entity"
 ENT.Type = "ai"
 ENT.PrintName = "CPTBase"
 ENT.Author = "Cpt. Hazama"
@@ -14,4 +14,8 @@ ENT.AdminSpawnable = false
 
 function ENT:SetAutomaticFrameAdvance(bUsingAnim)
 	self.AutomaticFrameAdvance = bUsingAnim
-end  
+end
+
+function ENT:PhysicsCollide(data,phys) end
+
+function ENT:PhysicsUpdate(phys) end

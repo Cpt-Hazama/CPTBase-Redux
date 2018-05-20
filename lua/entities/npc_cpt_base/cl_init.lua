@@ -7,7 +7,7 @@ function ENT:Draw()
 	if self.OnDraw then self:OnDraw() end
 end
 
--- function ENT:OnDraw() end
+function ENT:OnDraw() end
 
 function ENT:DrawTranslucent() end
 
