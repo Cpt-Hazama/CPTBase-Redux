@@ -9,6 +9,7 @@ include('server/cpt_utilities.lua')
 // Combine
 CPTBase.AddNPC("Combine Assasssin","npc_cpt_cassassin","CPTBase Redux")
 CPTBase.AddNPC("Mortar Synth","npc_cpt_mortarsynth","CPTBase Redux")
+CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 -- CPTBase.AddNPC("Combine APC","npc_cpt_apc","CPTBase Redux")
 
 // Fallout
@@ -31,6 +32,37 @@ game.AddAmmoType({name="9×19mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="5.7×28mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="darkpulseenergy",dmgtype=DMG_DISSOLVE})
 game.AddAmmoType({name="defaultammo",dmgtype=DMG_BULLET})
+
+-- hook.Add("Think","CPTBase_AdminWeapon",function()
+	-- if CLIENT then
+		-- local tb = {}
+		-- for _,v in ipairs(ents.GetAll()) do
+			-- if v:GetClass() == "weapon_cpt_adminweapon" && IsValid(v:GetOwner()) then
+				-- if !table.HasValue(tb,v) then
+					-- table.insert(tb,v)
+				-- end
+				-- if !table.HasValue(tb,v:GetOwner()) then
+					-- table.insert(tb,v:GetOwner())
+				-- end
+			-- else
+				-- if table.HasValue(tb,v) then
+					-- tb[v] = nil
+				-- end
+			-- end
+		-- end
+		-- halo.Add(tb,Color(127,0,0),4,4,3,true,true)
+	-- end
+-- end)
+
+function CPTBase_Chat(ply,spoke)
+	local lowered = string.lower(spoke)
+	if (ply:IsAdmin() or ply:IsSuperAdmin()) && (string.sub(lowered,1,11) == "!setfaction") then
+		local in_faction = string.sub(string.upper(spoke),13)
+		ply.Faction = in_faction
+		ply:ChatPrint("Set faction to " .. in_faction)
+	end
+end
+hook.Add("PlayerSay","CPTBase_Chat",CPTBase_Chat)
 
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.IsPossessing = false

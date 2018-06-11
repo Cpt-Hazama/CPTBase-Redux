@@ -36,6 +36,22 @@ function ENT:TASKFUNC_LASTPOSITION()
 	self:StartSchedule(_lastpositiontask)
 end
 
+function ENT:TASKFUNC_WALKLASTPOSITION()
+	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_walk")
+	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
+	_lastpositiontask:EngTask("TASK_WALK_PATH",0)
+	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	self:StartSchedule(_lastpositiontask)
+end
+
+function ENT:TASKFUNC_RUNLASTPOSITION()
+	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_run")
+	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
+	_lastpositiontask:EngTask("TASK_RUN_PATH",0)
+	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	self:StartSchedule(_lastpositiontask)
+end
+
 function ENT:Hide()
 	local _hidetask = ai_sched_cpt.New("_hidetask") 
 	_hidetask:EngTask("TASK_FIND_COVER_FROM_ENEMY",0) 

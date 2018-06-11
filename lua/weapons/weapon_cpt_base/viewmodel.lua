@@ -27,15 +27,19 @@ function SWEP:ViewModelDrawn()
 			end
 			if (ShootPos != nil or ShootPos != false) && IsValid(self.Owner) then
 				if ShootPos == self._CModel:GetAttachment(self._CModel:LookupAttachment(self.Muzzle)).Pos then
-					net.Start("cpt_CModelshootpos")
-					net.WriteVector(ShootPos)
-					net.WriteEntity(self)
-					net.SendToServer()
+					-- net.Start("cpt_CModelshootpos")
+					-- net.WriteVector(ShootPos)
+					-- net.WriteEntity(self)
+					-- net.SendToServer()
+					self:SetNWVector("cpt_CModelshootpos",ShootPos)
 				end
 			end
-			net.Start("cpt_CModel")
-			net.WriteEntity(self._CModel)
-			net.SendToServer()
+			-- net.Start("cpt_CModel")
+			-- net.WriteEntity(self._CModel)
+			-- net.WriteEntity(self)
+			-- net.SendToServer()
+			self:SetNWEntity("cpt_CModel",self._CModel)
+			-- print(self._CModel)
 		end
 	end
 end

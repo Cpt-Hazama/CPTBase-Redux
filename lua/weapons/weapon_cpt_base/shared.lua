@@ -25,6 +25,7 @@ SWEP.WorldModel		= "models/error.mdl"
 SWEP.AnimPrefix		= "python"
 SWEP.Spawnable = false
 SWEP.AdminSpawnable = false
+-- SWEP.AdminOnly = false
 SWEP.UseLuaMovement = true
 SWEP.LuaMovementScale_Forward = 0.0400
 SWEP.LuaMovementScale_Right = 0.0084
@@ -41,7 +42,17 @@ SWEP.Muzzle = "muzzle"
 SWEP.MuzzleFlash_Color = Color(255,93,0)
 SWEP.MuzzleFlash_Brightness = 2
 SWEP.MuzzleFlash_Distance = 150
-SWEP.HasShells = true
+
+SWEP.UsePhysicalBullets = false
+SWEP.PhysicalBulletSpawnRight = 2
+SWEP.PhysicalBulletSpawnUp = -5
+SWEP.PhyscialBulletDamageType = DMG_BULLET
+SWEP.PhyscialBulletDamageForce = Vector(0,0,0)
+SWEP.PhyscialBulletMass = 1
+SWEP.PhyscialBulletGravity = false
+SWEP.PhysicalBulletSpeed = 50000000
+
+SWEP.HasShells = false
 SWEP.ShellModel = "models/shells/shell_large.mdl"
 SWEP.ShellTable = {
 	Pos = {Right = 3,Forward = 0,Up = -0.8},
@@ -56,12 +67,16 @@ SWEP.Primary.Damage = 5
 SWEP.Primary.Delay = 0.5
 SWEP.Primary.TracerEffect = "cpt_tracer"
 SWEP.RemoveAmmoAmount = 1
+SWEP.IgnoreRecoil = false
 
 SWEP.Primary.ClipSize		= 8
 SWEP.Primary.DefaultClip	= 8
 SWEP.Primary.Automatic		= false
 SWEP.Primary.Ammo			= "9×19mm" // Default CPTBase Ammo
 SWEP.NPCFireRate = 0.1
+SWEP.tbl_NPCFireTimes = {0}
+-- SWEP.NPC_FireTime = 0 -- Shoot timer
+-- SWEP.NPC_FireRateAmount = 1 -- How many times it runs the shoot code
 
 SWEP.AdjustViewModel = false
 SWEP.ViewModelAdjust = {
@@ -89,17 +104,20 @@ SWEP.tbl_Sounds = {}
 SWEP.Weight				= 5			// Decides whether we should switch from/to this
 SWEP.AutoSwitchTo		= false		// Auto switch to if we pick it up
 SWEP.AutoSwitchFrom		= false		// Auto switch from if you pick up a better weapon
+SWEP.CSMuzzleFlashes 	= false
+SWEP.NextFireTime_NPC = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
-net.Receive("cpt_CModelshootpos",function(len,pl)
-	vec = net.ReadVector()
-	ent = net.ReadEntity()
-	ent:SetNWVector("cpt_CModel_MuzzlePos",vec)
-end)
+-- net.Receive("cpt_CModelshootpos",function(len,pl)
+	-- vec = net.ReadVector()
+	-- ent = net.ReadEntity()
+	-- ent:SetNWVector("cpt_CModel_MuzzlePos",vec)
+-- end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
-net.Receive("cpt_CModel",function(len,pl)
-	ent = net.ReadEntity()
-	self:SetNWEntity("cpt_CModel",ent)
-end)
+-- net.Receive("cpt_CModel",function(len,pl)
+	-- ent = net.ReadEntity()
+	-- owner = net.ReadEntity()
+	-- owner:SetNWEntity("cpt_CModel",ent)
+-- end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AddClip1(amount)
 	self.Weapon:SetClip1(self:Clip1() +amount)
@@ -176,7 +194,7 @@ function SWEP:GetViewModelPosition(pos,ang)
 			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
 		end
-	else---------------------------------------------------------------------------------------------------------------------------------------------
+	else
 		if self:GetNWBool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *0)
 			opos:Add(ang:Forward() *0)
@@ -265,7 +283,34 @@ function SWEP:ShouldDropOnDie()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPCShoot_Primary(ShootPos,ShootDir)
-	self:PrimaryAttack(ShootPos,ShootDir)
+	-- if CurTime() > self.NextFireTime_NPC then
+		-- for i = 1, self.NPC_FireRateAmount do
+			-- timer.Simple(self.NPC_FireTime,function()
+				-- if self:IsValid() && self.Owner:IsValid() then
+					-- self:PrimaryAttack(ShootPos,ShootDir)
+				-- end
+			-- end)
+		-- end
+		-- self.NextFireTime_NPC = CurTime() +self.NPCFireRate
+	-- end
+	if CurTime() > self.NextFireTime_NPC then
+		if table.Count(self.tbl_NPCFireTimes) > 0 then
+			for _, v in ipairs(self.tbl_NPCFireTimes) do
+				timer.Simple(v,function()
+					if IsValid(self) && IsValid(self.Owner) then
+						if self:Clip1() <= 0 then
+							if !self.IsReloading then
+								self:Reload()
+								return
+							end
+						end
+						self:PrimaryAttack(ShootPos,ShootDir)
+					end
+				end)
+			end
+		end
+		self.NextFireTime_NPC = CurTime() +self.NPCFireRate
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:CanFire(canfire)
@@ -283,8 +328,8 @@ function SWEP:SetWeaponSlot(hud_slot,hud_importance)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Initialize()
-	self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
-	self:SetNWEntity("cpt_CModel",self)
+	-- self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
+	-- self:SetNWEntity("cpt_CModel",self)
 	self:SetNWBool("cptbase_UseIronsights",false)
 	self.Weapon:SetClip1(self.Primary.ClipSize)
 	self.Primary.DefaultClip = self.Primary.ClipSize
@@ -351,7 +396,8 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 			self:PlayWeaponSound("DryFire",75)
 		end
 	elseif self.Owner:IsNPC() then
-		if CurTime() < self.NPC_NextFireT then return end
+		-- if CurTime() < self.NPC_NextFireT then return end
+		if self.IsReloading == true then return end
 	end
 	if self.Owner:IsNPC() && self.Weapon:Clip1() <= 0 && self.Owner.ReloadingWeapon == false then
 		self:NPC_Reload()
@@ -364,7 +410,9 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	self:AddClip1(-self.RemoveAmmoAmount)
 	local newclip = self:Clip1()
 	if self.Owner:IsPlayer() then
-		self.Owner:ViewPunch(Angle(-self.Primary.Force,math.random(-self.Primary.Force /2,self.Primary.Force /2),0))
+		if self.IgnoreRecoil != true then
+			self.Owner:ViewPunch(Angle(-self.Primary.Force,math.random(-self.Primary.Force /2,self.Primary.Force /2),0))
+		end
 		self.Owner:SetAnimation(PLAYER_ATTACK1)
 		local cnddmg = math.Round(self.Primary.Force/6)
 		if cnddmg < 1 then
@@ -471,8 +519,7 @@ function SWEP:GetBulletPos()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
-	-- if CLIENT then return end
-	-- if SERVER then
+	if self.UsePhysicalBullets == false then
 		local bullet = {}
 		bullet.Num = self.Primary.TotalShots
 		bullet.Src = self:GetBulletPos()
@@ -487,7 +534,29 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		end
 		bullet.AmmoType = self.Primary.Ammo
 		self.Owner:FireBullets(bullet)
-	-- end
+	else
+		if SERVER then
+			for i = 1, self.Primary.TotalShots do
+				local ang = self.Owner:GetAimVector():Angle()
+				local ent = ents.Create("obj_cpt_bullet")
+				ent:SetPos(ShootPos || self:GetBulletPos() +ang:Right() *self.PhysicalBulletSpawnRight +ang:Up() *self.PhysicalBulletSpawnUp)
+				ent:SetAngles(self.Owner:GetAimVector():Angle())
+				ent:SetOwner(self.Weapon:GetOwner())
+				ent:SetBulletMass(self.PhyscialBulletMass,self.PhyscialBulletGravity)
+				ent:SetDamage(self.Primary.Damage,self.PhyscialBulletDamageType,self.PhyscialBulletDamageForce)
+				ent:Spawn()
+				ent:SetDamage(self.Primary.Damage,self.PhyscialBulletDamageType,self.PhyscialBulletDamageForce)
+				ent:SetBulletMass(self.PhyscialBulletMass,self.PhyscialBulletGravity)
+				ent:Activate()
+				if self.Owner:IsPlayer() then
+					ent:GetPhysicsObject():ApplyForceCenter(self.Owner:GetAimVector() *self.PhysicalBulletSpeed +self.Owner:GetVelocity() +self.Owner:GetUp() *math.Rand(-self.Primary.Spread,self.Primary.Spread) +self.Owner:GetRight() *math.Rand(-self.Primary.Spread,self.Primary.Spread))
+				else
+					ent:GetPhysicsObject():ApplyForceCenter((self.Owner:GetEnemy():GetPos() -self.Owner:GetPos()) *self.PhysicalBulletSpeed +self.Owner:GetUp() *math.Rand(-self.Primary.Spread,self.Primary.Spread) +self.Owner:GetRight() *math.Rand(-self.Primary.Spread,self.Primary.Spread))
+				end
+				ent.InitialVelocity = self.Owner:GetAimVector() *self.PhysicalBulletSpeed +self.Owner:GetVelocity() +self.Owner:GetUp() *math.Rand(-self.Primary.Spread,self.Primary.Spread) +self.Owner:GetRight() *math.Rand(-self.Primary.Spread,self.Primary.Spread)
+			end
+		end
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:FiredBullet(attacker,tr,dmginfo) end
@@ -581,14 +650,20 @@ function SWEP:NPC_Reload()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:BeforeReload() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:FinishedReload() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Reload()
+	if self.Owner:IsNPC() then self:NPC_Reload() return end
 	if self.Owner:GetAmmoCount(self.Primary.Ammo) <= 0 then return end
 	-- if !self.Owner:KeyDown(IN_RELOAD) then return end
 	if self.Owner:KeyDown(IN_USE) then return end
 	if self:Clip1() == self.Primary.DefaultClip then return end
 	if self.IsFiring == false && self.IsReloading == false then
+		self:BeforeReload()
 		self.IsReloading = true
 		self.CanUseIdle = false
 		self:ReloadSounds()
@@ -599,9 +674,9 @@ function SWEP:Reload()
 				self.Owner:ChatPrint("Hint: This weapon uses a pump action reload. Hold down your reload key to cycle reloading. Let go at any point to stop.")
 				self.NextReloadHintT = CurTime() +math.random(50,100)
 			end
-			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetClip1(self:Clip1() +1) self.CanUseIdle = true self.IsReloading = false end end)
+			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetClip1(self:Clip1() +1) self.CanUseIdle = true self.IsReloading = false self:FinishedReload() end end)
 		else
-			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(self.Primary.ClipSize -self:Clip1(),self.Primary.Ammo) self:SetClip1(self.Primary.DefaultClip) self.CanUseIdle = true self.IsReloading = false end end)
+			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(self.Primary.ClipSize -self:Clip1(),self.Primary.Ammo) self:SetClip1(self.Primary.DefaultClip) self.CanUseIdle = true self.IsReloading = false self:FinishedReload() end end)
 		end
 		timer.Simple(reloadtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
 		self.Weapon:SetNextPrimaryFire(reloadtime)

@@ -129,10 +129,13 @@ function ENT:OnHit(ent,data,phys)
 	end
 end
 
-function ENT:SetDamage(dmg,dmgtype)
+function ENT:SetDamage(dmg,dmgtype,dmgforce)
 	self.Damage = dmg
 	if dmgtype then
 		self.DamageType = dmgtype
+	end
+	if dmgforce then
+		self.DamageForce = dmgforce
 	end
 end
 

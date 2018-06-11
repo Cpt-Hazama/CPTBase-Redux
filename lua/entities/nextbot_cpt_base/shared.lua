@@ -1,2 +1,3 @@
 ENT.Base 			= "base_nextbot"
-ENT.Spawnable		= true
+ENT.Spawnable		= false
+ENT.AdminSpawnable	= false

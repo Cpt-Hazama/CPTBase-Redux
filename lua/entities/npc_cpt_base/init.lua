@@ -21,11 +21,15 @@ ENT.Mass = 5000 // 7670 is standard for attacking chairs and benches | Human siz
 ENT.CanBeRagdolled = true
 ENT.RagdolledPosSubtraction = 20
 ENT.RagdollRecoveryTime = 5
+ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
+ENT.DefaultPoseParamaterSpeed = 20
 
 ENT.Swim_CheckYawDistance = 250
 ENT.Swim_CheckPitchDistance = 75
 ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this to target
 
+ENT.IsBlind = false
+ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500
 ENT.ViewAngle = 75
 ENT.CanWander = true
@@ -58,7 +62,7 @@ ENT.DeathRagdollType = "prop_ragdoll"
 ENT.HasDeathAnimation = false
 ENT.ExtraDeathTime = 0
 ENT.TurnsOnDamage = true
-ENT.CanMutate = true -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
+ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
 
 ENT.UseTimedSteps = false
 ENT.NextFootSound_Walk = 0.45
@@ -243,7 +247,9 @@ function ENT:ChooseBetterPath(ent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_FaceAimPosition()
-	self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:FindCenter(self)):Angle().y,0))
+	if self.Possessor_CanMove == true then
+		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:FindCenter(self)):Angle().y,0))
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_AimTarget()
@@ -331,9 +337,11 @@ function ENT:Possess_Move(possessor)
 			-- end
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
-				self:TASKFUNC_RUNTOPOS()
+				self:TASKFUNC_RUNLASTPOSITION()
+				-- self:SetSchedule(SCHED_FORCED_GO_RUN)
 			else
-				self:TASKFUNC_WALKTOPOS()
+				self:TASKFUNC_WALKLASTPOSITION()
+				-- self:SetSchedule(SCHED_FORCED_GO)
 			end
 		elseif (possessor:KeyDown(IN_BACK)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
@@ -375,9 +383,9 @@ function ENT:Possess_Move(possessor)
 			-- posMove = self:GetPos() +(PlayersVectorBack *self.Possessor_MaxMoveDistanceBackward)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
-				self:TASKFUNC_RUNTOPOS()
+				self:TASKFUNC_RUNLASTPOSITION()
 			else
-				self:TASKFUNC_WALKTOPOS()
+				self:TASKFUNC_WALKLASTPOSITION()
 			end
 		elseif (possessor:KeyDown(IN_MOVELEFT)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
@@ -417,9 +425,9 @@ function ENT:Possess_Move(possessor)
 			-- posMove = self:GetPos() +(possessor:GetRight() *-self.Possessor_MaxMoveDistanceLeft)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
-				self:TASKFUNC_RUNTOPOS()
+				self:TASKFUNC_RUNLASTPOSITION()
 			else
-				self:TASKFUNC_WALKTOPOS()
+				self:TASKFUNC_WALKLASTPOSITION()
 			end
 		elseif (possessor:KeyDown(IN_MOVERIGHT)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
@@ -459,9 +467,9 @@ function ENT:Possess_Move(possessor)
 			-- posMove = self:GetPos() +(possessor:GetRight() *self.Possessor_MaxMoveDistanceRight)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
-				self:TASKFUNC_RUNTOPOS()
+				self:TASKFUNC_RUNLASTPOSITION()
 			else
-				self:TASKFUNC_WALKTOPOS()
+				self:TASKFUNC_WALKLASTPOSITION()
 			end
 		elseif (!possessor:KeyDown(IN_SPEED) && !possessor:KeyDown(IN_MOVERIGHT) && !possessor:KeyDown(IN_MOVELEFT) && !possessor:KeyDown(IN_BACK) && !possessor:KeyDown(IN_FORWARD)) then
 			self:StopCompletely()
@@ -509,6 +517,8 @@ function ENT:Possess_Move(possessor)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Think(possessor) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_OnPossessed(possessor) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Primary(possessor)
 	if self.DoAttack then
@@ -670,7 +680,7 @@ function ENT:Initialize()
 
 	self:UpdateFriends()
 	self:UpdateEnemies()
-	-- self:UpdateRelations()
+	self:UpdateRelations()
 
 	if self.SetupSoundTables == true then
 		if self.SoundDirectory == nil then MsgN("CPTBase warning: " .. self .. " has no sound directory. Please add a sound directory.") return end
@@ -745,11 +755,7 @@ function ENT:UpdateRelations() // Obsolete
 			if v:IsNPC() && v.Faction != nil && v != self then
 				if v.Faction == "FACTION_NONE" then return end
 				if self.Faction != v.Faction && self:Disposition(v) != D_HT then
-					-- if self:CheckConfidence(v) == "attack!" then
 						self:SetRelationship(v,D_HT)
-					-- elseif self:CheckConfidence(v) == "run!" then
-						-- self:SetRelationship(v,D_FR)
-					-- end
 				elseif self.Faction == v.Faction && self:Disposition(v) != D_LI then
 					self:SetRelationship(v,D_LI)
 				end
@@ -769,7 +775,7 @@ function ENT:UpdateRelations() // Obsolete
 				end
 			end
 		end
-		self.NextRelationshipCheckT = CurTime() +0.1
+		self.NextRelationshipCheckT = CurTime() +1
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -845,16 +851,8 @@ function ENT:Think()
 	self:UpdateFriends()
 	self:UpdateEnemies()
 	-- self:UpdateRelations()
-	self:UpdateMemory()
+	-- self:UpdateMemory()
 	if IsValid(self:GetEnemy()) && !self.IsPossessed then
-		-- if self.MeleeAttackDistance != nil then
-			-- for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.MeleeAttackDistance)) do
-				-- if self:FindInCone(v,self.MeleeAngle) && (self:FindDistance(v) <= self.PhysicsDistance) then
-					-- self:DetectDoors(v,true)
-					-- self:DetectProps(v,true)
-				-- end
-			-- end
-		-- end
 		local enemy = self:GetEnemy()
 		local dist = self:FindCenterDistance(enemy)
 		local nearest = self:GetClosestPoint(enemy)
@@ -892,7 +890,7 @@ function ENT:Think()
 	self:OnThink()
 	if !IsValid(self:GetEnemy()) && self.Faction != "FACTION_NONE" then
 		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-			if v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && (self:GetFaction() != "FACTION_PLAYER" && self.FriendlyToPlayers == false) then
+			if v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && (self:GetFaction() != "FACTION_PLAYER" && self.FriendlyToPlayers == false && self.Faction != v.Faction) then
 				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 						-- self:PlayerChat("Can Hear")
@@ -1107,70 +1105,6 @@ function ENT:MovementType()
 	return self.MoveType
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DetectDoors(v,attack)
-	if v:IsValid() && v:GetClass() == "prop_door_rotating" then
-		if (v:IsValid()) then
-			if attack == true then
-				self:DoAttack()
-			end
-			if self.MeleeAttackHitTime != nil then
-				timer.Simple(self.MeleeAttackHitTime,function()
-					if v:IsValid() && self:IsValid() && self.IsAttacking == true && v:GetClass() == "prop_door_rotating" && (v:GetPos():Distance(self:GetPos()) <= self.MeleeAttackDamageDistance) then
-						if math.random(1,3) == 1 then
-							local finddoors = ents.Create("prop_physics")
-							finddoors:SetPos(v:GetPos())
-							finddoors:SetAngles(v:GetAngles())
-							finddoors:SetModel(v:GetModel())
-							finddoors:Spawn()
-							finddoors:Activate()
-							if v:GetSkin() != nil then
-								finddoors:SetSkin(v:GetSkin())
-							end
-							finddoors:SetMaterial(v:GetMaterial())
-							v:Remove()
-							timer.Simple(3,function()
-								if IsValid(finddoors) then
-									finddoors:SetCollisionGroup(1)
-								end
-							end)
-							local finddoors_phys = finddoors:GetPhysicsObject()
-							finddoors_phys:ApplyForceCenter((self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,-8,20))) *150 +(self:GetEnemy():GetPos() +self:GetEnemy():GetUp() *50 -self:GetPos()) *140)
-						end
-					end
-				end)
-			end
-		end
-	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DetectProps(v,attack)
-	if v:IsValid() && (v:GetClass() == "prop_physics" /*or v:GetClass() == "func_breakable" or v:GetClass() == "prop_physics_multiplayer"*/) then
-		local findprops = v:GetPhysicsObject()
-		if (findprops:IsValid() && self:GetPhysicsObject():IsValid() && findprops:GetMass() > 4 && findprops:GetSurfaceArea() > 750 && (self.Mass >= findprops:GetSurfaceArea())) then
-			if attack == true then
-				self:DoAttack()
-			end
-			if self.MeleeAttackHitTime != nil then
-				timer.Simple(self.MeleeAttackHitTime,function()
-					if v:IsValid() && self:IsValid() && self.IsAttacking == true && findprops:IsValid() && (findprops:GetPos():Distance(self:GetPos()) <= self.MeleeAttackDamageDistance) then
-						local findprops = v:GetPhysicsObject()
-						if (findprops:IsValid() && self:GetPhysicsObject():IsValid() && findprops:GetMass() > 4 && findprops:GetSurfaceArea() > 750 && (self.Mass >= findprops:GetSurfaceArea())) then
-							if IsValid(self:GetEnemy()) then
-								findprops:EnableMotion(true)
-								findprops:Wake()
-								findprops:EnableGravity(true)
-								if self:GetEnemy():IsValid() then
-									findprops:ApplyForceCenter((self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,-8,20))) *150 +(self:GetEnemy():GetPos() +self:GetEnemy():GetUp() *50 -self:GetPos()) *140)
-								end
-							end
-						end
-					end
-				end)
-			end
-		end
-	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
 ENT.NextFootSoundT_Walk = 0
 ENT.NextFootSoundT_Run = 0
 ENT.WalkSoundVolume = 70
@@ -1295,12 +1229,14 @@ function ENT:GetIdleAnimation()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PoseParameters()
+	local pp = self.DefaultPoseParameters
+	local pp_speed = self.DefaultPoseParamaterSpeed
 	if self.IsPossessed then
-		self:LookAtPosition(self:Possess_EyeTrace(self.Possessor).HitPos,{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
+		self:LookAtPosition(self:Possess_EyeTrace(self.Possessor).HitPos,self.DefaultPoseParameters,pp_speed)
 	else
 		if IsValid(self:GetEnemy()) then
 			-- self:LookAtPosition(self:FindHeadPosition(self:GetEnemy()),{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
-			self:LookAtPosition(self:FindCenter(self:GetEnemy()),{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
+			self:LookAtPosition(self:FindCenter(self:GetEnemy()),self.DefaultPoseParameters,pp_speed)
 		end
 	end
 end
@@ -1344,18 +1280,29 @@ function ENT:OnCondition(iCondition)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CanSeeEntities(ent)
+	if self:FindDistance(ent) <= self.ViewDistance then
+		if self.IsBlind then
+			return false
+		else
+			return true
+		end
+		return true
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateFriends()
 	if self.Faction == "FACTION_NONE" then return end
-	for k,v in ipairs(ents.FindInSphere(self:GetPos(),self.ViewDistance)) do
+	for k,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
 		if v:IsNPC() && v != self && v:Health() > 0 then
-			if self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle) then
+			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) then
 				if (v:GetFaction() != nil && v.Faction == self:GetFaction()) then
 					self:SetRelationship(v,D_LI)
 				end
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
-			if self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
-				if (self:GetFaction() == "FACTION_PLAYER" && self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
+				if (self:GetFaction() == "FACTION_PLAYER" or v.Faction == self.Faction or self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
 				end
 			end
@@ -1365,16 +1312,16 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:LocateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
-	for k,v in ipairs(ents.FindInSphere(self:GetPos(),self.ViewDistance)) do
+	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
 		if v:IsNPC() && v != self && v:Health() > 0 then
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" then
+			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" then
 				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
 			end
-		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
-				if self:GetFaction() != "FACTION_PLAYER" && self.FriendlyToPlayers == false && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
+		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
+			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && self.FriendlyToPlayers == false && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
 			end
@@ -1410,12 +1357,11 @@ function ENT:UpdateEnemies()
 		-- end
 	end
 	local findenemy = self:GetClosestEntity(self.tbl_EnemyMemory)
-	if lastenemy != findenemy then
+	if lastenemy != findenemy && findenemy != self.Possessor then
 		self:SetEnemy(findenemy)
 		self:OnEnemyChanged(findenemy)
 	end
 	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
-		self:PlayerChat("Added")
 		table.insert(self.tbl_EnemyMemory,newenemy)
 		self.EnemyMemoryCount = self.EnemyMemoryCount +1
 		local oldcount = self.EnemyMemoryCount -1
@@ -1430,6 +1376,9 @@ end
 function ENT:UpdateMemory()
 	local enemymemory = self.tbl_EnemyMemory
 	for _,v in ipairs(enemymemory) do
+		if v:IsPlayer() && v.IsPossessing then
+			self:RemoveFromMemory(v)
+		end
 		if !v:IsValid() || v:Health() <= 0 || ((v:IsPlayer() && (!v:Alive() || v.IsPossessing || GetConVarNumber("ai_ignoreplayers") == 1)) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
 			self:RemoveFromMemory(v)
 		end
@@ -1524,7 +1473,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 		end
 	end
 	if DoIgnore == false && self.IsDead == false /*&& self.IsRagdolled == false*/ && self.IsEssential == false && self:BeforeTakeDamage(dmg,_Hitbox) then
-		local change = self:ChangeDamageOnHit(dmg,_Hitbox)
+		local change = self:ChangeDamageOnHit(dmg,_Hitbox,dmginfo)
 		-- print(change)
 		self:SetHealth(self:Health() -change)
 		self.DidGetHit = true
@@ -1642,8 +1591,15 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	self:OnDeath(dmg,dmginfo,_Hitbox)
 	if self.HasDeathAnimation == true then
 		self:SetLocalVelocity(Vector(0,0,0))
+		self:SetNPCState(NPC_STATE_SCRIPT)
 		self:PlayAnimation("Death")
-		timer.Simple(self:AnimationLength(self.CurrentAnimation) +self.ExtraDeathTime,function()
+		local deathtime
+		if self.IsPlayingSequence then
+			deathtime = self:AnimationLength(self.CurrentSequence,true)
+		else
+			deathtime = self:AnimationLength(self.CurrentAnimation)
+		end
+		timer.Simple(deathtime +self.ExtraDeathTime,function()
 			if self:IsValid() then
 				if self.HasDeathRagdoll == true then
 					self:CreateNPCRagdoll(dmg,dmginfo)
@@ -1752,6 +1708,8 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDeath_CreatedCorpse(the_ragdoll) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CheckBeforeRagdollEnemy(ent) return true end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:RagdollEnemy(dist,vel)
 	for _,ent in ipairs(ents.FindInSphere(self:GetPos(),dist)) do
 		if ent:IsValid() && self:IsValid() && self:Visible(ent) && ent:Health() > 0 then
@@ -1759,7 +1717,9 @@ function ENT:RagdollEnemy(dist,vel)
 				if ent.CanBeRagdolled == false then return end
 				if ent.IsRagdolled == true then return end
 				if self:GetClosestPoint(ent) <= dist then
-					ent:CreateRagdolledNPC(vel,self)
+					if self:CheckBeforeRagdollEnemy(ent) then
+						ent:CreateRagdolledNPC(vel,self)
+					end
 				end
 			end
 		end
@@ -1797,8 +1757,6 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 	local hitpos = Vector(0,0,0)
 	for _,ent in ipairs(ents.FindInSphere(pos,dist)) do
 		if ent:IsValid() && self:IsValid() && self:Visible(ent) && ent:Health() > 0 then
-			self:DetectDoors(ent)
-			self:DetectProps(ent)
 			if (ent:IsNPC() && ent != self && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) or (ent:IsPlayer() && ent:Alive()) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
 				if self:CustomChecksBeforeDamage(ent) then
 					if force then
@@ -1957,7 +1915,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetClosestEntity(tbl)
 	local target = self:GetEntitiesByDistance(tbl)[1]
-	if target:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then return NULL end
+	if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
 	return target
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1966,10 +1924,10 @@ function ENT:GetEntitiesByDistance(tbl)
 	for _,v in ipairs(tbl) do
 		if v:IsValid() && v:Alive() then
 			disttbl[v] = self:FindCenterDistance(v)
-		elseif (!v:IsValid() || !v:Alive() || (v:IsValid() && v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1)) && table.HasValue(disttbl,v) then
-			disttbl[v] = -1
+		elseif (!v:IsValid() || !v:Alive() || (v:IsValid() && v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1) && v.IsPossessing) && table.HasValue(disttbl,v) then
+			disttbl[v] = -100
 		end
-		if disttbl[v] == -1 then table.remove(disttbl,v) end
+		if disttbl[v] == -100 then table.remove(disttbl,v) end
 	end
 	return table.SortByKey(disttbl,false)
 end

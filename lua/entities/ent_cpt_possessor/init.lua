@@ -58,10 +58,13 @@ function ENT:PossessedNPC(possessed)
 		self.PossessedNPC:RemoveFromMemory(v)
 	end
 	self.PossessedNPC:StopProcessing()
+	self.PossessedNPC:Possess_OnPossessed(self.Possessor)
 end
 
 function ENT:FaceForward()
-	self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorView:GetPos() +self.Possessor:GetAimVector()*400)
+	if self.PossessedNPC.Possessor_CanMove == true then
+		self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorView:GetPos() +self.Possessor:GetAimVector() *400)
+	end
 end
 
 function ENT:Think()

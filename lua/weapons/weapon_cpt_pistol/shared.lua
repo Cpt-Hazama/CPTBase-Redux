@@ -1,19 +1,19 @@
 SWEP.PrintName		= "Five-SeveN Pistol"
-SWEP.Slot			= 1
-SWEP.SlotPos		= 3
+SWEP.HUDSlot = 2
+SWEP.HUDImportance = 3
 SWEP.Author 		= "Cpt. Hazama"
 SWEP.Category		= "CPTBase"
 SWEP.ViewModelFOV	= 55
 SWEP.ViewModelFlip	= false
 SWEP.ViewModel		= "models/weapons/cstrike/c_pist_fiveseven.mdl"
 SWEP.WorldModel		= "models/weapons/w_pist_fiveseven.mdl"
-SWEP.HoldType = "pistol"
+SWEP.HoldType = "revolver"
 SWEP.Base = "weapon_cpt_base"
 SWEP.Spawnable = true
 SWEP.AdminSpawnable = false
 SWEP.UseHands = true
 
-SWEP.DrawTime = 0.5
+SWEP.DrawTime = false
 SWEP.ReloadTime = false
 SWEP.WeaponWeight = 5
 SWEP.Muzzle = "1"
@@ -40,3 +40,7 @@ SWEP.tbl_Sounds = {
 	["DryFire"] = {"weapons/clipempty_pistol.wav"},
 	["Fire"] = {"weapons/fiveseven/fiveseven-1.wav"},
 }
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:BeforeReload() self:SetWeaponHoldType("pistol") end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:FinishedReload() self:SetWeaponHoldType(self.HoldType) end

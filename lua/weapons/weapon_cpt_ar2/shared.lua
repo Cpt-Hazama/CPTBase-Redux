@@ -1,6 +1,6 @@
 SWEP.PrintName		= "Pulse Rifle"
-SWEP.Slot			= 2
-SWEP.SlotPos		= 3
+SWEP.HUDSlot = 3
+SWEP.HUDImportance = 3
 SWEP.Author 		= "Cpt. Hazama"
 SWEP.Category		= "CPTBase"
 SWEP.ViewModelFOV	= 55

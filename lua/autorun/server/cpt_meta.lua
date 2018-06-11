@@ -57,6 +57,7 @@ function util.DoFrostDamage(dmg,ent,attacker)
 end
 
 function NPC_Meta:SetArmor(amount)
+	if self:IsPlayer() then self:SetArmor(amount) return end
 	self.Armor = amount
 end
 
@@ -467,6 +468,28 @@ function WPN_Meta:SoundCreate(snd,vol,pitch)
 	return sound.Play(snd,self:GetPos(),vol,pitch *GetConVarNumber("host_timescale"),1)
 end
 
+function PLY_Meta:GetWeaponAmmoName()
+	local CPTBase_DefaultAmmoTypes = {
+		["weapon_crowbar"] = -1,
+		["weapon_physcannon"] = -1,
+		["weapon_physgun"] = -1,
+		["weapon_pistol"] = "9MM",
+		["gmod_tool"] = -1,
+		["weapon_357"] = ".357",
+		["weapon_smg1"] = "4.6×30MM",
+		["weapon_ar2"] = "Pulse",
+		["weapon_crossbow"] = "Bolt",
+		["weapon_frag"] = -1,
+		["weapon_rpg"] = "RPG",
+		["weapon_shotgun"] = "Buckshot",
+	}
+	if ply:GetActiveWeapon().Primary then
+		return ply:GetActiveWeapon().Primary.Ammo
+	else
+		return CPTBase_DefaultAmmoTypes[ply:GetActiveWeapon():GetClass()]
+	end
+end
+
 function PLY_Meta:AddToAmmoCount(amount,ammo)
 	if (self:GetAmmoCount(ammo) +amount) > 9999 then
 		self:RemoveAmmo(self:GetAmmoCount(ammo) -amount,ammo)
@@ -576,7 +599,7 @@ hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
 	end
 end)
 
-function NPC_Meta:SetRelationship(ent,value,isplayer)
+function ENT_Meta:SetRelationship(ent,value,isplayer)
 	self:AddEntityRelationship(ent,value,99)
 	if !ent:IsPlayer() then
 		ent:AddEntityRelationship(self,value,99)
@@ -879,6 +902,7 @@ function NPC_Meta:PlayAnimation(_Animation,facetarget,timed)
 	local tbl = self:SelectFromTable(self.tbl_Animations[_Animation])
 	if string.find(tbl,"cptseq_") then
 		tbl = string.Replace(tbl,"cptseq_","")
+		if facetarget == nil then facetarget = 1 end
 		self:PlaySequence(tbl,facetarget)
 		return
 	end
@@ -888,7 +912,7 @@ function NPC_Meta:PlayAnimation(_Animation,facetarget,timed)
 	self:PlayActivity(tbl,facetarget,_Animation,timed)
 end
 
-function NPC_Meta:GetSequenceID(anim)
+function ENT_Meta:GetSequenceID(anim)
 	local tb = self:GetSequenceList()
 	local i = 0
 	for k,v in ipairs(tb) do
@@ -900,7 +924,7 @@ function NPC_Meta:GetSequenceID(anim)
 end
 
 function NPC_Meta:Alive()
-	if v:Health() < 0 then
+	if self:Health() < 0 then
 		return false
 	else
 		return true
@@ -999,7 +1023,14 @@ function NPC_Meta:FaceTarget(ent)
 	self:StartSchedule(_faceselectedtarget)
 end
 
-function NPC_Meta:StopProcessing() -- Be careful using this
+function ENT_Meta:StopEntityProcessing()
+	self.CurrentSchedule = nil
+	self.CurrentTask = nil
+	self:ClearSchedule()
+	self:StopMoving()
+end
+
+function NPC_Meta:StopProcessing()
 	self.CurrentSchedule = nil
 	self.CurrentTask = nil
 	self:StopCompletely()
@@ -1025,10 +1056,13 @@ function NPC_Meta:PlaySequence(sequence,animrate)
 	self:ResetSequenceInfo()
 	self:SetCycle(0)
 	self:SetNPCState(NPC_STATE_SCRIPT)
-	if animrate then self:SetPlaybackRate(animrate) end
-	self.NextAnimT = CurTime() +self:SequenceDuration(animid) /animrate
+	if animrate == nil then
+		animrate = 1
+	end
+	self:SetPlaybackRate(animrate)
+	self.NextAnimT = CurTime() +self:AnimationLength(sequence,true) /animrate
 	self.CurrentSequence = animid
-	timer.Simple(self:SequenceDuration(animid) /animrate,function()
+	timer.Simple(self:AnimationLength(sequence,true) /animrate,function()
 		if IsValid(self) then
 			self.bInSchedule = false
 			self.IsPlayingSequence = false
@@ -1043,6 +1077,7 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	local usegesture = false
 	local usesequence = false
 	local extratime = nil
+	-- if self.IsPlayingActivity then return end
 	if usetime then
 		if CurTime() < self.NextAnimT then return end
 	end
@@ -1065,8 +1100,10 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,1) return end
 	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),1) return end
 	if activity == nil then return end
+	if self:AnimationLength(activity) == 0 then return end
 	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
 	if fly == true then self:PlayActivity_Fly(activity) return end
+	self:StopProcessing()
 	self.CanChaseEnemy = false
 	local sched = ai_sched_cpt.New(activity)
 	local task = "TASK_PLAY_SEQUENCE"
@@ -1093,12 +1130,16 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	self.NextAnimT = CurTime() +self:AnimationLength(activity)
 	timer.Simple(self:AnimationLength(activity) +extratime,function()
 		if self:IsValid() then
+			self:SetNPCState(NPC_STATE_NONE)
 			self.IsPlayingActivity = false
 			self.CanChaseEnemy = true
+			self:OnFinishedAnimation(activity)
 		end
 	end)
 	return activity
 end
+
+function NPC_Meta:OnFinishedAnimation(activity) end
 
 function NPC_Meta:PlayActivity_Fly(activity,usetime)
 	if usetime then
@@ -1134,11 +1175,12 @@ function NPC_Meta:StopCompletely()
 end
 
 function NPC_Meta:AnimationLength(activity,seq)
+	if activity == nil then return end
 	if type(activity) == "string" && seq != true then
 		activity = self:TranslateStringToNumber(activity)
 	end
 	if seq then
-		return self:SequenceDuration(activity)
+		return self:SequenceDuration(activity) /self:GetPlaybackRate()
 	end
 	return self:SequenceDuration(self:SelectWeightedSequence(activity))
 end
@@ -1165,7 +1207,7 @@ end
 
 function ENT_Meta:CheckCanSee(ent,cone)
 	if ent == nil then return end
-	if self:Visible(ent) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos()):GetNormalized()) > math.cos(math.rad(cone))) then
+	if self:Visible(ent) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone))) then
 		return true
 	else
 		return false
@@ -1174,11 +1216,11 @@ end
 
 function ENT_Meta:FindInCone(ent,cone)
 	if ent == nil then return end
-	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos()):GetNormalized()) > math.cos(math.rad(cone)))
+	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
 end
 
 function PLY_Meta:FindInCone(ent,cone)
-	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos()):GetNormalized()) > math.cos(math.rad(cone)))
+	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
 end
 
 function NPC_Meta:GetHealth()
@@ -1211,6 +1253,7 @@ function NPC_Meta:AttackFinish(seq,time)
 		if time != nil then
 			animtime = time
 		end
+		-- print(animtime)
 		timer.Simple(animtime +0.02,function()
 			if self:IsValid() then
 				self.IsAttacking = false

@@ -1,0 +1,6 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models/props_trainstation/flashlight"
+	"$envmap" "env_cubemap"
+	"$envmapmask" "models/props_trainstation/flashlight_ref"
+}

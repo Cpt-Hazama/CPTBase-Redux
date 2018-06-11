@@ -14,6 +14,12 @@ SWEP.MeleeMiss = ACT_VM_MISSCENTER
 
 SWEP.CurrentTraceData = {}
 
+function SWEP:OnHitEntity() end
+
+function SWEP:OnHitWorld() end
+
+function SWEP:OnMissEntity() end
+
 function SWEP:PrimaryAttack()
 	if self.IsFiring == true then return end
 	local UseAct = self.MeleeMiss
@@ -47,10 +53,12 @@ function SWEP:PrimaryAttack()
 				else
 					self:PlayWeaponSound("Miss",80)
 					UseAct = self.MeleeMiss
+					self:OnMissEntity()
 				end
 			elseif hit == 2 then
 				self:PlayWeaponSound("HitWorld",85)
 				UseAct = self.MeleeHit
+				self:OnHitWorld()
 			end
 			-- UseAct = self.MeleeHit
 		end
@@ -70,7 +78,7 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:PlayMeleeAnimation(anim)
-	print(anim)
+	-- print(anim)
 	if type(anim) == "table" then
 		anim = self:SelectFromTable(anim)
 	end
@@ -101,6 +109,7 @@ function SWEP:CreateMeleeDamage(inflictor,attacker,pos,radius,dmg,filter,dmgtype
 					dmginfo:SetDamageType(dmgtype)
 					dmginfo:SetDamagePosition(dmgpos)
 					v:TakeDamageInfo(dmginfo)
+					self:OnHitEntity(v)
 				end
 			end
 			return foundents
