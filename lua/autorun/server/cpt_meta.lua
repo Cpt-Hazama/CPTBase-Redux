@@ -744,6 +744,7 @@ function NPC_Meta:PlaySound(_Sound,_SoundLevel,_SoundVolume,_SoundPitch,_UseDotP
 	self.CurrentSound = _SelectSound
 	_SelectSound:ChangePitch(_SoundPitch *GetConVarNumber("host_timescale"),0)
 	_SelectSound:ChangeVolume(_SoundVolume,0)
+	self.CurrentPlayingSound = __Sound
 	self:OnPlaySound(__Sound,_Sound)
 	return __Sound
 end
@@ -992,19 +993,27 @@ function NPC_Meta:TurnToDegree(degree,posAng,bPitch,iPitchMax) // Borrowing this
 	self:SetAngles(ang)
 end
 
-function NPC_Meta:GiveNPCWeapon(weapon)
+function NPC_Meta:GiveNPCWeapon(weapon,ismelee)
 	local default = self:GetDefaultNPCWeapon()
 	if weapon == nil then
 		if default == "" then
-			-- print("no default weapon")
 			return
 		else
-			-- print("gave default weapon")
 			self:Give(default)
 		end
 	else
-		-- print("gave weapon")
 		self:Give(weapon)
+	end
+	if self.tbl_Inventory != nil then
+		if ismelee then
+			if self.tbl_Inventory["Melee"] != nil then
+				table.insert(self.tbl_Inventory["Melee"],weapon)
+			end
+		else
+			if self.tbl_Inventory["Primary"] != nil then
+				table.insert(self.tbl_Inventory["Primary"],weapon)
+			end
+		end
 	end
 end
 
@@ -1236,6 +1245,9 @@ function Color8Bit2Color(inputbit)
 end
 
 function NPC_Meta:PlayNPCGesture(seq,layer,playbackrate) // You should always set layer to '2' or below. I recommend only '2' though
+	if seq == nil then return end
+	if layer == nil then layer = 2 end
+	if playbackrate == nil then playbackrate = 1 end
 	local gest = self:AddGestureSequence(self:LookupSequence(seq))
 	self:SetLayerPriority(gest,layer)
 	self:SetLayerPlaybackRate(gest,playbackrate)

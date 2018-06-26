@@ -1,38 +1,35 @@
-SWEP.PrintName		= "Pulse Rifle"
-SWEP.HUDSlot		= 3
-SWEP.HUDImportance 	= 3
+SWEP.PrintName		= "Shotgun"
+SWEP.HUDSlot = 4
+SWEP.HUDImportance = 1
 SWEP.Author 		= "Cpt. Hazama"
 SWEP.Category		= "CPTBase"
 SWEP.ViewModelFOV	= 55
 SWEP.ViewModelFlip	= false
-SWEP.ViewModel		= "models/weapons/c_irifle.mdl"
-SWEP.WorldModel		= "models/weapons/w_irifle.mdl"
-SWEP.HoldType = "ar2"
+SWEP.ViewModel		= "models/weapons/c_shotgun.mdl"
+SWEP.WorldModel		= "models/weapons/w_shotgun.mdl"
+SWEP.HoldType		= "shotgun"
 SWEP.Base = "weapon_cpt_base"
 SWEP.Spawnable = true
 SWEP.AdminSpawnable = false
 SWEP.UseHands = true
 
-SWEP.DrawTime = 0.5
-SWEP.ReloadTime = false
+SWEP.DrawTime = 0.4
+SWEP.ReloadTime = 0.5
 SWEP.WeaponWeight = 7
-SWEP.HasShells = false
+SWEP.UseSingleReload = true
 
-SWEP.Primary.TotalShots = 1
-SWEP.Primary.Spread = 0.03
+SWEP.Primary.TotalShots = 7
+SWEP.Primary.Spread = 0.08
 SWEP.Primary.Tracer = 1
-SWEP.Primary.Force = 1
-SWEP.Primary.Damage = 14
-SWEP.Primary.Delay = 0.09
-SWEP.MuzzleEffect = "cpt_muzzle_combine"
-SWEP.Primary.TracerEffect = "cpt_tracer_combine"
-SWEP.MuzzleFlash_Color = Color(0,178,255)
+SWEP.Primary.Force = 8
+SWEP.Primary.Damage = 4
+SWEP.Primary.Delay = 1.3
 
-SWEP.Primary.ClipSize		= 30
-SWEP.Primary.Automatic		= true
-SWEP.Primary.Ammo			= "darkpulseenergy"
-SWEP.NPCFireRate = 0.8
-SWEP.tbl_NPCFireTimes = {0,0.1,0.2,0.3,0.4}
+SWEP.Primary.ClipSize		= 8
+SWEP.Primary.Automatic		= false
+SWEP.Primary.Ammo			= "Buckshot"
+SWEP.NPCFireRate = 1.3
+SWEP.tbl_NPCFireTimes = {0}
 SWEP.NPC_MoveRandomlyChance = 60
 SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
 SWEP.NPC_FireDistance = 2500
@@ -40,7 +37,7 @@ SWEP.NPC_FireDistanceStop = 500
 SWEP.NPC_FireDistanceMoveAway = 200
 SWEP.NPC_CurrentReloadTime = 2
 SWEP.OverrideBulletPos = true
-SWEP.NPC_Spread = 10
+SWEP.NPC_Spread = 20
 SWEP.ReloadSpeed = 0.5
 
 SWEP.DrawAnimation = ACT_VM_DRAW
@@ -48,15 +45,10 @@ SWEP.IdleAnimation = ACT_VM_IDLE
 SWEP.FireAnimation = ACT_VM_PRIMARYATTACK
 SWEP.ReloadAnimation = ACT_VM_RELOAD
 
-SWEP.AdjustWorldModel = true
-SWEP.WorldModelAdjust = {
-	Pos = {Right = -4.3,Forward = -6.2,Up = 5},
-	Ang = {Right = -10,Up = 180,Forward = 0}
-}
-
 SWEP.tbl_Sounds = {
-	["DryFire"] = {"weapons/ar2/ar2_empty.wav"},
-	["Fire"] = {"weapons/ar1/ar1_dist1.wav","weapons/ar1/ar1_dist2.wav"},
+	["Fire"] = {"weapons/shotgun/shotgun_fire7.wav"},
+	["Reload"] = {"weapons/shotgun/shotgun_reload3.wav"},
+	["Cock"] = {"weapons/shotgun/shotgun_cock.wav"},
 }
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnInit()
@@ -67,8 +59,8 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnNPCThink()
 	if self.Owner.WeaponIsDrawn then
-		self.Owner.tbl_Animations["Walk"] = {"Walk_aiming_all"}
-		self.Owner.tbl_Animations["Run"] = {"RunAIMALL1"}
+		self.Owner.tbl_Animations["Walk"] = {"Walk_aiming_all_SG"}
+		self.Owner.tbl_Animations["Run"] = {"RunAIMALL1_SG"}
 		self:SetNoDraw(false)
 		self:DrawShadow(true)
 	else
@@ -77,10 +69,10 @@ function SWEP:OnNPCThink()
 		self:SetNoDraw(true)
 		self:DrawShadow(false)
 	end
-	self.Owner.tbl_Animations["Fire"] = {"gesture_shoot_ar2"}
+	self.Owner.tbl_Animations["Fire"] = {"gesture_shoot_shotgun"}
 	self.Owner.tbl_Animations["Reload"] = {"gesture_reload"}
 	if self.Owner.WeaponIsDrawn then
-		self.Owner:SetIdleAnimation("CombatIdle1")
+		self.Owner:SetIdleAnimation("CombatIdle1_SG")
 	else
 		self.Owner:SetIdleAnimation("Idle_Unarmed")
 	end
@@ -93,14 +85,13 @@ end
 function SWEP:OnPrimaryAttack()
 	if self.Owner:IsNPC() then
 		self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
+		timer.Simple(0.6,function()
+			if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
+				if self.Owner:IsPlayer() then self:UseDefinedSequence("pump") end
+				self:PlayWeaponSound("Cock",75)
+			end
+		end)
 	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:FiredBullet(attacker,tr,dmginfo)
-	local effectdata = EffectData()
-	effectdata:SetOrigin(tr.HitPos)
-	effectdata:SetScale(1)
-	util.Effect("AR2Impact",effectdata)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload()

@@ -14,7 +14,7 @@ SWEP.MeleeMiss = ACT_VM_MISSCENTER
 
 SWEP.CurrentTraceData = {}
 
-function SWEP:OnHitEntity() end
+function SWEP:OnHitEntity(ent) end
 
 function SWEP:OnHitWorld() end
 
@@ -41,7 +41,7 @@ function SWEP:PrimaryAttack()
 				UseAct = self.MeleeMiss
 			elseif hit == 1 then
 				for _,v in pairs(ents.FindInSphere(self.Owner:GetShootPos() +self.Owner:GetAimVector() *self.MeleeDamageDistance,self.MeleeDamageRadius)) do
-					if v:IsValid() && v != self && v != self.Owner && ((v:IsNPC() or v:IsPlayer()) or v:Health() > 0) && v:Visible(self.Owner) then
+					if v:IsValid() && v != self.Owner && v:Visible(self.Owner) then
 						hitent = true
 						self:CreateMeleeDamage(self,self.Owner,self.Owner:GetShootPos() +self.Owner:GetAimVector() *self.MeleeDamageDistance,self.MeleeDamageRadius,self.MeleeDamage,self.Owner,DMG_SLASH)
 					end
@@ -94,25 +94,38 @@ function SWEP:PlayMeleeAnimation(anim)
 	end
 end
 
+function SWEP:CheckBeforeDamage(ent)
+	return true
+end
+
 function SWEP:CreateMeleeDamage(inflictor,attacker,pos,radius,dmg,filter,dmgtype)
 	-- timer.Simple(self.MeleeHitTime,function()
 		-- if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 			local foundents = {}
-			for k, v in pairs(ents.FindInSphere(pos,radius)) do
+			local didhit = false
+			for _, v in pairs(ents.FindInSphere(pos,radius)) do
 				if (v != filter && !util.TraceLine({start = pos, endpos = v:GetPos() +v:OBBCenter(), mask = MASK_NPCWORLDSTATIC}).HitEntity && v:Health() != nil) then
-					local dmgpos = v:NearestPoint(pos)
-					foundents[v] = pos:Distance(dmgpos)
-					local dmginfo = DamageInfo()
-					dmginfo:SetDamage(dmg)
-					dmginfo:SetAttacker(attacker)
-					dmginfo:SetInflictor(inflictor)
-					dmginfo:SetDamageType(dmgtype)
-					dmginfo:SetDamagePosition(dmgpos)
-					v:TakeDamageInfo(dmginfo)
-					self:OnHitEntity(v)
+					if (v:IsNPC() || v:IsPlayer()) && self:CheckBeforeDamage(v) then
+						local dmgpos = v:NearestPoint(pos)
+						foundents[v] = pos:Distance(dmgpos)
+						local dmginfo = DamageInfo()
+						dmginfo:SetDamage(dmg)
+						dmginfo:SetAttacker(attacker)
+						dmginfo:SetInflictor(inflictor)
+						dmginfo:SetDamageType(dmgtype)
+						dmginfo:SetDamagePosition(dmgpos)
+						v:TakeDamageInfo(dmginfo)
+						didhit = true
+						if !table.HasValue(foundents,v) then
+							table.insert(foundents,v)
+						end
+					end
 				end
 			end
-			return foundents
+			if didhit == true then
+				self:OnHitEntity(foundents)
+			end
+			-- return foundents
 		-- end
 	-- end)
 end

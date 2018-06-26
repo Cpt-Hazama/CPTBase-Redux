@@ -25,9 +25,9 @@ function EFFECT:GetTracerOrigin(data)
 		local entity = data:GetEntity()
 		if(not IsValid(entity)) then return start end
 		if(not game.SinglePlayer() && entity:IsEFlagSet(EFL_DORMANT)) then return start end
-		if(entity:IsWeapon() && entity:IsCarriedByLocalPlayer()) then
+		if(entity:IsWeapon()) then
 			local ply = entity:GetOwner()
-			if(IsValid(ply)) then
+			if(IsValid(ply) && ply:IsPlayer()) then
 				local vm = ply:GetViewModel()
 				if(IsValid(vm) && not LocalPlayer():ShouldDrawLocalPlayer()) then
 					entity = vm
@@ -55,7 +55,7 @@ function EFFECT:Init(data)
 	self.StartTime = 0
 	self.LifeTime = (diff:Length() +self.Length) /self.Speed
 	local weapon = data:GetEntity()
-	if(IsValid(weapon) && (not weapon:IsWeapon() or not weapon:IsCarriedByLocalPlayer())) then
+	if(IsValid(weapon) && (not weapon:IsWeapon())) then
 		local dist, pos, time = util.DistanceToLine(self.StartPos,self.EndPos,EyePos())
 	end
 end

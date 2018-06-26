@@ -10,10 +10,7 @@ include('server/cpt_utilities.lua')
 CPTBase.AddNPC("Combine Assasssin","npc_cpt_cassassin","CPTBase Redux")
 CPTBase.AddNPC("Mortar Synth","npc_cpt_mortarsynth","CPTBase Redux")
 CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
--- CPTBase.AddNPC("Combine APC","npc_cpt_apc","CPTBase Redux")
-
-// Fallout
--- CPTBase.AddNPC("Super Mutant","npc_cpt_supermutant","CPTBase Redux")
+CPTBase.AddNPC("Combine Soldier","npc_cpt_csoldier","CPTBase Redux")
 
 // Zombies + Enemy Aliens
 CPTBase.AddNPC("Puker Zombie","npc_cpt_pukerzombie","CPTBase Redux")

@@ -14,6 +14,7 @@ if SERVER then
 	util.AddNetworkString("cpt_SpeakingPlayer")
 end
 
+	-- Initialize Variables --
 ENT.ModelTable = {}
 ENT.CollisionBounds = Vector(0,0,0)
 ENT.StartHealth = 10
@@ -21,13 +22,9 @@ ENT.Mass = 5000 // 7670 is standard for attacking chairs and benches | Human siz
 ENT.CanBeRagdolled = true
 ENT.RagdolledPosSubtraction = 20
 ENT.RagdollRecoveryTime = 5
-ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
-ENT.DefaultPoseParamaterSpeed = 20
+ENT.MaxTurnSpeed = 50
 
-ENT.Swim_CheckYawDistance = 250
-ENT.Swim_CheckPitchDistance = 75
-ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this to target
-
+	-- AI Variables --
 ENT.IsBlind = false
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500
@@ -40,38 +37,47 @@ ENT.MeleeAngle = 45
 ENT.HearingDistance = 900
 ENT.ReactsToSound = true
 ENT.PhysicsDistance = 80
+ENT.Faction = "FACTION_NONE"
+ENT.FriendlyToPlayers = false
+ENT.Confidence = 2 -- Obsolete
+ENT.UseDefaultPoseParameters = true
+ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
+ENT.DefaultPoseParamaterSpeed = 20
+ENT.ForceReloadAnimation = false
+
+	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true
 ENT.FlyUpOnSpawn_Time = 2
 ENT.FlyRandomDistance = 400
-ENT.Faction = "FACTION_NONE"
-ENT.FriendlyToPlayers = false
-ENT.Confidence = 2 -- 0 = Runs From Everything, 1 = Only Fights Weak Enemies, 2 = Normal AI, 3 = Will Fight Most Enemies, 4 = No Fear
 
-ENT.HasAlertAnimation = false
-ENT.AlertAnimationChance = 5
-ENT.HasFlinchAnimation = false
-ENT.FlinchChance = 10
+	-- Swim AI Variables --
+ENT.Swim_CheckYawDistance = 250
+ENT.Swim_CheckPitchDistance = 75
+ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this to target
 
+	-- Damage Variables --
 ENT.IsEssential = false
 ENT.Bleeds = true
 ENT.BloodEffect = {}
 ENT.LeavesBlood = true -- Don't need to change this if the table below is empty, it'll just not make decals
 ENT.BloodDecal = {}
+ENT.HasAlertAnimation = false
+ENT.AlertAnimationChance = 5
+ENT.HasFlinchAnimation = false
+ENT.FlinchChance = 10
+ENT.TurnsOnDamage = true
+ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
 ENT.HasDeathRagdoll = true
 ENT.DeathRagdollType = "prop_ragdoll"
 ENT.HasDeathAnimation = false
 ENT.ExtraDeathTime = 0
-ENT.TurnsOnDamage = true
-ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
 
-ENT.UseTimedSteps = false
-ENT.NextFootSound_Walk = 0.45
-ENT.NextFootSound_Run = 0.45
-
-ENT.SoundDirectory = nil
-ENT.SetupSoundTables = false -- Won't be as accurate as you setting them up yourself
-ENT.CheckForLoopsInSoundDirectory = true -- Makes sure looping sounds don't get added
-
+	-- Possessor Variables --
+ENT.Possessor_UseBoneCamera = false
+ENT.Possessor_BoneCameraName = 1
+ENT.Possessor_BoneCameraForward = 0
+ENT.Possessor_BoneCameraRight = 0
+ENT.Possessor_BoneCameraUp = 0
 ENT.Possessor_MaxMoveDistanceForward = 300
 ENT.Possessor_MaxMoveDistanceLeft = 125
 ENT.Possessor_MaxMoveDistanceRight = 125
@@ -79,15 +85,49 @@ ENT.Possessor_MaxMoveDistanceBackward = 150
 ENT.Possessor_MinMoveDistance = 55
 ENT.Possessor_CanMove = true
 ENT.Possessor_CanSprint = true
+ENT.Possessor_CanFaceTrace_Walking = false
+ENT.Possessor_CanFaceTrace_Running = false
 ENT.PossessorView = {
 	Pos = {Right = 0,Forward = 0,Up = 0}
 }
 
+	-- Tables --
 ENT.tbl_Animations = {}
 ENT.tbl_Sounds = {}
 ENT.tbl_Sentences = {}
 ENT.tbl_ImmuneTypes = {}
 ENT.tbl_Capabilities = {}
+
+	-- Sound Variables --
+ENT.SoundDirectory = nil
+ENT.SetupSoundTables = false -- Won't be as accurate as you setting them up yourself | there's also a weird issue where SNPCs can sometimes "share" sounds
+ENT.CheckForLoopsInSoundDirectory = true -- Makes sure looping sounds don't get added
+ENT.UseTimedSteps = false
+ENT.NextFootSound_Walk = 0.45
+ENT.NextFootSound_Run = 0.45
+ENT.WalkSoundVolume = 70
+ENT.RunSoundVolume = 75
+ENT.StepSoundPitch = 100
+ENT.IdleSoundVolume = 80
+ENT.IdleSoundPitch = 100
+ENT.IdleSoundChanceA = 10
+ENT.IdleSoundChanceB = 16
+ENT.AlertSoundVolume = 85
+ENT.AlertSoundPitch = 100
+ENT.AlertSoundChanceA = 4
+ENT.AlertSoundChanceB = 12
+ENT.PainSoundVolume = 82
+ENT.PainSoundPitch = 100
+ENT.PainSoundChanceA = 2
+ENT.PainSoundChanceB = 4
+ENT.DeathSoundVolume = 80
+ENT.DeathSoundPitch = 100
+
+	-- Misc Variables --
+ENT.NextFootSoundT_Walk = 0
+ENT.NextFootSoundT_Run = 0
+ENT.NextIdleSoundT = 0
+ENT.NextAlertSoundT = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AfterInit() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -252,6 +292,11 @@ function ENT:Possess_FaceAimPosition()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+-- function ENT:Possess_CustomHUDInterface(possessor)
+	-- net.Start("cpt_ControllerView_Custom")
+	-- net.Send(possessor)
+-- end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_AimTarget()
 	return self:Possess_EyeTrace(self.Possessor).HitPos
 end
@@ -307,9 +352,9 @@ function ENT:Possess_Move(possessor)
 			else
 				-- posMove = self:GetPos() +self:GetForward() *self.Possessor_MaxMoveDistance
 				if trace.HitPos:Distance(self:GetPos()) <= self.Possessor_MinMoveDistance then
-					posMove = trace.HitPos +self:GetForward() *self.Possessor_MinMoveDistance
+					posMove = trace.HitPos +self:GetForward() *self.Possessor_MinMoveDistance +self:GetForward() *(-self:GetCollisionBounds().y)
 				else
-					posMove = trace.HitPos
+					posMove = trace.HitPos +self:GetForward() *(-self:GetCollisionBounds().y)
 				end
 			end
 			-- if self.blockA == NULL || self.blockA == nil then
@@ -616,7 +661,7 @@ function ENT:Initialize()
 		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),-(Vector(self.CollisionBounds.x,self.CollisionBounds.y,0)))
 	end
 	self:SetSolid(SOLID_BBOX)
-	self:SetMaxYawSpeed(50)
+	self:SetMaxYawSpeed(self.MaxTurnSpeed)
 	self:SetHealth(self.StartHealth)
 	self:SetMaxHealth(self.StartHealth)
 	-- self:SetMovementType(MOVETYPE_STEP)
@@ -669,6 +714,10 @@ function ENT:Initialize()
 	self.TimeSinceLastTimeFalling = 0
 	self.tbl_Speakers = {}
 	self.NPC_Enemy = nil
+	self.tbl_Inventory = {
+		["Primary"] = nil,
+		["Melee"] = nil,
+	}
 
 	if table.Count(self.tbl_Capabilities) > 0 then
 		for _,cap in ipairs(self.tbl_Capabilities) do
@@ -765,6 +814,7 @@ function ENT:UpdateRelations() // Obsolete
 					if GetConVarNumber("ai_ignoreplayers") == 1 then return end
 					self:SetRelationship(v,D_LI)
 				else
+					if self.FriendlyToPlayers == true then return end
 					if v.IsPossessing == true then return end
 					if GetConVarNumber("ai_ignoreplayers") == 1 then return end
 					if self:CheckConfidence(v) == "attack!" then
@@ -790,11 +840,6 @@ function ENT:CheckPoseParameters()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-ENT.NextIdleSoundT = 0
-ENT.IdleSoundVolume = 80
-ENT.IdleSoundPitch = 100
-ENT.IdleSoundChanceA = 10
-ENT.IdleSoundChanceB = 16
 function ENT:IdleSounds()
 	if self.IsPossessed == false then
 		if !IsValid(self:GetEnemy()) then
@@ -805,7 +850,9 @@ function ENT:IdleSounds()
 				else
 					self:PlayNPCSentence("Idle")
 				end
-				self.NextIdleSoundT = CurTime() +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
+				if self.CurrentSound != nil then
+					self.NextIdleSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
+				end
 			end
 		end
 	else
@@ -816,9 +863,25 @@ function ENT:IdleSounds()
 			else
 				self:PlayNPCSentence("Idle")
 			end
-			self.NextIdleSoundT = CurTime() +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
+			if self.CurrentSound != nil then
+				self.NextIdleSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
+			end
 		end
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:IsWalking()
+	if self.CurrentSchedule != nil && (self.CurrentSchedule.Name == "_lastpositiontask_walk" || self.CurrentSchedule.Name == "_wandertaskfunc") then
+		return true
+	end
+	return false
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:IsRunning()
+	if self.CurrentSchedule != nil && (self.CurrentSchedule.Name == "_lastpositiontask_run" || self.CurrentSchedule.Name == "_lastpositiontask" || self.CurrentSchedule.Name == "_chasetaskfunc" || self.CurrentSchedule.Name == "getpathandchasetask" || self.CurrentSchedule.Name == "_hidetask" || self.CurrentSchedule.Name == "_followplayer") then
+		return true
+	end
+	return false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
@@ -840,13 +903,12 @@ function ENT:Think()
 		self.CurrentSchedule = nil
 		self.CurrentTask = nil
 	end
-	-- if self:GetMoveType() == MOVETYPE_STEP then
-		-- if self.cpt_Schedule_Walking == true then
-			-- self:SetMovementAnimation("Walk")
-		-- elseif self.cpt_Schedule_Running == true then
-			-- self:SetMovementAnimation("Run")
-		-- end
-	-- end
+	if self:IsWalking() then
+		self:SetMovementAnimation("Walk")
+	end
+	if self:IsRunning() then
+		self:SetMovementAnimation("Run")
+	end
 	self:IdleSounds()
 	self:UpdateFriends()
 	self:UpdateEnemies()
@@ -890,7 +952,7 @@ function ENT:Think()
 	self:OnThink()
 	if !IsValid(self:GetEnemy()) && self.Faction != "FACTION_NONE" then
 		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-			if v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && (self:GetFaction() != "FACTION_PLAYER" && self.FriendlyToPlayers == false && self.Faction != v.Faction) then
+			if v:IsPlayer() && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
 				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 						-- self:PlayerChat("Can Hear")
@@ -1105,11 +1167,6 @@ function ENT:MovementType()
 	return self.MoveType
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-ENT.NextFootSoundT_Walk = 0
-ENT.NextFootSoundT_Run = 0
-ENT.WalkSoundVolume = 70
-ENT.RunSoundVolume = 75
-ENT.StepSoundPitch = 100
 function ENT:FootStepCode()
 	if self.IsRagdolled == true then return end
 	if self:IsOnGround() && self:IsMoving() && self.UseTimedSteps == true then
@@ -1178,17 +1235,20 @@ function ENT:OnChaseEnemy(ent) self:SetMovementAnimation("Run") end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ChaseTarget(ent,uselastpos,pos)
 	if self.bInSchedule == true then return end
+	if self.CanChaseEnemy == false then return end
 	if self.IsPossessed == true then return end
-	self:OnChaseEnemy(ent)
-	if uselastpos == false then
-		self:SetTarget(ent)
-		self:TASKFUNC_GETPATHANDGO()
-	else
-		if pos == nil then
-			pos = ent:GetPos()
+	if IsValid(ent) then
+		self:OnChaseEnemy(ent)
+		if uselastpos == false then
+			self:SetTarget(ent)
+			self:TASKFUNC_GETPATHANDGO()
+		else
+			if pos == nil then
+				pos = ent:GetPos()
+			end
+			self:SetLastPosition(pos)
+			self:TASKFUNC_LASTPOSITION()
 		end
-		self:SetLastPosition(pos)
-		self:TASKFUNC_LASTPOSITION()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1229,6 +1289,7 @@ function ENT:GetIdleAnimation()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PoseParameters()
+	if !self.UseDefaultPoseParameters then return end
 	local pp = self.DefaultPoseParameters
 	local pp_speed = self.DefaultPoseParamaterSpeed
 	if self.IsPossessed then
@@ -1236,16 +1297,11 @@ function ENT:PoseParameters()
 	else
 		if IsValid(self:GetEnemy()) then
 			-- self:LookAtPosition(self:FindHeadPosition(self:GetEnemy()),{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
-			self:LookAtPosition(self:FindCenter(self:GetEnemy()),self.DefaultPoseParameters,pp_speed)
+			self:LookAtPosition(self:FindCenter(self:GetEnemy()),pp,pp_speed)
 		end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-ENT.NextAlertSoundT = 0
-ENT.AlertSoundVolume = 85
-ENT.AlertSoundPitch = 100
-ENT.AlertSoundChanceA = 4
-ENT.AlertSoundChanceB = 12
 function ENT:OnCondition(iCondition)
 	local cond = self:ConditionName(iCondition)
 	-- print(cond)
@@ -1265,7 +1321,9 @@ function ENT:OnCondition(iCondition)
 					else
 						self:PlayNPCSentence("Alert")
 					end
-					self.NextAlertSoundT = CurTime() +math.random(self.AlertSoundChanceA,self.AlertSoundChanceB)
+					if self.CurrentSound != nil then
+						self.NextAlertSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.AlertSoundChanceA,self.AlertSoundChanceB)
+					end
 				end
 			else
 				if math.random(1,self.AlertAnimationChance) == 1 then
@@ -1280,6 +1338,10 @@ function ENT:OnCondition(iCondition)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CanSetAsEnemy(ent)
+	return true
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CanSeeEntities(ent)
 	if self:FindDistance(ent) <= self.ViewDistance then
 		if self.IsBlind then
@@ -1291,6 +1353,8 @@ function ENT:CanSeeEntities(ent)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnSpottedFriendly(ent) end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateFriends()
 	if self.Faction == "FACTION_NONE" then return end
 	for k,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
@@ -1298,12 +1362,14 @@ function ENT:UpdateFriends()
 			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) then
 				if (v:GetFaction() != nil && v.Faction == self:GetFaction()) then
 					self:SetRelationship(v,D_LI)
+					self:OnSpottedFriendly(v)
 				end
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
 			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
-				if (self:GetFaction() == "FACTION_PLAYER" or v.Faction == self.Faction or self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+				if (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
+					self:OnSpottedFriendly(v)
 				end
 			end
 		end
@@ -1314,14 +1380,14 @@ function ENT:LocateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
 		if v:IsNPC() && v != self && v:Health() > 0 then
-			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" then
+			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
 				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
 			end
-		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
+		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
-				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && self.FriendlyToPlayers == false && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
 			end
@@ -1334,7 +1400,7 @@ function ENT:UpdateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	local totalenemies = self.EnemyMemoryCount
 	if IsValid(self:GetEnemy()) then
-		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy().IsPossessing)) then
+		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy().IsPossessing))) then
 			self:RemoveFromMemory(self:GetEnemy())
 		end
 	end
@@ -1343,7 +1409,7 @@ function ENT:UpdateEnemies()
 	local newenemy = self:LocateEnemies()
 	if newenemy == nil then return end
 	if newenemy:IsPlayer() then
-		if GetConVarNumber("ai_ignoreplayers") == 1 || newenemy.IsPossessing then self:RemoveFromMemory(newenemy) end
+		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy.IsPossessing then self:RemoveFromMemory(newenemy) end
 		-- if self:CheckConfidence(newenemy) == "attack!" then
 			self:SetRelationship(newenemy,D_HT,true)
 		-- elseif self:CheckConfidence(newenemy) == "run!" then
@@ -1532,15 +1598,26 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			end
 		end
 	end
+	if IsValid(_Inflictor) && (self.FriendlyToPlayers && _Inflictor:IsPlayer() && self:Disposition(_Inflictor) == D_LI) then
+		self.FriendlyToPlayers = false
+		if self.Faction == "FACTION_PLAYER" then
+			self.Faction = "FACTION_PLAYER_ENEMY"
+		end
+		self:SetRelationship(_Inflictor,D_HT)
+	elseif IsValid(_Inflictor) && (_Inflictor:IsPlayer() || _Inflictor:IsNPC() && self:Disposition(_Inflictor) != D_LI) then
+		if _Inflictor:IsPlayer() then
+			self.FriendlyToPlayers = false
+			if self.Faction == "FACTION_PLAYER" then
+				self.Faction = "FACTION_PLAYER_ENEMY"
+			end
+		end
+		self:SetRelationship(_Inflictor,D_HT)
+	end
 	if self:Health() <= 0 && self.IsDead == false then
 		self:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-ENT.PainSoundVolume = 82
-ENT.PainSoundPitch = 100
-ENT.PainSoundChanceA = 2
-ENT.PainSoundChanceB = 4
 function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	if self.HasFlinchAnimation == true then
 		self:DoFlinch(dmg,dmginfo,hitbox)
@@ -1552,7 +1629,9 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 			else
 				self:PlayNPCSentence("Pain")
 			end
-			self.NextPainSoundT = CurTime() +math.random(self.PainSoundChanceA,self.PainSoundChanceB)
+			if self.CurrentSound != nil then
+				self.NextPainSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.PainSoundChanceA,self.PainSoundChanceB)
+			end
 		end
 	end
 	self:OnTakePain(dmg,dmginfo,hitbox)
@@ -1576,8 +1655,6 @@ function ENT:ChangeDamageOnHit(dmg,hitbox) return dmg:GetDamage() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:BeforeTakeDamage(dmg,hitbox) return true end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-ENT.DeathSoundVolume = 80
-ENT.DeathSoundPitch = 100
 function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	gamemode.Call("OnNPCKilled",self,dmg:GetAttacker(),dmg:GetInflictor())
 	self.IsDead = true
@@ -1598,6 +1675,9 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 			deathtime = self:AnimationLength(self.CurrentSequence,true)
 		else
 			deathtime = self:AnimationLength(self.CurrentAnimation)
+		end
+		if deathtime == nil then
+			deathtime = 0
 		end
 		timer.Simple(deathtime +self.ExtraDeathTime,function()
 			if self:IsValid() then
@@ -1733,6 +1813,9 @@ function ENT:OnRemove()
 	self:StopParticles()
 	for k,v in pairs(self.LoopedSounds) do
 		v:Stop()
+	end
+	if self.CurrentSound != nil then
+		self.CurrentSound:Stop()
 	end
 	self:WhenRemoved()
 end

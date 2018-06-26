@@ -5,7 +5,7 @@ hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 		ent.Hitbox = hitbox
 		ent.tblDamageInfo = dmginfo
 		if (ent.Hitbox == HITGROUP_HEAD) then
-			dmginfo:SetDamage(2.0)
+			dmginfo:ScaleDamage(2.0)
 		end
 	end
 end)

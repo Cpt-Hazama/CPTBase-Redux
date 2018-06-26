@@ -31,6 +31,14 @@ CPTBase = {
 			language.Add("#" .. cptClass,cptName)
 		end
 	end,
+	AddHumanNPC = function(cptName,cptClass,cptCat,cptWeapons)
+		local NPC = {Name = cptName, Class = cptClass, Category = cptCat, Weapons = cptWeapons}
+		list.Set("NPC",NPC.Class,NPC)
+		if (CLIENT) then
+			language.Add(cptClass,cptName)
+			language.Add("#" .. cptClass,cptName)
+		end
+	end,
 	AddNPCWeapon = function(cptName,cptClass)
 		list.Add("NPCUsableWeapons",{class = cptClass,title = cptName})
 	end,

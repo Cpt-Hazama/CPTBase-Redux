@@ -62,12 +62,13 @@ SWEP.ShellTable = {
 SWEP.Primary.TotalShots = 1
 SWEP.Primary.Spread = 7
 SWEP.Primary.Tracer = 1
-SWEP.Primary.Force = 5
+SWEP.Primary.Force = 1
 SWEP.Primary.Damage = 5
 SWEP.Primary.Delay = 0.5
 SWEP.Primary.TracerEffect = "cpt_tracer"
 SWEP.RemoveAmmoAmount = 1
 SWEP.IgnoreRecoil = false
+SWEP.OverrideBulletPos = false
 
 SWEP.Primary.ClipSize		= 8
 SWEP.Primary.DefaultClip	= 8
@@ -75,6 +76,8 @@ SWEP.Primary.Automatic		= false
 SWEP.Primary.Ammo			= "9×19mm" // Default CPTBase Ammo
 SWEP.NPCFireRate = 0.1
 SWEP.tbl_NPCFireTimes = {0}
+SWEP.NPC_Spread = nil
+// These 2 variables are obsolete
 -- SWEP.NPC_FireTime = 0 -- Shoot timer
 -- SWEP.NPC_FireRateAmount = 1 -- How many times it runs the shoot code
 
@@ -506,15 +509,23 @@ function SWEP:CreateMuzzleFlash()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:OverrideBulletPosition()
+	return self:GetPos()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetBulletPos()
-	if self.ExtraViewModel == nil then
-		return self.Owner:GetShootPos()
-	else
-		if self:GetNWVector("cpt_CModel_MuzzlePos") == nil then
+	if self.OverrideBulletPos == false then
+		if self.ExtraViewModel == nil then
 			return self.Owner:GetShootPos()
 		else
-			return self:GetNWVector("cpt_CModel_MuzzlePos")
+			if self:GetNWVector("cpt_CModel_MuzzlePos") == nil then
+				return self.Owner:GetShootPos()
+			else
+				return self:GetNWVector("cpt_CModel_MuzzlePos")
+			end
 		end
+	else
+		return self:OverrideBulletPosition()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -523,10 +534,37 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		local bullet = {}
 		bullet.Num = self.Primary.TotalShots
 		bullet.Src = self:GetBulletPos()
-		bullet.Dir = self.Owner:GetAimVector()
-		bullet.Spread = Vector(self.Primary.Spread,self.Primary.Spread,0)
+		if self.Owner:IsNPC() then
+			local npcspread = self.Primary.Spread
+			if self.NPC_Spread != nil then
+				npcspread = self.NPC_Spread
+			end
+			for i = 1,self.Primary.TotalShots do
+				if self.Owner.IsPossessed then
+					bullet.Dir = (((self.Owner:Possess_AimTarget()) -self:GetBulletPos()) +self:GetUp() *math.Rand(-npcspread,npcspread) +self:GetRight() *math.Rand(-npcspread,npcspread))
+				else
+					if IsValid(self.Owner:GetEnemy()) then
+						bullet.Dir = (((self.Owner:GetEnemy():GetPos() +self.Owner:GetEnemy():OBBCenter()) -self:GetBulletPos()) +self:GetUp() *math.Rand(-npcspread,npcspread) +self:GetRight() *math.Rand(-npcspread,npcspread))
+					end
+				end
+			end
+		else
+			bullet.Dir = self.Owner:GetAimVector()
+		end
+		if self.Owner:IsNPC() then
+			local npcspread = self.Primary.Spread
+			if self.NPC_Spread != nil then
+				npcspread = self.NPC_Spread
+			end
+			bullet.Spread = Vector(npcspread,npcspread,0)
+		else
+			bullet.Spread = Vector(self.Primary.Spread,self.Primary.Spread,0)
+		end
 		bullet.Tracer = self.Primary.Tracer
-		bullet.TracerName = self.Primary.TracerEffect
+		-- if game.SinglePlayer() then
+		-- if self.Owner:IsPlayer() then
+			bullet.TracerName = self.Primary.TracerEffect
+		-- end
 		bullet.Force = self.Primary.Force
 		bullet.Damage = math.Round(self.Primary.Damage *(self.WeaponCondition /100))
 		bullet.Callback = function(attacker,tr,dmginfo)
@@ -639,7 +677,9 @@ function SWEP:NPC_Reload()
 		self:ReloadSounds()
 		self:OnReload()
 		-- self.Owner:StopCompletely()
-		self.Owner:PlayAnimation("Reload")
+		if self.Owner.ForceReloadAnimation == true && self.Owner.tbl_Animations["Reload"] != nil then
+			self.Owner:PlayAnimation("Reload")
+		end
 		local reloadtime = self.NPC_CurrentReloadTime
 		timer.Simple(reloadtime,function()
 			if self:IsValid() && self.Owner:IsValid() then

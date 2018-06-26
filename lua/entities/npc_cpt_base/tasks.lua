@@ -25,7 +25,7 @@ end
 function ENT:TASKFUNC_FOLLOWPLAYER()
 	local _followplayer = ai_sched_cpt.New("_followplayer")
 	_followplayer:EngTask("TASK_GET_PATH_TO_TARGET",0)
-	_followplayer:EngTask("TASK_RUN_PATH",0)
+	-- _followplayer:EngTask("TASK_RUN_PATH",0)
 	self:StartSchedule(_followplayer)
 end
 
@@ -39,20 +39,23 @@ end
 function ENT:TASKFUNC_WALKLASTPOSITION()
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_walk")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
-	_lastpositiontask:EngTask("TASK_WALK_PATH",0)
+	-- _lastpositiontask:EngTask("TASK_WALK_PATH",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_lastpositiontask)
+	self:SetMovementAnimation("Walk")
 end
 
 function ENT:TASKFUNC_RUNLASTPOSITION()
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_run")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
-	_lastpositiontask:EngTask("TASK_RUN_PATH",0)
+	-- _lastpositiontask:EngTask("TASK_RUN_PATH",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_lastpositiontask)
+	self:SetMovementAnimation("Run")
 end
 
 function ENT:Hide()
+	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_hidetask" then return end
 	local _hidetask = ai_sched_cpt.New("_hidetask") 
 	_hidetask:EngTask("TASK_FIND_COVER_FROM_ENEMY",0) 
 	_hidetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
@@ -92,6 +95,7 @@ function ENT:TASKFUNC_GETPATHANDGO()
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "getpathandchasetask" then return end
 	local getpathandchasetask = ai_sched_cpt.New("getpathandchasetask")
 	getpathandchasetask:EngTask("TASK_GET_PATH_TO_TARGET",0)
+	getpathandchasetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(getpathandchasetask)
 end
 
@@ -99,7 +103,7 @@ function ENT:TASKFUNC_CHASE()
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_chasetaskfunc" then return end
 	local _chasetaskfunc = ai_sched_cpt.New("_chasetaskfunc")
 	_chasetaskfunc:EngTask("TASK_GET_PATH_TO_ENEMY",0)
-	_chasetaskfunc:EngTask("TASK_RUN_PATH",0)
+	-- _chasetaskfunc:EngTask("TASK_RUN_PATH",0)
 	_chasetaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	_chasetaskfunc:EngTask("TASK_FACE_ENEMY",0)
 	self:StartSchedule(_chasetaskfunc)
@@ -108,7 +112,7 @@ end
 function ENT:TASKFUNC_WANDER()
 	local _wandertaskfunc = ai_sched_cpt.New("_wandertaskfunc")
 	_wandertaskfunc:EngTask("TASK_GET_PATH_TO_RANDOM_NODE",400)
-	_wandertaskfunc:EngTask("TASK_WALK_PATH",0)
+	-- _wandertaskfunc:EngTask("TASK_WALK_PATH",0)
 	_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_wandertaskfunc)
 end

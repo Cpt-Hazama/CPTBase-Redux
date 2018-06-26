@@ -1,5 +1,0 @@
-ENT.Base = "npc_cpt_base"
-ENT.Type = "ai"
-ENT.PrintName = "Super Mutant"
-ENT.Author = "Cpt. Hazama"
-ENT.Category = "CPTBase"

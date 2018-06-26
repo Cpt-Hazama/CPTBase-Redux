@@ -18,7 +18,11 @@ function ENT:PossessTheNPC()
 	self.Possessor.CurrentlyPossessedNPC = self.PossessedNPC
 	self.Possessor.Faction = "FACTION_NONE"
 	self.PossessorView = ents.Create("prop_dynamic")
-	self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+	if self.PossessedNPC.Possessor_UseBoneCamera then
+		self.PossessorView:SetPos(self.PossessedNPC:GetBonePosition(self.PossessedNPC.Possessor_BoneCameraName) +self.PossessedNPC:GetUp() *self.PossessedNPC.Possessor_BoneCameraUp  +self.PossessedNPC:GetRight() *self.PossessedNPC.Possessor_BoneCameraRight  +self.PossessedNPC:GetForward() *self.PossessedNPC.Possessor_BoneCameraForward)
+	else
+		self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+	end
 	self.PossessorView:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
 	self.PossessorView:SetParent(self.PossessedNPC)
 	self.PossessorView:SetRenderMode(RENDERMODE_TRANSALPHA)
@@ -93,11 +97,6 @@ function ENT:Think()
 				self:FaceForward()
 			end
 		end
-		-- for _,v in ipairs(self.PossessedNPC.tbl_EnemyMemory) do
-			-- if v == self.Possessor then
-				-- self.PossessedNPC:SetRelationship(v,D_LI)
-			-- end
-		-- end
 	end
 	if #self.Possessor:GetWeapons() > 0 then
 		self.Possessor:StripWeapons()
@@ -114,6 +113,7 @@ function ENT:Think()
 	net.WriteString(tostring(self.PossessedNPC.HasMutated))
 	net.WriteBool(self.PossessedNPC.DidGetHit)
 	net.Send(self.Possessor)
+	-- self.PossessedNPC:Possess_CustomHUDInterface(self.Possessor)
 end
 
 function ENT:StopPossessing(remove)
