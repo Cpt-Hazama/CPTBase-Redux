@@ -5,7 +5,7 @@
 --------------------------------------------------*/
 AddCSLuaFile('server/cpt_utilities.lua')
 include('server/cpt_utilities.lua')
-// GitHubTest
+// GitHubTest 2
 // Combine
 CPTBase.AddNPC("Combine Assasssin","npc_cpt_cassassin","CPTBase Redux")
 CPTBase.AddNPC("Mortar Synth","npc_cpt_mortarsynth","CPTBase Redux")
