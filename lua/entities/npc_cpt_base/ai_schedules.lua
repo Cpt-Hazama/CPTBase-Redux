@@ -28,6 +28,7 @@ function ENT:StartSchedule(schedule)
 	-- if (self.IsPlayingSequence) then return end
 	self:ClearCondition(35)
 	for k,v in ipairs(schedule.Tasks) do
+		-- print(v.TaskName)
 		if v.TaskName == "TASK_RUN_PATH" or v.TaskName == "TASK_RUN_PATH_FLEE" or v.TaskName == "TASK_RUN_PATH_TIMED" or v.TaskName == "TASK_RUN_PATH_FOR_UNITS" or v.TaskName == "TASK_RUN_PATH_WITHIN_DIST" then
 			schedule.cpt_ScheduleMoving = true
 			schedule.cpt_Schedule_Running = true

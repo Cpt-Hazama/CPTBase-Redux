@@ -43,6 +43,7 @@ ENT.Confidence = 2 -- Obsolete
 ENT.UseDefaultPoseParameters = true
 ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
 ENT.DefaultPoseParamaterSpeed = 20
+ENT.ReversePoseParameters = false
 ENT.ForceReloadAnimation = false
 
 	-- Air AI Variables --
@@ -176,6 +177,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnHearSound(ent)
 	if self.ReactsToSound == false then return end
+	if self.IsPossessed == true then return end
 	if ent:Visible(self) then
 		self:SetTarget(ent)
 		self:SetSchedule(SCHED_TARGET_FACE)
@@ -201,6 +203,8 @@ function ENT:OnRagdollRecover() end
 function ENT:CheckRagdollSettings() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDeath(dmg,dmginfo,hitbox) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnDeathAnimationFinished(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetUpRangeAttackTarget()
 	if self.IsPossessed then
@@ -886,6 +890,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.IsDead == true then return end
+	-- print(self:GetEnemy())
 	self:OnThink_Disabled()
 	if self:IsMoving() then
 		self:SetArrivalActivity(self:GetIdleAnimation())
@@ -951,22 +956,25 @@ function ENT:Think()
 	end
 	self:OnThink()
 	if !IsValid(self:GetEnemy()) && self.Faction != "FACTION_NONE" then
-		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-			if v:IsPlayer() && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
-				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
-					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
-						-- self:PlayerChat("Can Hear")
-						self:OnHearSound(v)
-					end
-				end
-			elseif v:IsNPC() && v != self && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
+		self:HearingCode()
+	end
+	self:NextThink(CurTime() +0.1)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:HearingCode()
+	for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
+		if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
+			if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 				if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 					self:OnHearSound(v)
 				end
 			end
+		elseif v:IsNPC() && v != self && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
+			if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
+				self:OnHearSound(v)
+			end
 		end
 	end
-	self:NextThink(CurTime() +0.1)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 net.Receive("cpt_SpeakingPlayer",function(len,pl)
@@ -1293,11 +1301,11 @@ function ENT:PoseParameters()
 	local pp = self.DefaultPoseParameters
 	local pp_speed = self.DefaultPoseParamaterSpeed
 	if self.IsPossessed then
-		self:LookAtPosition(self:Possess_EyeTrace(self.Possessor).HitPos,self.DefaultPoseParameters,pp_speed)
+		self:LookAtPosition(self:Possess_EyeTrace(self.Possessor).HitPos,self.DefaultPoseParameters,pp_speed,self.ReversePoseParameters)
 	else
 		if IsValid(self:GetEnemy()) then
 			-- self:LookAtPosition(self:FindHeadPosition(self:GetEnemy()),{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
-			self:LookAtPosition(self:FindCenter(self:GetEnemy()),pp,pp_speed)
+			self:LookAtPosition(self:FindCenter(self:GetEnemy()),pp,pp_speed,self.ReversePoseParameters)
 		end
 	end
 end
@@ -1400,7 +1408,7 @@ function ENT:UpdateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	local totalenemies = self.EnemyMemoryCount
 	if IsValid(self:GetEnemy()) then
-		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy().IsPossessing))) then
+		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy():GetNWBool("CPTBase_IsPossessing")))) then
 			self:RemoveFromMemory(self:GetEnemy())
 		end
 	end
@@ -1409,7 +1417,7 @@ function ENT:UpdateEnemies()
 	local newenemy = self:LocateEnemies()
 	if newenemy == nil then return end
 	if newenemy:IsPlayer() then
-		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy.IsPossessing then self:RemoveFromMemory(newenemy) end
+		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNWBool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
 		-- if self:CheckConfidence(newenemy) == "attack!" then
 			self:SetRelationship(newenemy,D_HT,true)
 		-- elseif self:CheckConfidence(newenemy) == "run!" then
@@ -1497,9 +1505,10 @@ function ENT:ClearMemory()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateBloodEffects(dmg,hitgroup,dmginfo,doignore)
-	if dmg:GetDamagePosition() != Vector(0,0,0) or (self:IsOnFire() && dmginfo:IsDamageType(DMG_BURN) && (DoIgnore == false)) then
+	if dmg:GetDamagePosition() != Vector(0,0,0) or (self:IsOnFire() && (IsValid(dmg:GetAttacker()) && dmg:GetAttacker():GetClass() != "entityflame") && (DoIgnore == false)) then
 		ParticleEffect(self:SelectFromTable(self.BloodEffect),dmg:GetDamagePosition(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),false)
 	else
+		if (self:IsOnFire() && (IsValid(dmg:GetAttacker()) && dmg:GetAttacker():GetClass() == "entityflame")) then return end
 		ParticleEffect(self:SelectFromTable(self.BloodEffect),self:FindCenter(self),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),false)
 	end
 end
@@ -1683,6 +1692,7 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 			if self:IsValid() then
 				if self.HasDeathRagdoll == true then
 					self:CreateNPCRagdoll(dmg,dmginfo)
+					self:OnDeathAnimationFinished(dmg,dmginfo,_Hitbox)
 				end
 				self:Remove()
 			end

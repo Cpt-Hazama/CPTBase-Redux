@@ -15,6 +15,10 @@ ENT.Damage = 10
 ENT.DamageType = DMG_SLASH
 ENT.RemoveOnHitEntity = false
 
+ENT.tbl_Sounds = {}
+
+ENT.IdleSoundLevel = 75
+
 function ENT:Initialize()
 	self:SetMoveCollide(self.MoveCollide)
 	self:SetCollisionGroup(self.CollisionGroup)
@@ -29,6 +33,13 @@ function ENT:Initialize()
 	self:CustomEffects()
 	if self.CanFade == true then
 		self.RemoveTime = CurTime() +self.FadeTime
+	end
+	self.NextIdleSoundT = 0
+	if self.tbl_Sounds["Idle"] != nil then
+		local sound = self:SelectFromTable(self.tbl_Sounds["Idle"])
+		self.IdleSound = CreateSound(self,sound)
+		self.IdleSound:SetSoundLevel(self.IdleSoundLevel)
+		self.IdleSoundName = sound
 	end
 	self.IsDead = false
 end
@@ -64,7 +75,14 @@ function ENT:GetHitEntity()
 	return self:GetNetworkedEntity("CPTProjectile_HitEntity")
 end
 
-function ENT:OnRemove() end
+function ENT:OnRemove()
+	if self.IdleSound then
+		self.IdleSound:Stop()
+	end
+	self:WhenRemoved()
+end
+
+function ENT:WhenRemoved() end
 
 function ENT:SetEntityOwner(ent)
 	self:SetOwner(ent)
@@ -93,6 +111,13 @@ function ENT:Think()
 		if CurTime() > self.RemoveTime then
 			self:Remove()
 			return
+		end
+	end
+	if self.tbl_Sounds["Idle"] != nil then
+		if CurTime() > self.NextIdleSoundT then
+			self.IdleSound:Stop()
+			self.IdleSound:Play()
+			self.NextIdleSoundT = CurTime() +SoundDuration(self.IdleSoundName)
 		end
 	end
 	self:OnThink()

@@ -322,16 +322,24 @@ function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent)
 	local pos = pos or Vector(0,0,0)
 	local dmg = dmg or 60
 	local dist = dist or 300
-	if effect != false then
-		effect = "mininuke_explosion"
+	local exploeffect
+	if effect != false && effect == nil then
+		exploeffect = "mininuke_explosion"
+	else
+		exploeffect = effect
 	end
-	local snd = snd or "weapons/explode" .. math.random(3,5) .. ".wav"
+	local explosnd
+	if snd == nil then
+		explosnd = "weapons/explode" .. math.random(3,5) .. ".wav"
+	else
+		explosnd = snd
+	end
 	local silent = silent or false
 	if silent != true then
 		if effect != false then
-			ParticleEffect(effect,pos,Angle(0,0,0),nil)
+			ParticleEffect(exploeffect,pos,Angle(0,0,0),nil)
 		end
-		sound.Play(snd,pos,110,100)
+		sound.Play(explosnd,pos,120,100)
 		sound.Play("weapons/debris" .. math.random(1,3) .. ".wav",pos,95,100)
 	end
 	util.BlastDamage(attacker,attacker,pos,dist,dmg)
@@ -664,8 +672,9 @@ function NPC_Meta:GetMovementAnimation()
 	return self:GetMovementActivity()
 end
 
-function ENT_Meta:LookAtPosition(pos,parameters,speed)
+function ENT_Meta:LookAtPosition(pos,parameters,speed,reverse)
 	local pos = pos or Vector(0,0,0)
+	local reverse = reverse or false
 	local parameters = parameters or {"aim_pitch","aim_yaw"}
 	if parameters == nil then
 		parameters = {"aim_pitch","aim_yaw"}
@@ -673,7 +682,12 @@ function ENT_Meta:LookAtPosition(pos,parameters,speed)
 	local speed = speed or 10
 	local selfpos = self:GetPos() +self:OBBCenter()
 	local selfang = self:GetAngles()
-	local targetang = (pos - selfpos):Angle()
+	local targetang
+	if reverse == false then
+		targetang = (pos -selfpos):Angle()
+	else
+		targetang = (pos +selfpos):Angle()
+	end
 	local pitch = math.AngleDifference(targetang.p,selfang.p)
 	local yaw = math.AngleDifference(targetang.y,selfang.y)
 	for _,v in ipairs(parameters) do
