@@ -206,13 +206,13 @@ function ENT:OnDeath(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDeathAnimationFinished(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:SetUpRangeAttackTarget()
+function ENT:SetUpRangeAttackTarget(subtractdist)
 	if self.IsPossessed then
 		return (self:Possess_AimTarget() -self:LocalToWorld(Vector(0,0,0)))
 	else
 		if IsValid(self:GetEnemy()) then
 			if self:GetEnemy():IsPlayer() then
-				return ((self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,0,0))) +self:CheckPlayerMoveDirection(self:GetEnemy()))
+				return ((self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,0,0))) +self:CheckPlayerMoveDirection(self:GetEnemy(),subtractdist))
 			else
 				return (self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,0,0)))
 			end
@@ -224,13 +224,13 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CheckPlayerMoveDirection(ent,extradist)
 	local addvel
-	local addto = 50
+	local addto = 0
 	if extradist != nil then addto = extradist end
 	local extravel
 	if ent:KeyDown(IN_RUN) then
-		extravel = ent:GetRunSpeed() -50
+		extravel = ent:GetRunSpeed() -50 +addto
 	else
-		extravel = ent:GetWalkSpeed() -50
+		extravel = ent:GetWalkSpeed() -50 +addto
 	end
 	if ent:KeyDown(IN_MOVELEFT) then
 		addvel = ent:GetRight() *-extravel
@@ -666,6 +666,18 @@ function ENT:Initialize()
 	end
 	self:SetSolid(SOLID_BBOX)
 	self:SetMaxYawSpeed(self.MaxTurnSpeed)
+	local dif = GetConVarNumber("cpt_aidifficulty")
+	local start = self.StartHealth
+	local hp
+	if dif == 1 then
+		hp = start *0.5
+	elseif dif == 2 then
+		hp = start
+	elseif dif == 3 then
+		hp = start *2
+	elseif dif == 4 then
+		hp = start *4
+	end
 	self:SetHealth(self.StartHealth)
 	self:SetMaxHealth(self.StartHealth)
 	-- self:SetMovementType(MOVETYPE_STEP)
@@ -813,6 +825,7 @@ function ENT:UpdateRelations() // Obsolete
 					self:SetRelationship(v,D_LI)
 				end
 			elseif v:IsPlayer() && v:Alive() && v.IsPossessing == false then
+				if v.Faction == "FACTION_NOTARGET" then return end
 				if (self:GetFaction() == "FACTION_PLAYER" || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
 					if v.IsPossessing == true then return end
 					if GetConVarNumber("ai_ignoreplayers") == 1 then return end
@@ -963,7 +976,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HearingCode()
 	for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-		if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
+		if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
 			if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 				if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 					self:OnHearSound(v)
@@ -1205,7 +1218,7 @@ function ENT:SelectSchedule(bSchedule)
 	if self.IsDead == true then return end
 	if self.bInSchedule == true then return end
 	if self.IsPlayingSequence == true then return end
-	if self.IsPossessed == false && self.CanWander then
+	if self.IsPossessed == false && !self.IsPlayingSequence && self.CanWander then
 		if !IsValid(self:GetEnemy()) then
 			if self.WanderChance != 0 && math.random(1,self.WanderChance) == 1 then
 				self:TASKFUNC_WANDER()
@@ -1325,12 +1338,14 @@ function ENT:OnCondition(iCondition)
 				if CurTime() > self.NextAlertSoundT then
 					if self.tbl_Sentences["Alert"] == nil then
 						self:PlaySound("Alert",self.AlertSoundVolume,90,self.AlertSoundPitch)
+						-- print('ok')
 						self:DoPlaySound("Alert")
 					else
 						self:PlayNPCSentence("Alert")
 					end
 					if self.CurrentSound != nil then
 						self.NextAlertSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.AlertSoundChanceA,self.AlertSoundChanceB)
+						-- print(self.NextAlertSoundT)
 					end
 				end
 			else
@@ -1375,7 +1390,7 @@ function ENT:UpdateFriends()
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
 			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
-				if (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
 					self:OnSpottedFriendly(v)
 				end
@@ -1395,6 +1410,7 @@ function ENT:LocateEnemies()
 			end
 		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
+				if v.Faction == "FACTION_NOTARGET" then return end
 				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
@@ -1408,7 +1424,7 @@ function ENT:UpdateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	local totalenemies = self.EnemyMemoryCount
 	if IsValid(self:GetEnemy()) then
-		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy():GetNWBool("CPTBase_IsPossessing")))) then
+		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy():GetNWBool("CPTBase_IsPossessing") || self:GetEnemy().Faction == "FACTION_NOTARGET"))) then
 			self:RemoveFromMemory(self:GetEnemy())
 		end
 	end
@@ -1453,7 +1469,7 @@ function ENT:UpdateMemory()
 		if v:IsPlayer() && v.IsPossessing then
 			self:RemoveFromMemory(v)
 		end
-		if !v:IsValid() || v:Health() <= 0 || ((v:IsPlayer() && (!v:Alive() || v.IsPossessing || GetConVarNumber("ai_ignoreplayers") == 1)) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
+		if !v:IsValid() || v:Health() <= 0 || ((v:IsPlayer() && (!v:Alive() || v.IsPossessing || GetConVarNumber("ai_ignoreplayers") == 1 || v.Faction == "FACTION_NOTARGET")) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
 			self:RemoveFromMemory(v)
 		end
 	end
@@ -1862,7 +1878,18 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 					if self.HasMutated == true && (self.MutationType == "damage" or self.MutationType == "both") then
 						dmg = math.Round(dmg *1.65)
 					end
-					dmginfo:SetDamage(dmg)
+					local dif = GetConVarNumber("cpt_aidifficulty")
+					local finaldmg
+					if dif == 1 then
+						finaldmg = dmg *0.5
+					elseif dif == 2 then
+						finaldmg = dmg
+					elseif dif == 3 then
+						finaldmg = dmg *2
+					elseif dif == 4 then
+						finaldmg = dmg *4
+					end
+					dmginfo:SetDamage(finaldmg)
 					dmginfo:SetAttacker(self)
 					dmginfo:SetInflictor(self)
 					dmginfo:SetDamageType(dmgtype)
@@ -1914,10 +1941,10 @@ function ENT:OnMissEntity()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DoTraceAttack(dist,dmg,dmgtype,dmgdist,trace)
+function ENT:DoTraceAttack(dist,dmg,dmgtype,dmgdist,trace,extradist)
 	if IsValid(self) then
 		local use
-		trace = trace or util.QuickTrace(self:GetPos(),self:SetUpRangeAttackTarget(),{self})
+		trace = trace or util.QuickTrace(self:GetPos(),self:SetUpRangeAttackTarget(extradist),{self})
 		if IsValid(self:GetEnemy()) then
 			use = self:FindDistance(self:GetEnemy())
 		else

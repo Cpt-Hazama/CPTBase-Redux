@@ -54,12 +54,18 @@ function ENT:TASKFUNC_RUNLASTPOSITION()
 	self:SetMovementAnimation("Run")
 end
 
-function ENT:Hide()
+function ENT:Hide(move)
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_hidetask" then return end
-	local _hidetask = ai_sched_cpt.New("_hidetask") 
-	_hidetask:EngTask("TASK_FIND_COVER_FROM_ENEMY",0) 
+	local moveanim = move
+	if move == nil then
+		moveanim = "Run"
+	end
+	local _hidetask = ai_sched_cpt.New("_hidetask")
+	-- _hidetask:EngTask("TASK_FIND_COVER_FROM_ENEMY",0) 
+	_hidetask:EngTask("TASK_FIND_FAR_NODE_COVER_FROM_ENEMY",300) 
 	_hidetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_hidetask)
+	self:SetMovementAnimation(moveanim)
 end
 
 function ENT:UseTraceChase(enemy)

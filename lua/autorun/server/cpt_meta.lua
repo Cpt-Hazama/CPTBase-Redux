@@ -308,7 +308,18 @@ function util.CreateSplashDamage(pos,dmg,dmgtype,dist,attacker)
 		if v:IsValid() && (v:IsNPC() || v:IsPlayer()) && attacker:Disposition(v) != D_LI && v != attacker then
 			local dmgpos = v:NearestPoint(attacker:GetPos() +attacker:OBBCenter())
 			local dmginfo = DamageInfo()
-			dmginfo:SetDamage(dmg)
+			local dif = GetConVarNumber("cpt_aidifficulty")
+			local finaldmg
+			if dif == 1 then
+				finaldmg = dmg *0.5
+			elseif dif == 2 then
+				finaldmg = dmg
+			elseif dif == 3 then
+				finaldmg = dmg *2
+			elseif dif == 4 then
+				finaldmg = dmg *4
+			end
+			dmginfo:SetDamage(finaldmg)
 			dmginfo:SetAttacker(attacker)
 			dmginfo:SetInflictor(attacker)
 			dmginfo:SetDamageType(dmgtype)
@@ -318,10 +329,16 @@ function util.CreateSplashDamage(pos,dmg,dmgtype,dist,attacker)
 	end
 end
 
-function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent)
+function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent,sndvol)
 	local pos = pos or Vector(0,0,0)
 	local dmg = dmg or 60
 	local dist = dist or 300
+	local vol
+	if sndvol == nil then
+		vol = 120
+	else
+		vol = sndvol
+	end
 	local exploeffect
 	if effect != false && effect == nil then
 		exploeffect = "mininuke_explosion"
@@ -339,11 +356,26 @@ function util.CreateCustomExplosion(pos,dmg,dist,attacker,effect,snd,silent)
 		if effect != false then
 			ParticleEffect(exploeffect,pos,Angle(0,0,0),nil)
 		end
-		sound.Play(explosnd,pos,120,100)
+		sound.Play(explosnd,pos,vol,100)
 		sound.Play("weapons/debris" .. math.random(1,3) .. ".wav",pos,95,100)
 	end
-	util.BlastDamage(attacker,attacker,pos,dist,dmg)
-	util.ScreenShake(pos,5,dmg,math.Clamp(dmg /100,0.1,2),dist *2)
+	local dif = GetConVarNumber("cpt_aidifficulty")
+	local finaldmg
+	-- if attacker:IsNPC() || (IsValid(attacker:GetOwner()) && attacker:GetOwner():IsNPC()) then
+		if dif == 1 then
+			finaldmg = dmg *0.5
+		elseif dif == 2 then
+			finaldmg = dmg
+		elseif dif == 3 then
+			finaldmg = dmg *2
+		elseif dif == 4 then
+			finaldmg = dmg *4
+		end
+	-- else
+		-- finaldmg = dmg
+	-- end
+	util.BlastDamage(attacker,attacker,pos,dist,finaldmg)
+	util.ScreenShake(pos,5,finaldmg,math.Clamp(finaldmg /100,0.1,2),dist *2)
 end
 
 function ENT_Meta:GetClosestPoint(ent)

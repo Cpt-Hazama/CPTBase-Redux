@@ -5,7 +5,7 @@
 --------------------------------------------------*/
 AddCSLuaFile('server/cpt_utilities.lua')
 include('server/cpt_utilities.lua')
-// GitHubTest 2
+
 // Combine
 CPTBase.AddNPC("Combine Assasssin","npc_cpt_cassassin","CPTBase Redux")
 CPTBase.AddNPC("Mortar Synth","npc_cpt_mortarsynth","CPTBase Redux")
@@ -17,39 +17,20 @@ CPTBase.AddNPC("Puker Zombie","npc_cpt_pukerzombie","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 
 CPTBase.AddConVar("cpt_corpselifetime",100)
+CPTBase.AddConVar("cpt_aidifficulty",2) -- 1 = Easy, 2 = Normal, 3 = Hard, 4 = Hell
 
 CPTBase.AddParticleSystem("particles/cpt_blood.pcf",{}) -- I made these myself :)
 CPTBase.AddParticleSystem("particles/cpt_darkmessiah.pcf",{}) -- I made these myself :)
 CPTBase.AddParticleSystem("particles/cpt_mutation.pcf",{})
-CPTBase.AddParticleSystem("particles/mininuke.pcf",{}) -- Credits to Silverlan
+CPTBase.AddParticleSystem("particles/cpt_explosions.pcf",{"hefg_explosion","mininuke_explosion"}) -- Credits to Silverlan
 CPTBase.AddParticleSystem("particles/mortarsynth_fx.pcf",{}) -- Credits to Silverlan
 CPTBase.AddParticleSystem("particles/WEAPON_FX.pcf",{})
 
 game.AddAmmoType({name="9×19mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="5.7×28mm",dmgtype=DMG_BULLET})
+game.AddAmmoType({name="5.56×45mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="darkpulseenergy",dmgtype=DMG_DISSOLVE})
 game.AddAmmoType({name="defaultammo",dmgtype=DMG_BULLET})
-
--- hook.Add("Think","CPTBase_AdminWeapon",function()
-	-- if CLIENT then
-		-- local tb = {}
-		-- for _,v in ipairs(ents.GetAll()) do
-			-- if v:GetClass() == "weapon_cpt_adminweapon" && IsValid(v:GetOwner()) then
-				-- if !table.HasValue(tb,v) then
-					-- table.insert(tb,v)
-				-- end
-				-- if !table.HasValue(tb,v:GetOwner()) then
-					-- table.insert(tb,v:GetOwner())
-				-- end
-			-- else
-				-- if table.HasValue(tb,v) then
-					-- tb[v] = nil
-				-- end
-			-- end
-		-- end
-		-- halo.Add(tb,Color(127,0,0),4,4,3,true,true)
-	-- end
--- end)
 
 function CPTBase_Chat(ply,spoke)
 	local lowered = string.lower(spoke)

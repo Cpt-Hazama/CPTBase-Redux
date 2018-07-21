@@ -56,7 +56,8 @@ SWEP.tbl_Sounds = {
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnInit()
 	timer.Simple(0.02,function()
-		self.Owner:SetHealth(self.Owner:Health() +5000)
+		self.Owner:SetHealth(self.Owner:Health() +9000)
+		self.Owner:EmitSound("cptbase/9000.mp3")
 	end)
 	self.NextAdminRegenT = 0
 end

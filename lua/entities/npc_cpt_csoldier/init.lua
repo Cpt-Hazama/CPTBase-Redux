@@ -20,7 +20,7 @@ ENT.tbl_Sounds = {
 	["Death"] = {"npc/combine_soldier/die1.wav","npc/combine_soldier/die2.wav","npc/combine_soldier/die3.wav"},
 }
 
-ENT.tbl_PrimaryWeapons = {"weapon_cpt_ar2","weapon_cpt_ar2","weapon_cpt_shotgun"}
+ENT.tbl_PrimaryWeapons = {"weapon_cpt_ar2","weapon_cpt_ar2","weapon_cpt_ar2","weapon_cpt_ar2","weapon_cpt_shotgun"}
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetInit()
 	self:SetHullType(HULL_HUMAN)
@@ -191,23 +191,43 @@ function ENT:ThrowGrenade()
 		self:PlayActivity("grenThrow",2)
 		self.IsRangeAttacking = true
 		timer.Simple(0.6,function()
-			if self:IsValid() then
-				local grenent = ents.Create("npc_grenade_frag")
-				grenent:SetModel("models/Items/grenadeAmmo.mdl")
+			if IsValid(self) then
+				-- local grenent = ents.Create("npc_grenade_frag")
+				-- grenent:SetModel("models/Items/grenadeAmmo.mdl")
+				-- grenent:SetPos(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Pos)
+				-- grenent:SetAngles(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Ang)
+				-- grenent:Fire("SetParentAttachment","anim_attachment_LH")
+				-- grenent:Spawn()
+				-- grenent:Activate()
+				-- grenent:Input("SetTimer",self:GetOwner(),self:GetOwner(),3.5)
+				local grenent = ents.Create("obj_cpt_grenade")
 				grenent:SetPos(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Pos)
 				grenent:SetAngles(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Ang)
+				grenent:SetParent(self)
 				grenent:Fire("SetParentAttachment","anim_attachment_LH")
+				grenent:SetTimer(4)
 				grenent:Spawn()
 				grenent:Activate()
-				grenent:Input("SetTimer",self:GetOwner(),self:GetOwner(),3.5)
 				local phys = grenent:GetPhysicsObject()
 				if IsValid(phys) then
+					grenent:SetParent(NULL)
 					phys:SetVelocity(self:SetUpRangeAttackTarget() *math.Rand(1,2) +self:GetUp() *200)
 				end
 			end
 		end)
 		self:AttackFinish()
-		self.NextGrenadeT = CurTime() +math.random(5,8)
+		local dif = GetConVarNumber("cpt_aidifficulty")
+		local time
+		if dif == 1 then
+			time = math.random(12,20)
+		elseif dif == 2 then
+			time = math.random(5,8)
+		elseif dif == 3 then
+			time = math.random(3,5)
+		elseif dif == 4 then
+			time = math.random(1,2)
+		end
+		self.NextGrenadeT = CurTime() +time
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

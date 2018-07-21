@@ -373,7 +373,7 @@ function SWEP:Initialize()
 			end
 		end
 	end)
-	self:OnInit()
+	if self.OnInit then self:OnInit() end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SetWeaponCondition(cnd)
@@ -387,7 +387,7 @@ function SWEP:DamageWeaponCondition(dmg)
 	self:SetWeaponCondition(self.WeaponCondition -dmg)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:OnInit() end
+-- function SWEP:OnInit() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	if !self.Owner:IsNPC() then
@@ -566,7 +566,23 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 			bullet.TracerName = self.Primary.TracerEffect
 		-- end
 		bullet.Force = self.Primary.Force
-		bullet.Damage = math.Round(self.Primary.Damage *(self.WeaponCondition /100))
+		local dif = GetConVarNumber("cpt_aidifficulty")
+		local dmg = math.Round(self.Primary.Damage *(self.WeaponCondition /100))
+		local finaldmg
+		if self.Owner:IsNPC() then
+			if dif == 1 then
+				finaldmg = dmg *0.5
+			elseif dif == 2 then
+				finaldmg = dmg
+			elseif dif == 3 then
+				finaldmg = dmg *2
+			elseif dif == 4 then
+				finaldmg = dmg *4
+			end
+		else
+			finaldmg = dmg
+		end
+		bullet.Damage = finaldmg
 		bullet.Callback = function(attacker,tr,dmginfo)
 			self:FiredBullet(attacker,tr,dmginfo)
 		end
@@ -744,6 +760,20 @@ end
 function SWEP:ReloadSounds()
 	self:PlayWeaponSound("Reload",75)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:FireAnimationEvent(pos,ang,event,options)
+	if self:CustomEvents(pos,ang,event,options) then
+		return true
+	end
+	if event == 21 || event == 22 || event == 5001 || event == 5003 then -- Disable event muzzle flashes
+		return true
+	end
+	if event == 20 || event == 6001 then -- Disable bullet shells
+		return true
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:CustomEvents(pos,ang,event,options) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayerSpeeds(set)
 	if set == "setup" then

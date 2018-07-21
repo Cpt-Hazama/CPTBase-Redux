@@ -1,0 +1,13 @@
+"VertexLitGeneric"
+{
+	"$BaseTexture" "models/cpthazama/scpsl/grenade/grenade"
+	"$bumpmap" "models/cpthazama/scpsl/grenade/grenade_n"
+
+	$emissiveBlendEnabled 1
+    $emissiveBlendTexture    "dev/null"
+    $emissiveBlendBaseTexture    "models/cpthazama/scpsl/grenade/grenade_g"
+    $emissiveBlendFlowTexture    "dev/null"
+    $emissiveBlendTint "[1 0 0]"
+    $emissiveBlendStrength 1
+    $emissiveBlendScrollVector "[0 0]"
+}

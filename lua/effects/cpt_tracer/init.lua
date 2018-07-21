@@ -16,8 +16,8 @@ local cpt_MainTexture		= Material("cptbase/muzzles/spark") // mat_texture_list 1
 local cpt_FrontTexture		= Material("cptbase/muzzles/muzzleflash" .. math.random(1,4))
 local cpt_MainTextureSize 	= 1
 local cpt_FrontTextureSize 	= 1
-local cpt_MainTextureColor 	= Color(255,214,104)
-local cpt_FrontTextureColor = Color(255,214,104)
+local cpt_MainTextureColor 	= Color(255,131,0)
+local cpt_FrontTextureColor = Color(255,131,0)
 
 function EFFECT:GetTracerOrigin(data)
 	local start = data:GetStart()

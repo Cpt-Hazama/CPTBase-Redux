@@ -16,14 +16,19 @@ if (CLIENT) then
 		local CPTBaseMenu_SNPC = {Options = {},CVars = {},Label = "#Presets",MenuButton = "1",Folder = "CPTBase Settings"}
 		CPTBaseMenu_SNPC.Options["#Default"] = {
 			cpt_usetracemovement = "0",
+			cpt_corpselifetime = "100",
+			cpt_aidifficulty = "2",
 		}
 		panel:AddControl("ComboBox",CPTBaseMenu_SNPC)
-		panel:AddControl("CheckBox",{Label = "Use Trace Movement",Command = "cpt_usetracemovement"})
+		panel:AddControl("CheckBox",{ Label = "Use Trace Movement",Command = "cpt_usetracemovement"})
 		panel:ControlHelp("If enabled, your possessed SNPC will move towards your cursor instead of a set direction.")
+		panel:AddControl("Slider", { Label 	= "Corpse Life Time", Command = "cpt_corpselifetime", Type = "Float", Min = "0", Max = "800"})
+		panel:AddControl("Slider", { Label 	= "AI Difficulty", Command = "cpt_aidifficulty", Type = "Float", Min = "1", Max = "4"})
+		panel:ControlHelp("1 = Easy, 2 = Normal, 3 = Hard, 4 = Hell (Only effects base values. Mods with custom functions will need to be updated by the mod owner)")
 		panel:AddControl("Label",{Text = "Cpt. Hazama"})
 	end
 	function CPTBaseMenu_Add()
-		spawnmenu.AddToolMenuOption("CPTBase","SNPC Settings","Possessor Settings","Possessor Settings","","",CPTBaseMenu_SNPC) -- Tab, Dropdown, Select, Title
+		spawnmenu.AddToolMenuOption("CPTBase","SNPC Settings","AI Settings","AI Settings","","",CPTBaseMenu_SNPC) -- Tab, Dropdown, Select, Title
 	end
 	hook.Add("PopulateToolMenu","CPTBaseMenu_Add",CPTBaseMenu_Add)
 end

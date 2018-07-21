@@ -65,7 +65,7 @@ function ENT:DoAttack()
 	timer.Simple(self.RangeAttackHitTime,function()
 		if self:IsValid() then
 			self:PlaySound("Fire",80,90,170)
-			self:DoTraceAttack(self.RangeAttackDistance,self.RangeAttackDamage,self.RangeAttackDamageType,self.RangeAttackDamageDistance)
+			self:DoTraceAttack(self.RangeAttackDistance,self.RangeAttackDamage,self.RangeAttackDamageType,self.RangeAttackDamageDistance,nil,-75)
 		end
 	end)
 	self:AttackFinish()
