@@ -7,6 +7,7 @@ ENT.SpawnableVectors = {} -- {[1] = Vector(5,10,0),[2] = Vector(30,5,10)}
 ENT.MaxAliveNPCs = 0 -- How many NPCs that can be spawned at once
 ENT.MaxSpawnableNPCs = 0 -- Set to -1 to make it infinite, otherwise it'll remove itself once X amount have spawned
 ENT.SpawnChance = 8
+ENT.IsActivated = false
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnInitialize() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -40,8 +41,12 @@ function ENT:Initialize()
 	self.bInitialized = true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnThink_BeforeActivated() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.bInitialized != true then return end
+	self:OnThink_BeforeActivated()
+	if self.IsActivated == false then return end
 	if self.MaxSpawnableNPCs != -1 then
 		if self.TotalSpawnedNPCs >= self.MaxSpawnableNPCs then
 			self:Remove()

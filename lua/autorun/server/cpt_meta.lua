@@ -12,6 +12,15 @@ if (SERVER) then
 	util.AddNetworkString("cpt_ControllerView")
 end
 
+function NPC_Meta:SpawnEntityAtSelf(class)
+	if SERVER then
+		local ent = ents.Create(class)
+		ent:SetPos(self:GetPos())
+		ent:SetAngles(self:GetAngles())
+		ent:Spawn()
+	end
+end
+
 SNDDURATION_TABLE = {}
 
 function NPC_Meta:GetNPCEnemy()
@@ -400,6 +409,11 @@ function NPC_Meta:PlayTimedSound(snd,time,sndlvl,pitch)
 			sound.Play(snd,self:GetPos(),sndlvl,pitch *GetConVarNumber("host_timescale"))
 		end
 	end)
+end
+
+function NPC_Meta:FindAngleOfPosition(pos,ang)
+	local angle = ang -(pos -self:GetPos()):Angle()
+	return angle
 end
 
 function WPN_Meta:CreateLoopSound(sound,lvl,pitch,volume)
@@ -1152,8 +1166,8 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 			activity = self:TranslateStringToNumber(activity)
 		end
 	end
-	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,1) return end
-	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),1) return end
+	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,self.GlobalAnimationSpeed) return end
+	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),self.GlobalAnimationSpeed) return end
 	if activity == nil then return end
 	if self:AnimationLength(activity) == 0 then return end
 	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
@@ -1182,6 +1196,7 @@ function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
 	self.CurrentAnimation = activity
 	self.IsPlayingActivity = true
 	self:MaintainActivity()
+	self:OnStartedAnimation(activity)
 	self.NextAnimT = CurTime() +self:AnimationLength(activity)
 	timer.Simple(self:AnimationLength(activity) +extratime,function()
 		if self:IsValid() then
@@ -1271,7 +1286,11 @@ end
 
 function ENT_Meta:FindInCone(ent,cone)
 	if ent == nil then return end
-	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
+	if type(ent) == "Vector" then
+		return (self:GetForward():Dot(((ent) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
+	else	
+		return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
+	end
 end
 
 function PLY_Meta:FindInCone(ent,cone)
@@ -1318,7 +1337,7 @@ function NPC_Meta:AttackFinish(seq,time)
 				self.IsRangeAttacking = false
 				-- self.IsLeapAttacking = false
 				self.HasStoppedMovingToAttack = false
-				self:CustomOnAttackFinish()
+				self:CustomOnAttackFinish(anim)
 			end
 		end)
 	elseif seq then
@@ -1338,7 +1357,7 @@ function NPC_Meta:AttackFinish(seq,time)
 				self.IsRangeAttacking = false
 				-- self.IsLeapAttacking = false
 				self.HasStoppedMovingToAttack = false
-				self:CustomOnAttackFinish()
+				self:CustomOnAttackFinish(anim)
 			end
 		end)
 	end

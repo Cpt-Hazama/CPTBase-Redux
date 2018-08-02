@@ -142,7 +142,7 @@ function ENT:HandleEvents(...)
 		bullet.Damage = 6
 		bullet.AmmoType = "Pistol"
 		self:FireBullets(bullet)
-		self:SoundCreate(self:SelectFromTable(self.tbl_Sounds["Fire"]),95)
+		self:SoundCreate(self:SelectFromTable(self.tbl_Sounds["Fire"]),90)
 		local effectdata = EffectData()
 		effectdata:SetStart(muzzle.Pos)
 		effectdata:SetOrigin(muzzle.Pos)

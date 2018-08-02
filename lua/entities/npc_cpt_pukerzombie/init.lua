@@ -157,6 +157,7 @@ function ENT:OnDeath(dmg,dmginfo,hitbox)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
+	print(self:CanPerformProcess())
 	if(disp == D_HT) then
 		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
 			self:DoAttack()
@@ -166,6 +167,7 @@ function ENT:HandleSchedules(enemy,dist,nearest,disp)
 		end
 		if nearest <= 200 then self.tbl_Animations["Run"] = {ACT_RUN} else self.tbl_Animations["Run"] = {ACT_WALK} end
 		if self:CanPerformProcess() then
+			print('ok')
 			self:ChaseEnemy()
 		end
 	elseif(disp == D_FR) then

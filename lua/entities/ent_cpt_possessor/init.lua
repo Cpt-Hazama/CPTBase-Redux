@@ -83,9 +83,11 @@ function ENT:Think()
 		self.PossessedNPC:Possess_Think(self.Possessor)
 		self.PossessedNPC:Possess_Commands(self.Possessor)
 		self.PossessedNPC:Possess_Move(self.Possessor)
-		if self.PossessedNPC.IsLeapAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
-		if self.PossessedNPC.IsRangeAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
-		if self.PossessedNPC.IsAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+		if self.Possessor_CanTurnWhileAttacking then
+			if self.PossessedNPC.IsLeapAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+			if self.PossessedNPC.IsRangeAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+			if self.PossessedNPC.IsAttacking then self.PossessedNPC:Possess_FaceAimPosition() end
+		end
 		if self.PossessedNPC:IsMoving() then
 			if (self.Possessor:KeyDown(IN_SPEED)) then
 				self.PossessedNPC:SetMovementAnimation("Run")

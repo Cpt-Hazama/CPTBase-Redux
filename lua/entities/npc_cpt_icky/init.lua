@@ -44,6 +44,16 @@ function ENT:SetInit()
 	self.IsAttacking = false
 	self:SetSwimSpeed(280)
 	self:SetMaxYawSpeed(5)
+	self.NextDrownT = 0
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnOutsideWater()
+	self:SetLocalVelocity(Vector(0,0,0))
+	self:SetIdleAnimation(ACT_IDLE)
+	if CurTime() > self.NextDrownT then
+		self:TakeDamage(1,nil)
+		self.NextDrownT = CurTime() +0.2
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink()

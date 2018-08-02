@@ -25,6 +25,7 @@ ENT.RagdollRecoveryTime = 5
 ENT.MaxTurnSpeed = 50
 
 	-- AI Variables --
+ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
 ENT.IsBlind = false
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500
@@ -45,6 +46,11 @@ ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
 ENT.DefaultPoseParamaterSpeed = 20
 ENT.ReversePoseParameters = false
 ENT.ForceReloadAnimation = false
+ENT.GlobalAnimationSpeed = 1
+ENT.AllowPropDamage = true
+ENT.AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
+ENT.UnfreezeProps = false
+ENT.PropAttackForce = Vector(0,0,0) -- Forward, Right, Up
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true
@@ -70,6 +76,7 @@ ENT.TurnsOnDamage = true
 ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
 ENT.HasDeathRagdoll = true
 ENT.DeathRagdollType = "prop_ragdoll"
+ENT.DeathRagdollKeepOverrides = true
 ENT.HasDeathAnimation = false
 ENT.ExtraDeathTime = 0
 
@@ -84,6 +91,7 @@ ENT.Possessor_MaxMoveDistanceLeft = 125
 ENT.Possessor_MaxMoveDistanceRight = 125
 ENT.Possessor_MaxMoveDistanceBackward = 150
 ENT.Possessor_MinMoveDistance = 55
+ENT.Possessor_CanTurnWhileAttacking = true
 ENT.Possessor_CanMove = true
 ENT.Possessor_CanSprint = true
 ENT.Possessor_CanFaceTrace_Walking = false
@@ -593,7 +601,7 @@ function ENT:Possess_Duck(possessor) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Reload(possessor) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CustomOnAttackFinish() end
+function ENT:CustomOnAttackFinish(anim) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomChecksForProcesses()
 	return false
@@ -846,14 +854,16 @@ function ENT:UpdateRelations() // Obsolete
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-local alreadyreset = false
+local AlreadyResetPoseParamaters = false
 function ENT:CheckPoseParameters()
-	if self:CheckForValidMemory() <= 0 && alreadyreset == false then
-		alreadyreset = true
-		self:ClearPoseParameters()
-		self:ClearMemory()
+	if self:CheckForValidMemory() <= 0 then
+		if AlreadyResetPoseParamaters == false then
+			AlreadyResetPoseParamaters = true
+			self:ClearPoseParameters()
+			self:ClearMemory()
+		end
 	else
-		alreadyreset = false
+		AlreadyResetPoseParamaters = false
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -932,6 +942,7 @@ function ENT:Think()
 	self:UpdateEnemies()
 	-- self:UpdateRelations()
 	-- self:UpdateMemory()
+	-- print(self:GetEnemy(),self.IsPossessed)
 	if IsValid(self:GetEnemy()) && !self.IsPossessed then
 		local enemy = self:GetEnemy()
 		local dist = self:FindCenterDistance(enemy)
@@ -973,6 +984,8 @@ function ENT:Think()
 	end
 	self:NextThink(CurTime() +0.1)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnStartedAnimation(activity) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HearingCode()
 	for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
@@ -1310,6 +1323,7 @@ function ENT:GetIdleAnimation()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PoseParameters()
+	self:CheckPoseParameters()
 	if !self.UseDefaultPoseParameters then return end
 	local pp = self.DefaultPoseParameters
 	local pp_speed = self.DefaultPoseParamaterSpeed
@@ -1399,6 +1413,18 @@ function ENT:UpdateFriends()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FindAllEnemies()
+	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
+	for _,v in ipairs(ents.GetAll()) do
+		if IsValid(v) && (v:IsNPC() && v != self || v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && self.FriendlyToPlayers == false && v.IsPossessing == false && self:GetFaction() != "FACTION_PLAYER") then
+			if v.Faction == "FACTION_NOTARGET" then return end
+			if v:Health() > 0 && self.Faction != v.Faction && self:Disposition(v) != D_LI then
+				return v
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:LocateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
@@ -1429,8 +1455,13 @@ function ENT:UpdateEnemies()
 		end
 	end
 	local lastenemy = self:GetEnemy()
+	local newenemy
 	self:UpdateMemory()
-	local newenemy = self:LocateEnemies()
+	if self.CanSeeAllEnemies == true then
+		newenemy = self:FindAllEnemies()
+	else
+		newenemy = self:LocateEnemies()
+	end
 	if newenemy == nil then return end
 	if newenemy:IsPlayer() then
 		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNWBool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
@@ -1531,16 +1562,17 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateBloodDecals(dmg,dmginfo,hitbox)
 	if table.Count(self.BloodDecal) <= 0 then return end
-	local min,max = 50,500
+	local min = 80
+	local max = 500
 	local tr = util.TraceLine({
-		start = dmginfo:GetDamagePosition(),
-		endpos = dmginfo:GetDamagePosition() +dmginfo:GetDamageForce():GetNormal() *math.Clamp(dmginfo:GetDamageForce():Length() *10,min,max),
+		start = dmg:GetDamagePosition(),
+		endpos = dmg:GetDamagePosition() +dmg:GetDamageForce():GetNormal() *math.Clamp(dmg:GetDamageForce():Length() *10,min,max),
 		filter = self
 	})
 	util.Decal(self:SelectFromTable(self.BloodDecal),tr.HitPos +tr.HitNormal,tr.HitPos -tr.HitNormal)
 	for i = 1,2 do
 		if math.random(1,2) == 1 then
-			util.Decal(self:SelectFromTable(self.BloodDecal),tr.HitPos +tr.HitNormal +Vector(math.random(-70,70),math.random(-70,70),0),tr.HitPos -tr.HitNormal)
+			util.Decal(self:SelectFromTable(self.BloodDecal),tr.HitPos +tr.HitNormal +Vector(math.random(-30,30),math.random(-30,30),0),tr.HitPos -tr.HitNormal)
 		end
 	end
 end
@@ -1762,8 +1794,10 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 			ragdoll:SetBodygroup(i,self:GetBodygroup(i))
 		end
 	end
-	ragdoll:SetColor(rbg)
-	ragdoll:SetMaterial(mat)
+	if self.DeathRagdollKeepOverrides == true then
+		ragdoll:SetColor(rbg)
+		ragdoll:SetMaterial(mat)
+	end
 	ragdoll:SetCollisionGroup(1)
 	ragdoll.cpt_Corpse = true
 	if self:IsOnFire() then
@@ -1781,7 +1815,7 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 		end)
 		timer.Simple(8,function()
 			if ragdoll:IsValid() then
-				ragdoll:SetColor(Color(0,0,0,255))
+				ragdoll:SetColor(Color(20,20,20,255))
 			end
 		end)
 	end
@@ -1837,10 +1871,15 @@ function ENT:OnRemove()
 		self.Ragdoll_CPT:Remove()
 	end
 	self:StopParticles()
-	for k,v in pairs(self.LoopedSounds) do
-		v:Stop()
+	for _,v in pairs(self.LoopedSounds) do
+		if v then
+			v:Stop()
+		end
 	end
 	if self.CurrentSound != nil then
+		if self.CurrentPlayingSound != nil && (self.tbl_Sounds["Death"] != nil && table.HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound)) then
+			return
+		end
 		self.CurrentSound:Stop()
 	end
 	self:WhenRemoved()
@@ -1852,21 +1891,79 @@ function ENT:CustomChecksBeforeDamage(ent)
 	return true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:AttackProps(props,dmg,dmgtype,force,OnHit)
+	local center = self:GetPos() +self:OBBCenter()
+	local didhit = false
+	for _,v in ipairs(props) do
+		if IsValid(v) then
+			local phys = v:GetPhysicsObject()
+			local force = self.PropAttackForce
+			local forward,right,up = self:GetForward(),self:GetRight(),self:GetUp()
+			force = forward *force.x +right *force.y +up *force.z
+			didhit = true
+			local dmgpos = v:NearestPoint(center)
+			local dmginfo = DamageInfo()
+			if self.HasMutated == true && (self.MutationType == "damage" or self.MutationType == "both") then
+				dmg = math.Round(dmg *1.65)
+			end
+			local dif = GetConVarNumber("cpt_aidifficulty")
+			local finaldmg
+			if dif == 1 then
+				finaldmg = dmg *0.5
+			elseif dif == 2 then
+				finaldmg = dmg
+			elseif dif == 3 then
+				finaldmg = dmg *2
+			elseif dif == 4 then
+				finaldmg = dmg *4
+			end
+			dmginfo:SetDamage(finaldmg)
+			dmginfo:SetAttacker(self)
+			dmginfo:SetInflictor(self)
+			dmginfo:SetDamageType(dmgtype)
+			dmginfo:SetDamagePosition(dmgpos)
+			if force then
+				dmginfo:SetDamageForce(force)
+			end
+			if(OnHit) then
+				OnHit(v,dmginfo)
+			end
+			v:TakeDamageInfo(dmginfo)
+			if phys:IsValid() then
+				if self.UnfreezeProps == true then
+					phys:EnableMotion(true)
+				end
+				phys:ApplyForceCenter(force)
+			end
+		end
+	end
+	if didhit then
+		self:EmitSound("npc/zombie/zombie_pound_door.wav",55,100)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 // self:DoDamage(150,23,DMG_SLASH,Vector(0,0,0),Angle(0,0,0),OnHit)
 // self:DoDamage(150,23,DMG_SLASH,Vector(0,0,0),Angle(0,0,0),function(ent,dmginfo)
 //		print(ent)
 //		return
 // end)
 function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
-	local pos = self:GetPos() +self:OBBCenter() +self:GetForward()*20
+	local pos = self:GetPos() +self:OBBCenter() +self:GetForward() *20
 	local posSelf = self:GetPos()
 	local center = posSelf +self:OBBCenter()
 	local didhit
 	local tblhit = {}
+	local tblprops = {}
 	local hitpos = Vector(0,0,0)
 	for _,ent in ipairs(ents.FindInSphere(pos,dist)) do
-		if ent:IsValid() && self:IsValid() && self:Visible(ent) && ent:Health() > 0 then
-			if (ent:IsNPC() && ent != self && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) or (ent:IsPlayer() && ent:Alive()) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
+		if ent:IsValid() && self:Visible(ent) then
+			if self.AllowPropDamage then
+				if table.HasValue(self.AttackablePropNames,ent:GetClass()) then
+					table.insert(tblprops,ent)
+				end
+				self:AttackProps(tblprops,dmg,dmgtype,force,OnHit)
+			end
+			if ((ent:IsNPC() && ent != self && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) || (ent:IsPlayer() && ent:Alive())) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
 				if self:CustomChecksBeforeDamage(ent) then
 					if force then
 						local forward,right,up = self:GetForward(),self:GetRight(),self:GetUp()

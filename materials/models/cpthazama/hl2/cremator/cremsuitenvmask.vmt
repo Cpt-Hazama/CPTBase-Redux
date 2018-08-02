@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models\cpthazama\hl2\cremator\cremsuitenvmask"
+	"$translucent" 1
+}

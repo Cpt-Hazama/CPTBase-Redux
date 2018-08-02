@@ -1,0 +1,5 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models\cpthazama\hl2\cremator\face"
+	"$selfillum" 1
+}
