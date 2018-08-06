@@ -67,6 +67,7 @@ ENT.IsEssential = false
 ENT.Bleeds = true
 ENT.BloodEffect = {}
 ENT.LeavesBlood = true -- Don't need to change this if the table below is empty, it'll just not make decals
+ENT.AutomaticallySetsUpDecals = false
 ENT.BloodDecal = {}
 ENT.HasAlertAnimation = false
 ENT.AlertAnimationChance = 5
@@ -81,6 +82,7 @@ ENT.HasDeathAnimation = false
 ENT.ExtraDeathTime = 0
 
 	-- Possessor Variables --
+ENT.Possessor_CanBePossessed = true
 ENT.Possessor_UseBoneCamera = false
 ENT.Possessor_BoneCameraName = 1
 ENT.Possessor_BoneCameraForward = 0
@@ -742,6 +744,12 @@ function ENT:Initialize()
 		["Primary"] = nil,
 		["Melee"] = nil,
 	}
+	
+	if self.LeavesBlood == true then
+		if self.AutomaticallySetsUpDecals then
+			self:SetupBloodDecals()
+		end
+	end
 
 	if table.Count(self.tbl_Capabilities) > 0 then
 		for _,cap in ipairs(self.tbl_Capabilities) do
@@ -766,6 +774,41 @@ function ENT:Initialize()
 	self:SetInit()
 	self:AfterInit()
 	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetupBloodDecals()
+	if table.Count(self.BloodEffect) > 0 && table.Count(self.BloodDecal) <= 0 then
+		if table.HasValue(self.BloodEffect,"blood_impact_red") then
+			table.insert(self.BloodDecal,"CPTBase_RedBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_yellow") then
+			table.insert(self.BloodDecal,"CPTBase_YellowBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_blue") then
+			table.insert(self.BloodDecal,"CPTBase_BlueBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_green") then
+			table.insert(self.BloodDecal,"CPTBase_GreenBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_purple") then
+			table.insert(self.BloodDecal,"CPTBase_PurpleBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_orange") then
+			table.insert(self.BloodDecal,"CPTBase_OrangeBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_white") then
+			table.insert(self.BloodDecal,"CPTBase_WhiteBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_black") then
+			table.insert(self.BloodDecal,"CPTBase_BlackBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_pink") then
+			table.insert(self.BloodDecal,"CPTBase_PinkBlood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_infection") then
+			table.insert(self.BloodDecal,"CPTBase_ZombieBlood")
+		end
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetInit()

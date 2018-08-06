@@ -1,0 +1,7 @@
+"DecalModulate"
+{
+	"$translucent" 1
+	"$basetexture" "cptbase/decals/white4"
+	"$decal" 1
+	"$decalscale" .25
+}

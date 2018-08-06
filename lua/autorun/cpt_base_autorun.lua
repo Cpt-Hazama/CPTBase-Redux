@@ -21,19 +21,6 @@ CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 CPTBase.AddConVar("cpt_corpselifetime",100)
 CPTBase.AddConVar("cpt_aidifficulty",2) -- 1 = Easy, 2 = Normal, 3 = Hard, 4 = Hell
 
-CPTBase.AddParticleSystem("particles/cpt_blood.pcf",{}) -- I made these myself :)
-CPTBase.AddParticleSystem("particles/cpt_darkmessiah.pcf",{}) -- I made these myself :)
-CPTBase.AddParticleSystem("particles/cpt_mutation.pcf",{})
-CPTBase.AddParticleSystem("particles/cpt_explosions.pcf",{"hefg_explosion","mininuke_explosion"}) -- Credits to Silverlan
-CPTBase.AddParticleSystem("particles/cpt_flamethrower.pcf",{}) -- Credits to Silverlan
-CPTBase.AddParticleSystem("particles/mortarsynth_fx.pcf",{}) -- Credits to Silverlan
-CPTBase.AddParticleSystem("particles/WEAPON_FX.pcf",{})
-if IsMounted("ep2") then
-	CPTBase.AddParticleSystem("particles/antlion_worker.pcf",{"antlion_spit"})
-	CPTBase.AddParticleSystem("particles/antlion_gib_01.pcf",{"antlion_gib_01"})
-	CPTBase.AddParticleSystem("particles/antlion_gib_02.pcf",{"antlion_gib_02"})
-end
-
 game.AddAmmoType({name="9×19mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="5.7×28mm",dmgtype=DMG_BULLET})
 game.AddAmmoType({name="5.56×45mm",dmgtype=DMG_BULLET})

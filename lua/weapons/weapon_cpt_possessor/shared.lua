@@ -77,6 +77,11 @@ function SWEP:PrimaryAttack()
 			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
 			return
 		end
+		if tr.Entity:IsNPC() && tr.Entity.Possessor_CanBePossessed == false then
+			self.Owner:ChatPrint("This entity can not be possessed!")
+			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			return
+		end
 		for i = 0,self.Owner:GetBoneCount() -1 do
 			ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
 		end
