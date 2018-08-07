@@ -37,7 +37,6 @@ ENT.CanChaseEnemy = true
 ENT.MeleeAngle = 45
 ENT.HearingDistance = 900
 ENT.ReactsToSound = true
-ENT.PhysicsDistance = 80
 ENT.Faction = "FACTION_NONE"
 ENT.FriendlyToPlayers = false
 ENT.Confidence = 2 -- Obsolete
