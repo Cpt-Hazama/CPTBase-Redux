@@ -1505,6 +1505,7 @@ function ENT:UpdateEnemies()
 		newenemy = self:LocateEnemies()
 	end
 	if newenemy == nil then return end
+	-- if newenemy == self then return end
 	if newenemy:IsPlayer() then
 		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNWBool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
 		-- if self:CheckConfidence(newenemy) == "attack!" then
@@ -1701,14 +1702,6 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 		self.FriendlyToPlayers = false
 		if self.Faction == "FACTION_PLAYER" then
 			self.Faction = "FACTION_PLAYER_ENEMY"
-		end
-		self:SetRelationship(_Inflictor,D_HT)
-	elseif IsValid(_Inflictor) && (_Inflictor:IsPlayer() || _Inflictor:IsNPC() && self:Disposition(_Inflictor) != D_LI) then
-		if _Inflictor:IsPlayer() then
-			self.FriendlyToPlayers = false
-			if self.Faction == "FACTION_PLAYER" then
-				self.Faction = "FACTION_PLAYER_ENEMY"
-			end
 		end
 		self:SetRelationship(_Inflictor,D_HT)
 	end
