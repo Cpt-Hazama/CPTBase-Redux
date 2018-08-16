@@ -46,6 +46,9 @@ function SWEP:Initialize()
 	self.CPTBase_Weapon = true
 	self.UseLuaMovement = true
 	self:EmitSound(Sound("cptbase/fx_melee_claw_flesh0" .. math.random(1,2) .. ".wav"),60,100)
+	self.Owner:ChatPrint("Weapon Controls:")
+	self.Owner:ChatPrint("LMB - Possess NPC at crosshair")
+	self.Owner:ChatPrint("RMB - Find closest NPC to crosshair")
 end
 
 function SWEP:Deploy()
@@ -65,7 +68,6 @@ function SWEP:PrimaryAttack()
 	tracedata.endpos = self.Owner:GetShootPos() +self.Owner:GetAimVector() *10000
 	tracedata.filter = self.Owner
 	local tr = util.TraceLine(tracedata) 
-
 	if tr.Entity && IsValid( tr.Entity ) && tr.Entity:Health() > 0 then
 		if tr.Entity.IsPossessed == true then
 			self.Owner:ChatPrint("This (S)NPC is already being possessed!")
@@ -102,10 +104,81 @@ function SWEP:PrimaryAttack()
 		end
 	end
 	self:SetNextPrimaryFire(CurTime() +1)
+	self:SetNextSecondaryFire(CurTime() +1)
 end
 
 function SWEP:SecondaryAttack()
-	return false
+	if (CLIENT) or self.Owner:IsNPC() then return end
+	local tracedata = {}
+	tracedata.start = self.Owner:GetShootPos()
+	tracedata.endpos = self.Owner:GetShootPos() +self.Owner:GetAimVector() *10000
+	tracedata.filter = self.Owner
+	local tr = util.TraceLine(tracedata) 
+	local pos = tr.HitPos
+	local tbl_Ents = {}
+	for _,v in ipairs(ents.FindInSphere(pos,50)) do
+		if IsValid(v) then
+			if v:IsNPC() then
+				if !table.HasValue(tbl_Ents,v) then
+					table.insert(tbl_Ents,v)
+				end
+			end
+		end
+	end
+	local ent = self:GetClosestEntity(tbl_Ents,pos)
+	if ent && IsValid(ent) && ent:Health() > 0 then
+		if ent.IsPossessed == true then
+			self.Owner:ChatPrint("This (S)NPC is already being possessed!")
+			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			return
+		end
+		if ent:IsNPC() && ent.CPTBase_NPC != true then
+			self.Owner:ChatPrint("You are unable to possess this (S)NPC!")
+			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			return
+		end
+		if ent:IsNPC() && ent.Possessor_CanBePossessed == false then
+			self.Owner:ChatPrint("This entity can not be possessed!")
+			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			return
+		end
+		for i = 0,self.Owner:GetBoneCount() -1 do
+			ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
+		end
+		for i = 0,tr.Entity:GetBoneCount() -1 do
+			util.ParticleTracerEx("vortigaunt_beam",self.Owner:GetPos(),ent:GetBonePosition(i),false,self:EntIndex(),4)
+			ParticleEffect("vortigaunt_glow_beam_cp0",ent:GetBonePosition(i),Angle(0,0,0),nil)
+		end
+		local possessor = ents.Create("ent_cpt_possessor")
+		possessor.Possessor = self.Owner
+		possessor:PossessedNPC(ent)
+		possessor:Spawn()
+		sound.Play("cptbase/fx_poison_stinger.wav",self:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
+		sound.Play("beams/beamstart5.wav",self:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
+		sound.Play("beams/beamstart5.wav",ent:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
+		possessor:PossessTheNPC()
+		if self.Owner:GetViewModel() != nil then
+			self.Owner:GetViewModel():SetRenderFX(kRenderFxNone)
+		end
+	end
+	self:SetNextPrimaryFire(CurTime() +1)
+	self:SetNextSecondaryFire(CurTime() +1)
+end
+
+
+function SWEP:GetClosestEntity(tbl,pos)
+	local target = self:GetEntitiesByDistance(tbl,pos)[1]
+	return target
+end
+
+function SWEP:GetEntitiesByDistance(tbl,pos)
+	local disttbl = {}
+	for _,v in ipairs(tbl) do
+		if v:IsValid() then
+			disttbl[v] = v:GetPos():Distance(pos)
+		end
+	end
+	return table.SortByKey(disttbl,false)
 end
 
 function SWEP:Think() end

@@ -38,9 +38,13 @@ end
 hook.Add("PlayerSay","CPTBase_Chat",CPTBase_Chat)
 
 hook.Add("PlayerSpawn","CPTBase_StopIgnition",function(ply)
-	if ply:IsOnFire() then
-		ply:Extinguish()
-	end
+	timer.Simple(0.02,function()
+		if IsValid(ply) then
+			if ply:IsOnFire() then
+				ply:Extinguish()
+			end
+		end
+	end)
 end)
 
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
