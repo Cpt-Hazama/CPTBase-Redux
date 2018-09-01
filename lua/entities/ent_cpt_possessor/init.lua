@@ -80,7 +80,7 @@ function ENT:Think()
 	if self.Possessor.IsPossessing != true then return end
 	if (self.Possessor.IsPossessing) && IsValid(self.PossessedNPC) then
 		self.PossessedNPC.CanChaseEnemy = false
-		self.PossessedNPC:Possess_Think(self.Possessor)
+		self.PossessedNPC:Possess_Think(self.Possessor,self)
 		self.PossessedNPC:Possess_Commands(self.Possessor)
 		self.PossessedNPC:Possess_Move(self.Possessor)
 		if self.Possessor_CanTurnWhileAttacking then
@@ -124,6 +124,9 @@ function ENT:StopPossessing(remove)
 	if IsValid(self.Possessor) then
 		self.Possessor.IsPossessing = false
 		self.Possessor.Faction = nil
+		if IsValid(self.PossessedNPC) then
+			self.Possessor:SetPos(self.PossessedNPC:GetPos() +self.PossessedNPC:OBBCenter())
+		end
 		local playerpos = self.Possessor:GetPos()
 		self.Possessor:UnSpectate()
 		self.Possessor:KillSilent()
@@ -131,7 +134,8 @@ function ENT:StopPossessing(remove)
 		self.Possessor:SetNWBool("CPTBase_IsPossessing",false)
 		self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 		if IsValid(self.PossessorView) then
-			self.Possessor:SetPos(self.PossessorView:GetPos() +self.PossessorView:GetUp()*100) else
+			self.Possessor:SetPos(self.PossessorView:GetPos() +self.PossessorView:GetUp() *100)
+		else
 			self.Possessor:SetPos(playerpos)
 		end
 		for k, v in pairs(self.PossessorCurrentWeapons) do
@@ -152,7 +156,6 @@ function ENT:StopPossessing(remove)
 			ParticleEffect("vortigaunt_glow_beam_cp0",self.Possessor:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 	end
-	self.Possessor = nil
 	if IsValid(self.PossessedNPC) then
 		self.PossessedNPC.CanChaseEnemy = true
 		self.PossessedNPC.IsPossessed = false
@@ -160,7 +163,9 @@ function ENT:StopPossessing(remove)
 			ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 		self.PossessedNPC:ClearSchedule()
+		self.PossessedNPC:Possess_OnStopPossessing(self.Possessor)
 	end
+	self.Possessor = nil
 	-- if remove == true then
 		-- if self.PossessedNPC:IsValid() then
 			-- if self.PossessedNPC:Health() > 0 then

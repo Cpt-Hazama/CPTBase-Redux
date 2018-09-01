@@ -7,7 +7,9 @@ function ENT:Draw()
 	if self.OnDraw then self:OnDraw() end
 end
 
-function ENT:OnDraw() end
+function ENT:Think()
+	if self.OnClientThink then self:OnClientThink() end
+end
 
 function ENT:DrawTranslucent() end
 
@@ -20,3 +22,9 @@ end
 function ENT:DoRagdollBone(PhysBoneNum,BoneNum) end
 
 function ENT:OnRestore() end
+
+	//-- Custom Functions --\\
+
+function ENT:OnDraw() end
+
+function ENT:OnClientThink() end

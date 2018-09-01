@@ -24,6 +24,7 @@ CPTBase.AddParticleSystem("particles/cpt_mutation.pcf",{}) -- Credits to Darken
 CPTBase.AddParticleSystem("particles/cpt_explosions.pcf",{"hefg_explosion","mininuke_explosion"}) -- Credits to Silverlan
 CPTBase.AddParticleSystem("particles/cpt_flamethrower.pcf",{}) -- Credits to Silverlan
 CPTBase.AddParticleSystem("particles/mortarsynth_fx.pcf",{}) -- Credits to Silverlan
+CPTBase.AddParticleSystem("particles/electrical_fx.pcf",{"electrical_arc_01_system"})
 CPTBase.AddParticleSystem("particles/WEAPON_FX.pcf",{})
 if IsMounted("ep2") then -- If you don't own this game..shame on you
 	CPTBase.AddParticleSystem("particles/antlion_worker.pcf",{"antlion_spit"})

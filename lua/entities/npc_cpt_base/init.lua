@@ -50,6 +50,7 @@ ENT.AllowPropDamage = true
 ENT.AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
 ENT.UnfreezeProps = false
 ENT.PropAttackForce = Vector(0,0,0) -- Forward, Right, Up
+ENT.ChaseClosestEnemy = true -- True = Closest, False = Farthest
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true
@@ -66,7 +67,7 @@ ENT.IsEssential = false
 ENT.Bleeds = true
 ENT.BloodEffect = {}
 ENT.LeavesBlood = true -- Don't need to change this if the table below is empty, it'll just not make decals
-ENT.AutomaticallySetsUpDecals = false
+ENT.AutomaticallySetsUpDecals = false -- Not finished yet
 ENT.BloodDecal = {}
 ENT.HasAlertAnimation = false
 ENT.AlertAnimationChance = 5
@@ -333,7 +334,29 @@ function ENT:Possess_Commands(possessor)
 		return self:Possess_Jump(possessor)
 	elseif possessor:KeyDown(IN_RELOAD) then
 		return self:Possess_Reload(possessor)
+	elseif possessor:KeyDown(IN_WALK) then
+		return self:Possess_Walk(possessor)
 	end
+	return self:Possess_CustomCommands(possessor)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_CustomCommands(possessor)
+	local w = possessor:KeyDown(IN_FORWARD)
+	local e = possessor:KeyDown(IN_USE)
+	local r = possessor:KeyDown(IN_RELOAD)
+	local a = possessor:KeyDown(IN_MOVELEFT)
+	local s = possessor:KeyDown(IN_BACK)
+	local d = possessor:KeyDown(IN_MOVERIGHT)
+	local lmb = possessor:KeyDown(IN_ATTACK)
+	local rmb = possessor:KeyDown(IN_ATTACK2)
+	local alt = possessor:KeyDown(IN_WALK)
+	local shift = possessor:KeyDown(IN_RUN)
+	local zoom = possessor:KeyDown(IN_ZOOM)
+	/* Example:
+		if zoom then
+			return self:Possess_Zoom(possessor)
+		end
+	*/
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Move(possessor)
@@ -574,9 +597,11 @@ function ENT:Possess_Move(possessor)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:Possess_Think(possessor) end
+function ENT:Possess_Think(possessor,object) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_OnPossessed(possessor) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_OnStopPossessing(possessor) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Primary(possessor)
 	if self.DoAttack then
@@ -601,6 +626,8 @@ end
 function ENT:Possess_Duck(possessor) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Reload(possessor) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_Walk(possessor) end -- Alt key
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CustomOnAttackFinish(anim) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -745,9 +772,9 @@ function ENT:Initialize()
 	}
 	
 	if self.LeavesBlood == true then
-		if self.AutomaticallySetsUpDecals then
-			self:SetupBloodDecals()
-		end
+		-- if self.AutomaticallySetsUpDecals then
+			-- self:SetupBloodDecals()
+		-- end
 	end
 
 	if table.Count(self.tbl_Capabilities) > 0 then
@@ -1653,7 +1680,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 	if self.Bleeds == true && DoIgnore == false then
 		self:CreateBloodEffects(dmg,_Hitbox,dmginfo,DoIgnore)
 		if self.LeavesBlood == true then
-			self:CreateBloodDecals(dmg,dmginfo,_Hitbox)
+			-- self:CreateBloodDecals(dmg,dmginfo,_Hitbox)
 		end
 	end
 	if self.IsDead == false then
@@ -2181,7 +2208,7 @@ function ENT:GetEntitiesByDistance(tbl)
 		end
 		if disttbl[v] == -100 then table.remove(disttbl,v) end
 	end
-	return table.SortByKey(disttbl,false)
+	return table.SortByKey(disttbl,self.ChaseClosestEnemy)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetDistanceToVector(pos,type)

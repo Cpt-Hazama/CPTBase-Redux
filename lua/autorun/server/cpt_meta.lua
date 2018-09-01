@@ -21,6 +21,18 @@ function NPC_Meta:SpawnEntityAtSelf(class)
 	end
 end
 
+function ENT_Meta:GetAllEnts()
+	for _,v in ipairs(player.GetAll()) do
+		return v
+	end
+end
+
+function ENT_Meta:GetAllPlayers()
+	for _,v in ipairs(player.GetAll()) do
+		return v
+	end
+end
+
 SNDDURATION_TABLE = {}
 
 function NPC_Meta:GetNPCEnemy()
@@ -782,6 +794,17 @@ end
 
 function ENT_Meta:FindCenterDistance(ent)
 	return self:GetPos():Distance(self:FindCenter(ent))
+end
+
+function WPN_Meta:OwnerUsingWeapon()
+	if IsValid(self) && IsValid(self.Owner) && IsValid(self.Owner:GetActiveWeapon()) && self.Owner:GetActiveWeapon() == self then
+		return true
+	end
+	return false
+end
+
+function PLY_Meta:FindCenterDistance(ent)
+	return self:GetPos():Distance(ent:GetPos() +ent:OBBCenter())
 end
 
 function ENT_Meta:FindCenter(ent)
