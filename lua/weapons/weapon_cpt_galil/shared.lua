@@ -26,20 +26,19 @@ SWEP.Primary.Delay = 0.08
 SWEP.Muzzle = "1"
 SWEP.MuzzleEffect = "cpt_muzzle"
 SWEP.Primary.TracerEffect = "cpt_tracer"
+SWEP.OverrideBulletPos = true
 
 SWEP.Primary.ClipSize		= 35
 SWEP.Primary.Automatic		= true
 SWEP.Primary.Ammo			= "5.56×45mm"
-SWEP.NPCFireRate = 0.5
-SWEP.tbl_NPCFireTimes = {0,0.1,0.2,0.3,0.4}
-SWEP.NPC_MoveRandomlyChance = 60
+SWEP.NPCFireRate = 0.2
+SWEP.tbl_NPCFireTimes = {0,0.1}
 SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
 SWEP.NPC_FireDistance = 2500
 SWEP.NPC_FireDistanceStop = 500
 SWEP.NPC_FireDistanceMoveAway = 200
-SWEP.NPC_CurrentReloadTime = 2
 SWEP.NPC_Spread = 10
-SWEP.ReloadSpeed = 0.5
+SWEP.ReloadSpeed = 0.8
 
 SWEP.DrawAnimation = ACT_VM_DRAW
 SWEP.IdleAnimation = ACT_VM_IDLE

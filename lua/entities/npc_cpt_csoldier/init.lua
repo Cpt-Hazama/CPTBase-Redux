@@ -6,6 +6,7 @@ ENT.ModelTable = {"models/combine_Soldier.mdl"}
 ENT.StartHealth = 100
 
 ENT.Faction = "FACTION_COMBINE"
+ENT.UseDefaultWeaponThink = false
 
 ENT.GrenadeDistance = 1000
 ENT.GrenadeMinDistance = 450

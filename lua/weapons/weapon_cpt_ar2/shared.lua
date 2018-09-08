@@ -31,17 +31,17 @@ SWEP.MuzzleFlash_Color = Color(0,178,255)
 SWEP.Primary.ClipSize		= 30
 SWEP.Primary.Automatic		= true
 SWEP.Primary.Ammo			= "darkpulseenergy"
+SWEP.OverrideBulletPos = true
+SWEP.NPC_MoveRandomlyChance = 60
+
 SWEP.NPCFireRate = 0.8
 SWEP.tbl_NPCFireTimes = {0,0.1,0.2,0.3,0.4}
-SWEP.NPC_MoveRandomlyChance = 60
 SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
 SWEP.NPC_FireDistance = 2500
 SWEP.NPC_FireDistanceStop = 500
 SWEP.NPC_FireDistanceMoveAway = 200
-SWEP.NPC_CurrentReloadTime = 2
-SWEP.OverrideBulletPos = true
 SWEP.NPC_Spread = 10
-SWEP.ReloadSpeed = 0.5
+SWEP.ReloadSpeed = 1
 
 SWEP.DrawAnimation = ACT_VM_DRAW
 SWEP.IdleAnimation = ACT_VM_IDLE
@@ -90,12 +90,6 @@ function SWEP:OverrideBulletPosition()
 	return self:GetAttachment(1).Pos
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:OnPrimaryAttack()
-	if self.Owner:IsNPC() then
-		self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
-	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:FiredBullet(attacker,tr,dmginfo)
 	local effectdata = EffectData()
 	effectdata:SetOrigin(tr.HitPos)
@@ -103,8 +97,18 @@ function SWEP:FiredBullet(attacker,tr,dmginfo)
 	util.Effect("AR2Impact",effectdata)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:OnPrimaryAttack()
+	if self.Owner:IsNPC() then
+		if self.Owner.tbl_Animations != nil && self.Owner.tbl_Animations["Fire"] != nil then
+			self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload()
 	if self.Owner:IsNPC() then
-		self.Owner:PlayNPCGesture(self:SelectFromTable(self.Owner.tbl_Animations["Reload"]),2,self.ReloadSpeed)
+		if self.Owner.tbl_Animations != nil && self.Owner.tbl_Animations["Reload"] != nil then
+			self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Reload"]),2,self.ReloadSpeed)
+		end
 	end
 end

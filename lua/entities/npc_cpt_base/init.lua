@@ -50,7 +50,11 @@ ENT.AllowPropDamage = true
 ENT.AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
 ENT.UnfreezeProps = false
 ENT.PropAttackForce = Vector(0,0,0) -- Forward, Right, Up
-ENT.ChaseClosestEnemy = true -- True = Closest, False = Farthest
+ENT.UseDefaultWeaponThink = true -- True = use the default think code in the weapon, False = use your own
+ENT.OverrideWalkAnimation = false -- Replace with an animation name to use
+ENT.OverrideRunAnimation = false -- Replace with an animation name to use
+ENT.UsePlayermodelMovement = false
+ENT.FallingHeight = 15
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true
@@ -66,7 +70,7 @@ ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this
 ENT.IsEssential = false
 ENT.Bleeds = true
 ENT.BloodEffect = {}
-ENT.LeavesBlood = true -- Don't need to change this if the table below is empty, it'll just not make decals
+ENT.LeavesBlood = false -- Don't need to set this to false if the table below is empty, it'll just not make decals
 ENT.AutomaticallySetsUpDecals = false -- Not finished yet
 ENT.BloodDecal = {}
 ENT.HasAlertAnimation = false
@@ -424,6 +428,10 @@ function ENT:Possess_Move(possessor)
 				self:TASKFUNC_WALKLASTPOSITION()
 				-- self:SetSchedule(SCHED_FORCED_GO)
 			end
+			if self.UsePlayermodelMovement then
+				self:SetPoseParameter("move_x",1)
+				self:SetPoseParameter("move_y",0)
+			end
 		elseif (possessor:KeyDown(IN_BACK)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local PlayersVectorBack = possessor:GetAimVector() *-1
@@ -468,6 +476,10 @@ function ENT:Possess_Move(possessor)
 			else
 				self:TASKFUNC_WALKLASTPOSITION()
 			end
+			if self.UsePlayermodelMovement then
+				self:SetPoseParameter("move_x",-1)
+				self:SetPoseParameter("move_y",0)
+			end
 		elseif (possessor:KeyDown(IN_MOVELEFT)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
@@ -510,6 +522,10 @@ function ENT:Possess_Move(possessor)
 			else
 				self:TASKFUNC_WALKLASTPOSITION()
 			end
+			if self.UsePlayermodelMovement then
+				self:SetPoseParameter("move_x",0)
+				self:SetPoseParameter("move_y",-1)
+			end
 		elseif (possessor:KeyDown(IN_MOVERIGHT)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
@@ -551,6 +567,10 @@ function ENT:Possess_Move(possessor)
 				self:TASKFUNC_RUNLASTPOSITION()
 			else
 				self:TASKFUNC_WALKLASTPOSITION()
+			end
+			if self.UsePlayermodelMovement then
+				self:SetPoseParameter("move_x",0)
+				self:SetPoseParameter("move_y",1)
 			end
 		elseif (!possessor:KeyDown(IN_SPEED) && !possessor:KeyDown(IN_MOVERIGHT) && !possessor:KeyDown(IN_MOVELEFT) && !possessor:KeyDown(IN_BACK) && !possessor:KeyDown(IN_FORWARD)) then
 			self:StopCompletely()
@@ -983,6 +1003,7 @@ end
 function ENT:Think()
 	if self.IsDead == true then return end
 	-- print(self:GetEnemy())
+	-- print(self,self:GetSequenceName(self:GetSequence()),self:GetSequenceName(self.tbl_Animations["Run"][1]))
 	self:OnThink_Disabled()
 	if self:IsMoving() then
 		self:SetArrivalActivity(self:GetIdleAnimation())
@@ -1033,10 +1054,11 @@ function ENT:Think()
 	self:PoseParameters()
 	self:FootStepCode()
 	if self.IsSwimType == false then
-		if self:IsFalling() then
+		if self:IsFalling(self.FallingHeight) then
+			self:SetGroundEntity(NULL)
 			self:WhileFalling()
 			self.TimeSinceLastTimeFalling = CurTime() +0.2
-		elseif !self:IsFalling() && self.TimeSinceLastTimeFalling > 0 && self.TimeSinceLastTimeFalling <= CurTime() then
+		elseif !self:IsFalling(self.FallingHeight) && self.TimeSinceLastTimeFalling > 0 && self.TimeSinceLastTimeFalling <= CurTime() then
 			self:OnLand()
 			self.TimeSinceLastTimeFalling = 0
 		end
@@ -1273,13 +1295,13 @@ end
 function ENT:FootStepCode()
 	if self.IsRagdolled == true then return end
 	if self:IsOnGround() && self:IsMoving() && self.UseTimedSteps == true then
-		if table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
+		if (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
 			self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
 			self:DoPlaySound("FootStep")
 			self:OnStep("Walk")
 			self.NextFootSoundT_Walk = CurTime() + self.NextFootSound_Walk
 		end
-		if table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
+		if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
 			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 			self:DoPlaySound("FootStep")
 			self:OnStep("Run")
@@ -1548,8 +1570,8 @@ function ENT:UpdateEnemies()
 		-- end
 	end
 	local findenemy = self:GetClosestEntity(self.tbl_EnemyMemory)
-	if lastenemy != findenemy && findenemy != self.Possessor then
-		self:SetEnemy(findenemy)
+	self:SetEnemy(findenemy)
+	if lastenemy != findenemy then
 		self:OnEnemyChanged(findenemy)
 	end
 	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
@@ -1680,7 +1702,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 	if self.Bleeds == true && DoIgnore == false then
 		self:CreateBloodEffects(dmg,_Hitbox,dmginfo,DoIgnore)
 		if self.LeavesBlood == true then
-			-- self:CreateBloodDecals(dmg,dmginfo,_Hitbox)
+			self:CreateBloodDecals(dmg,dmginfo,_Hitbox)
 		end
 	end
 	if self.IsDead == false then
@@ -2193,22 +2215,55 @@ function ENT:AutoSetupSoundTable(tbl,needles)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetClosestEntity(tbl)
-	local target = self:GetEntitiesByDistance(tbl)[1]
-	if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
-	return target
+	-- local target = self:GetEntitiesByDistance(tbl)[1]
+	-- if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
+	-- print(self:GetEntitiesByDistance(tbl)[1])
+	return self:GetEntitiesByDistance(tbl)[1]
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetEntitiesByDistance(tbl)
-	local disttbl = {}
-	for _,v in ipairs(tbl) do
-		if v:IsValid() && v:Alive() then
-			disttbl[v] = self:FindCenterDistance(v)
-		elseif (!v:IsValid() || !v:Alive() || (v:IsValid() && v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1) && v.IsPossessing) && table.HasValue(disttbl,v) then
-			disttbl[v] = -100
+	local close = {}
+	local result = NULL
+	for _,v in pairs(tbl) do
+		if (v:Health() <= 0 || !v:Alive() || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1)) then
+			close[v] = -69
+		else
+			close[v] = self:GetPos():Distance(v:GetPos())
 		end
-		if disttbl[v] == -100 then table.remove(disttbl,v) end
+		if close[v] == -69 then
+			table.remove(close,close[v])
+		end
 	end
-	return table.SortByKey(disttbl,self.ChaseClosestEnemy)
+	return table.SortByKey(close,false)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetMovementAnimation(_Animation)
+	local anim
+	if _Animation == "Walk" && self.OverrideWalkAnimation != false then
+		_Animation = self.OverrideWalkAnimation
+	end
+	if _Animation == "Run" && self.OverrideRunAnimation != false then
+		_Animation = self.OverrideRunAnimation
+	end
+	if type(_Animation) == "string" then
+		if self.tbl_Animations[_Animation] != nil then
+			anim = self:SelectFromTable(self.tbl_Animations[_Animation])
+		else
+			anim = self:TranslateStringToNumber(_Animation)
+		end
+	elseif type(_Animation) == "number" then
+		anim = _Animation
+	end
+	if type(anim) == "string" then
+		anim = self:TranslateStringToNumber(anim)
+	end
+	if self:GetMovementAnimation() != anim then
+		self:SetMovementActivity(anim)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetMovementAnimation()
+	return self:GetMovementActivity()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetDistanceToVector(pos,type)

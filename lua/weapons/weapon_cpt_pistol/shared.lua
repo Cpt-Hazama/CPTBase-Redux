@@ -17,6 +17,7 @@ SWEP.DrawTime = false
 SWEP.ReloadTime = false
 SWEP.WeaponWeight = 5
 SWEP.Muzzle = "1"
+SWEP.OverrideBulletPos = true
 
 SWEP.Primary.TotalShots = 1
 SWEP.Primary.Spread = 0.03
@@ -29,7 +30,13 @@ SWEP.Primary.ClipSize		= 20
 SWEP.Primary.Automatic		= false
 SWEP.Primary.Ammo			= "5.7×28mm"
 SWEP.NPCFireRate = 0.5
-SWEP.NPC_FireDistance = 2000
+SWEP.tbl_NPCFireTimes = {0,0.25}
+SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
+SWEP.NPC_FireDistance = 2500
+SWEP.NPC_FireDistanceStop = 500
+SWEP.NPC_FireDistanceMoveAway = 200
+SWEP.NPC_Spread = 5
+SWEP.ReloadSpeed = 0.8
 
 SWEP.DrawAnimation = ACT_VM_DRAW
 SWEP.IdleAnimation = ACT_VM_IDLE

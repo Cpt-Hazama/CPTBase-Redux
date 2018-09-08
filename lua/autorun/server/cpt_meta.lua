@@ -12,6 +12,11 @@ if (SERVER) then
 	util.AddNetworkString("cpt_ControllerView")
 end
 
+function NPC_Meta:SetInvisible(inv)
+	self:SetNoDraw(inv)
+	self:DrawShadow(not inv)
+end
+
 function NPC_Meta:SpawnEntityAtSelf(class)
 	if SERVER then
 		local ent = ents.Create(class)
@@ -612,6 +617,10 @@ function WPN_Meta:PlayWeaponAnimation(tbl)
 	self.Weapon:SendWeaponAnim(self.tbl_Animations[tbl][math.random(1,#self.tbl_Animations[tbl])])
 end
 
+function ENT_Meta:TranslateNumberToString(anim)
+	return self:GetSequenceName(anim)
+end
+
 function NPC_Meta:GetCurrentAnimation()
 	return self:GetSequenceName(self:GetSequence())
 end
@@ -705,29 +714,6 @@ end
 
 function NPC_Meta:FindZombieFaction()
 	return {"monster_headcrab","monster_babycrab","monster_zombie","npc_zombie","npc_poisonzombie","npc_fastzombie","npc_zombie_torso","npc_fastzombie_torso","npc_zombine","npc_headcrab_fast","npc_headcrab_black","npc_headcrab"}
-end
-
-function NPC_Meta:SetMovementAnimation(_Animation)
-	local anim
-	if type(_Animation) == "string" then
-		if self.tbl_Animations[_Animation] != nil then
-			anim = self:SelectFromTable(self.tbl_Animations[_Animation])
-		else
-			anim = self:TranslateStringToNumber(_Animation)
-		end
-	elseif type(_Animation) == "number" then
-		anim = _Animation
-	end
-	if type(anim) == "string" then
-		anim = self:TranslateStringToNumber(anim)
-	end
-	if self:GetMovementAnimation() != anim then
-		self:SetMovementActivity(anim)
-	end
-end
-
-function NPC_Meta:GetMovementAnimation()
-	return self:GetMovementActivity()
 end
 
 function ENT_Meta:LookAtPosition(pos,parameters,speed,reverse)
@@ -956,11 +942,27 @@ function NPC_Meta:PlayerChat(text)
 	end
 end
 
-function NPC_Meta:IsFalling()
-	if self:GetVelocity().z < 0 then
-		return true
+function NPC_Meta:IsFalling(max)
+	local dist
+	if max == nil then
+		dist = 12
 	else
+		dist = max
+	end
+	-- if self:GetVelocity().z < 0 then
+		-- return true
+	-- else
+		-- return false
+	-- end
+	local tracedata = {}
+	tracedata.start = self:GetPos()
+	tracedata.endpos = self:GetPos() -Vector(0,0,dist)
+	tracedata.filter = {self}
+	local tr = util.TraceLine(tracedata)
+	if tr.Hit then
 		return false
+	else
+		return true
 	end
 end
 
@@ -1143,14 +1145,18 @@ function NPC_Meta:PlaySequence(sequence,animrate)
 		if #sequence < 1 then return end
 		sequence = tostring(table.Random(sequence))
 	end
+	if type(sequence) == "number" then
+		sequence = self:TranslateNumberToString(sequence)
+	end
+	if animrate == nil then
+		animrate = 1
+	end
+	self:SetPlaybackRate(animrate)
 	local animid = self:LookupSequence(sequence)
 	self:ResetSequence(animid)
 	self:ResetSequenceInfo()
 	self:SetCycle(0)
 	self:SetNPCState(NPC_STATE_SCRIPT)
-	if animrate == nil then
-		animrate = 1
-	end
 	self:SetPlaybackRate(animrate)
 	self.NextAnimT = CurTime() +self:AnimationLength(sequence,true) /animrate
 	self.CurrentSequence = animid

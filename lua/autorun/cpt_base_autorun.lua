@@ -6,6 +6,9 @@
 AddCSLuaFile('server/cpt_utilities.lua')
 include('server/cpt_utilities.lua')
 
+// Bots
+CPTBase.AddNPC("Player Bot","npc_cpt_bot","CPTBase Redux")
+
 // Combine
 CPTBase.AddNPC("Combine Assasssin","npc_cpt_cassassin","CPTBase Redux")
 CPTBase.AddNPC("Cremator","npc_cpt_cremator","CPTBase Redux")

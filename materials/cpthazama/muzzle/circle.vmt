@@ -1,0 +1,9 @@
+"unlitgeneric"
+{
+	"$basetexture" "cpthazama/muzzle/circle"
+	$translucent	1
+	$nocull		1
+	$vertexalpha	1
+	$vertexcolor	1
+	$srgbtint		"[2 2 2]"
+}

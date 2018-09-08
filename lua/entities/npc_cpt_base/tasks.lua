@@ -12,6 +12,9 @@ function ENT:TASKFUNC_RUNTOPOS()
 	_runtoposition:EngTask("TASK_RUN_PATH",0)
 	_runtoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_runtoposition)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_WALKTOPOS()
@@ -20,6 +23,9 @@ function ENT:TASKFUNC_WALKTOPOS()
 	_walktoposition:EngTask("TASK_WALK_PATH",0)
 	_walktoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_walktoposition)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_FOLLOWPLAYER()
@@ -27,6 +33,9 @@ function ENT:TASKFUNC_FOLLOWPLAYER()
 	_followplayer:EngTask("TASK_GET_PATH_TO_TARGET",0)
 	-- _followplayer:EngTask("TASK_RUN_PATH",0)
 	self:StartSchedule(_followplayer)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_LASTPOSITION()
@@ -34,6 +43,10 @@ function ENT:TASKFUNC_LASTPOSITION()
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_lastpositiontask)
+	self:SetMovementAnimation("Run") // New change
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_WALKLASTPOSITION()
@@ -43,6 +56,9 @@ function ENT:TASKFUNC_WALKLASTPOSITION()
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Walk")
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_RUNLASTPOSITION()
@@ -52,6 +68,9 @@ function ENT:TASKFUNC_RUNLASTPOSITION()
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Run")
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:Hide(move)
@@ -66,6 +85,9 @@ function ENT:Hide(move)
 	_hidetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_hidetask)
 	self:SetMovementAnimation(moveanim)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:UseTraceChase(enemy)
@@ -103,6 +125,9 @@ function ENT:TASKFUNC_GETPATHANDGO()
 	getpathandchasetask:EngTask("TASK_GET_PATH_TO_TARGET",0)
 	getpathandchasetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(getpathandchasetask)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_CHASE()
@@ -113,6 +138,9 @@ function ENT:TASKFUNC_CHASE()
 	_chasetaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	_chasetaskfunc:EngTask("TASK_FACE_ENEMY",0)
 	self:StartSchedule(_chasetaskfunc)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end
 
 function ENT:TASKFUNC_WANDER()
@@ -121,4 +149,7 @@ function ENT:TASKFUNC_WANDER()
 	-- _wandertaskfunc:EngTask("TASK_WALK_PATH",0)
 	_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_wandertaskfunc)
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",1)
+	end
 end

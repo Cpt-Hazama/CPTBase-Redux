@@ -30,15 +30,13 @@ SWEP.Primary.Automatic		= false
 SWEP.Primary.Ammo			= "Buckshot"
 SWEP.NPCFireRate = 1.3
 SWEP.tbl_NPCFireTimes = {0}
-SWEP.NPC_MoveRandomlyChance = 60
-SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
-SWEP.NPC_FireDistance = 2500
-SWEP.NPC_FireDistanceStop = 500
+SWEP.NPC_EnemyFarDistance = 700 -- Too Far, chase
+SWEP.NPC_FireDistance = 1000
+SWEP.NPC_FireDistanceStop = 400
 SWEP.NPC_FireDistanceMoveAway = 200
-SWEP.NPC_CurrentReloadTime = 2
-SWEP.OverrideBulletPos = true
-SWEP.NPC_Spread = 20
+SWEP.NPC_Spread = 10
 SWEP.ReloadSpeed = 0.5
+SWEP.OverrideBulletPos = true
 
 SWEP.DrawAnimation = ACT_VM_DRAW
 SWEP.IdleAnimation = ACT_VM_IDLE
@@ -84,7 +82,9 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnPrimaryAttack()
 	if self.Owner:IsNPC() then
-		self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
+		if self.Owner.tbl_Animations != nil && self.Owner.tbl_Animations["Fire"] != nil then
+			self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
+		end
 		timer.Simple(0.6,function()
 			if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 				if self.Owner:IsPlayer() then self:UseDefinedSequence("pump") end
@@ -96,6 +96,8 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload()
 	if self.Owner:IsNPC() then
-		self.Owner:PlayNPCGesture(self:SelectFromTable(self.Owner.tbl_Animations["Reload"]),2,self.ReloadSpeed)
+		if self.Owner.tbl_Animations != nil && self.Owner.tbl_Animations["Reload"] != nil then
+			self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Reload"]),2,self.ReloadSpeed)
+		end
 	end
 end

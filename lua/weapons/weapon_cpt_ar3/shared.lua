@@ -31,8 +31,15 @@ SWEP.MuzzleFlash_Color = Color(0,115,255)
 SWEP.Primary.ClipSize		= 200
 SWEP.Primary.Automatic		= true
 SWEP.Primary.Ammo			= "darkpulseenergy"
-SWEP.NPCFireRate = 0.004
-SWEP.NPC_FireDistance = 2000
+SWEP.NPCFireRate = 0.41
+SWEP.tbl_NPCFireTimes = {0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4}
+SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
+SWEP.NPC_FireDistance = 2500
+SWEP.NPC_FireDistanceStop = 500
+SWEP.NPC_FireDistanceMoveAway = 200
+SWEP.NPC_Spread = 10
+SWEP.ReloadSpeed = 0.8
+SWEP.OverrideBulletPos = true
 
 SWEP.DrawAnimation = ACT_VM_DRAW
 SWEP.IdleAnimation = ACT_VM_IDLE

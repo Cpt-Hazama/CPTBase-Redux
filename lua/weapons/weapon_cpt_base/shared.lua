@@ -77,6 +77,7 @@ SWEP.Primary.Ammo			= "9×19mm" // Default CPTBase Ammo
 SWEP.NPCFireRate = 0.1
 SWEP.tbl_NPCFireTimes = {0}
 SWEP.NPC_Spread = nil
+SWEP.NPC_CurrentReloadTime = 2
 // These 2 variables are obsolete
 -- SWEP.NPC_FireTime = 0 -- Shoot timer
 -- SWEP.NPC_FireRateAmount = 1 -- How many times it runs the shoot code
@@ -122,6 +123,46 @@ SWEP.NextFireTime_NPC = 0
 	-- owner:SetNWEntity("cpt_CModel",ent)
 -- end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetNPCIdleAnimation(anim)
+	self.NPC_IdleAnimation = anim
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetNPCWalkAnimation(anim)
+	self.NPC_WalkAnimation = anim
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetNPCRunAnimation(anim)
+	self.NPC_RunAnimation = anim
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetNPCFireAnimation(anim)
+	self.NPC_FireAnimation = anim
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetNPCReloadAnimation(anim)
+	self.NPC_ReloadAnimation = anim
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:GetNPCIdleAnimation()
+	return self.NPC_IdleAnimation
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:GetNPCWalkAnimation()
+	return self.NPC_WalkAnimation
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:GetNPCRunAnimation()
+	return self.NPC_RunAnimation
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:GetNPCFireAnimation()
+	return self.NPC_FireAnimation
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:GetNPCReloadAnimation()
+	return self.NPC_ReloadAnimation
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AddClip1(amount)
 	self.Weapon:SetClip1(self:Clip1() +amount)
 end
@@ -143,6 +184,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPC_FireGesture(gesture)
 	if !self.Owner:IsNPC() then return end
+	if !gesture then return end
 	local gest = self.Owner:AddGestureSequence(self.Owner:LookupSequence(gesture))
 	self.Owner:SetLayerPriority(gest,2)
 	self.Owner:SetLayerPlaybackRate(gest,0.5)
@@ -343,7 +385,7 @@ function SWEP:Initialize()
 	end
 	if self.Owner:IsNPC() then
 		self.Owner.ReloadingWeapon = false
-		-- self.Owner:SetCurrentWeaponProficiency(WEAPON_PROFICIENCY_PERFECT)
+		hook.Add("Think",self,self.NPC_Think)
 	end
 	self:SetWeaponHoldType(self.HoldType)
 	self:SetWeaponSlot(self.HUDSlot,self.HUDImportance)
@@ -373,7 +415,27 @@ function SWEP:Initialize()
 			end
 		end
 	end)
-	if self.OnInit then self:OnInit() end
+	if SERVER then
+		if self.OnInit then self:OnInit() end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:NPC_Think()
+	if (CLIENT) then
+		return
+	end
+	if !IsValid(self) then
+		return
+	end
+	if !IsValid(self.Owner) then
+		return
+	end
+	if !self.Owner.UseDefaultWeaponThink then
+		return
+	end
+	self:OnThink_NPC()
+	hook.Remove("Think",self)
+	hook.Add("Think",self,self.NPC_Think)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SetWeaponCondition(cnd)
@@ -437,6 +499,9 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	self:CreateMuzzleFlash()
 	self:CreateShellCasings()
 	self:OnPrimaryAttack(oldclip,newclip)
+	if self.Owner:IsNPC() then
+		self:OnPrimaryAttack_NPC()
+	end
 	timer.Simple(self.Primary.Delay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
 	timer.Simple(self.Primary.Delay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
 end
@@ -510,22 +575,21 @@ function SWEP:CreateMuzzleFlash()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OverrideBulletPosition()
-	return self:GetPos()
+	return self:GetAttachment(1).Pos
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:GetBulletPos()
-	if self.OverrideBulletPos == false then
-		if self.ExtraViewModel == nil then
+	if self.OverrideBulletPos == true && self.Owner:IsNPC() then
+		return self:OverrideBulletPosition()
+	end
+	if self.ExtraViewModel == nil then
+		return self.Owner:GetShootPos()
+	else
+		if self:GetNWVector("cpt_CModel_MuzzlePos") == nil then
 			return self.Owner:GetShootPos()
 		else
-			if self:GetNWVector("cpt_CModel_MuzzlePos") == nil then
-				return self.Owner:GetShootPos()
-			else
-				return self:GetNWVector("cpt_CModel_MuzzlePos")
-			end
+			return self:GetNWVector("cpt_CModel_MuzzlePos")
 		end
-	else
-		return self:OverrideBulletPosition()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -563,7 +627,9 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		bullet.Tracer = self.Primary.Tracer
 		-- if game.SinglePlayer() then
 		-- if self.Owner:IsPlayer() then
-			bullet.TracerName = self.Primary.TracerEffect
+			if self.Primary.TracerEffect != false then
+				bullet.TracerName = self.Primary.TracerEffect
+			end
 		-- end
 		bullet.Force = self.Primary.Force
 		local dif = GetConVarNumber("cpt_aidifficulty")
@@ -624,9 +690,40 @@ function SWEP:SecondaryAttack()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:OnThink_NPC()
+	self.Owner.OverrideWalkAnimation = self.NPC_WalkAnimation
+	self.Owner.OverrideRunAnimation = self.NPC_RunAnimation
+	self.Owner:SetIdleAnimation(self.NPC_IdleAnimation)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:OnPrimaryAttack_NPC()
+	if self.Owner:IsNPC() && self.NPC_FireAnimation != nil then
+		self:BeforePrimaryAttack_NPC()
+		local speed = 1
+		if self.DefaultHoldType == "pistol" then
+			speed = 0.5
+		end
+		self.Owner:PlayNPCGesture(self.NPC_FireAnimation,2,speed)
+		self:AfterPrimaryAttack_NPC()
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:OnReload_NPC()
+	if self.Owner:IsNPC() && self.NPC_ReloadAnimation != nil then
+		self.Owner:PlayNPCGesture(self.NPC_ReloadAnimation,2,self.ReloadSpeed)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:BeforePrimaryAttack_NPC() end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:AfterPrimaryAttack_NPC() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Think()
 	self:WeaponConditionThink()
 	self:OnThink()
+	-- if self.Owner:IsNPC() then
+		-- self:OnThink_NPC()
+	-- end
 	if CLIENT then
 		if self.AdjustWorldModel == true then
 			if self.Weapon:IsValid() && self.Owner:IsValid() then
@@ -692,6 +789,9 @@ function SWEP:NPC_Reload()
 		self.Owner.ReloadingWeapon = true
 		self:ReloadSounds()
 		self:OnReload()
+		if self.Owner:IsNPC() then
+			self:OnReload_NPC()
+		end
 		-- self.Owner:StopCompletely()
 		if self.Owner.ForceReloadAnimation == true && self.Owner.tbl_Animations["Reload"] != nil then
 			self.Owner:PlayAnimation("Reload")
