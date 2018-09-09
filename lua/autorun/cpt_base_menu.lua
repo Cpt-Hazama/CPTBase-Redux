@@ -5,7 +5,7 @@
 --------------------------------------------------*/
 CPTBase.AddConVar("cpt_bot_seeenemies","0")
 CPTBase.AddConVar("cpt_bot_chat","1")
-CPTBase.AddConVar("cpt_bot_custommodel","models/player/kleiner.mdl")
+-- CPTBase.AddConVar("cpt_bot_custommodel","models/player/kleiner.mdl")
 CPTBase.AddConVar("cpt_usetracemovement","0")
 
 if (CLIENT) then
@@ -23,12 +23,12 @@ if (CLIENT) then
 			cpt_aidifficulty = "2",
 			cpt_bot_seeenemies = "0",
 			cpt_bot_chat = "1",
-			cpt_bot_custommodel = "models/player/kleiner.mdl",
+			-- cpt_bot_custommodel = "models/player/kleiner.mdl",
 		}
 		panel:AddControl("ComboBox",CPTBaseMenu_SNPC)
 		panel:AddControl("CheckBox",{ Label = "CPTBase Bots can wall hack?",Command = "cpt_bot_seeenemies"})
 		panel:AddControl("CheckBox",{ Label = "CPTBase Bots can use chat?",Command = "cpt_bot_chat"})
-		Panel:AddControl("TextBox", {Label = "Custom CPTBase Bot model:", Command = "cpt_bot_custommodel", WaitForEnter = "0"})
+		-- panel:AddControl("TextBox", {Label = "Custom CPTBase Bot model:", Command = "cpt_bot_custommodel", WaitForEnter = "0"})
 		panel:AddControl("CheckBox",{ Label = "Use Trace Movement",Command = "cpt_usetracemovement"})
 		panel:ControlHelp("If enabled, your possessed SNPC will move towards your cursor instead of a set direction.")
 		panel:AddControl("Slider", { Label 	= "Corpse Life Time", Command = "cpt_corpselifetime", Type = "Float", Min = "0", Max = "800"})

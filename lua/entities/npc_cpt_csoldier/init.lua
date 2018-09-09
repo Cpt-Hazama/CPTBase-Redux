@@ -256,6 +256,9 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 			if nearest <= wep.NPC_FireDistance then
 				if self.ReloadingWeapon == false && enemy:Visible(self) && self:DoWeaponTrace() && self:FindInCone(enemy,40) then
 					wep:CanFire(true)
+					if wep.NPC_MoveRandomlyChance == nil then
+						wep.NPC_MoveRandomlyChance = 30
+					end
 					if math.random(1,wep.NPC_MoveRandomlyChance) == 1 then
 						self:MoveAway(false)
 					end

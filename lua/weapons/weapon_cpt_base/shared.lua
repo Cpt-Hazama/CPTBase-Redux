@@ -415,9 +415,9 @@ function SWEP:Initialize()
 			end
 		end
 	end)
-	if SERVER then
+	-- if SERVER then
 		if self.OnInit then self:OnInit() end
-	end
+	-- end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:NPC_Think()

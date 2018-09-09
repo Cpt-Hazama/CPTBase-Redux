@@ -12,6 +12,14 @@ if (SERVER) then
 	util.AddNetworkString("cpt_ControllerView")
 end
 
+function FindLuaFile(luadir)
+	return file.Exists(luadir,"LUA")
+end
+
+function FindGameFile(filedir)
+	return file.Exists(filedir,"GAME")
+end
+
 function NPC_Meta:SetInvisible(inv)
 	self:SetNoDraw(inv)
 	self:DrawShadow(not inv)

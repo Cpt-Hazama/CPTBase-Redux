@@ -32,6 +32,7 @@ ENT.tbl_Capabilities = {CAP_ANIMATEDFACE,CAP_USE,CAP_OPEN_DOORS,CAP_MOVE_JUMP}
 function ENT:SetInit()
 	self:SetHullType(HULL_HUMAN)
 	self:SetCollisionBounds(Vector(14,14,77), Vector(-14,-14,0))
+	if self.BeforeBotCreated then self:BeforeBotCreated() end
 	local swep = self:SelectFromTable(self.tbl_Weapons)
 	self:GiveNPCWeapon(swep)
 	if IsValid(self:GetActiveWeapon()) then
@@ -191,6 +192,7 @@ function ENT:OnHearSound(ent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:NPCPLY_Chat()
+	if GetConVar("cpt_bot_chat"):GetInt() == 0 then return end
 	self.IsUsingChat = true
 	if self:GetEnemy() != nil then
 		timer.Simple(3,function()

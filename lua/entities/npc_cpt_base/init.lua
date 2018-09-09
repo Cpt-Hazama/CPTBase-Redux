@@ -714,7 +714,9 @@ function ENT:Initialize()
 	self:SetNWBool("IsCPTBase_NPC",true)
 	self:SetNWEntity("cpt_SpokenPlayer",NULL)
 	self:SetNWString("cpt_Faction",self.Faction)
-	self:SetModel(self:SelectFromTable(self.ModelTable))
+	if table.Count(self.ModelTable) > 0 then
+		self:SetModel(self:SelectFromTable(self.ModelTable))
+	end
 	self:DrawShadow(true)
 	self:SetHullSizeNormal()
 	if self.CollisionBounds != Vector(0,0,0) then
