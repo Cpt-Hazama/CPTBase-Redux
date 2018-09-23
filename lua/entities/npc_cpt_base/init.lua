@@ -2,6 +2,7 @@ if !CPTBase then return end
 AddCSLuaFile('cl_init.lua')
 AddCSLuaFile('shared.lua')
 include('ai_schedules.lua')
+include('animator.lua')
 include('shared.lua')
 include('tasks.lua')
 include('states.lua')
@@ -16,90 +17,94 @@ end
 
 	-- Initialize Variables --
 ENT.ModelTable = {}
-ENT.CollisionBounds = Vector(0,0,0)
-ENT.StartHealth = 10
+ENT.CollisionBounds = Vector(0,0,0) -- Change from Vector(0,0,0) to apply. If set to Vector(0,0,0), it will use HULL type bounds
+ENT.StartHealth = 10 -- How much health the NPC starts out with
 ENT.Mass = 5000 // 7670 is standard for attacking chairs and benches | Human sized NPCs
-ENT.CanBeRagdolled = true
-ENT.RagdolledPosSubtraction = 20
-ENT.RagdollRecoveryTime = 5
-ENT.MaxTurnSpeed = 50
+ENT.CanBeRagdolled = true -- Can the NPC be ragdolled by enemies if the damage is critical?
+ENT.RagdolledPosSubtraction = 20 -- How far "down" the NPC is while ragdolled (the NPC becomes invisible when ragdolled and follows the ragdoll entity around)
+ENT.RagdollRecoveryTime = 5 -- How long until the NPC gets up
+ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 
 	-- AI Variables --
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
-ENT.IsBlind = false
+ENT.IsBlind = false -- Is the NPC blind? (Experimental)
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
-ENT.ViewDistance = 7500
-ENT.ViewAngle = 75
+ENT.ViewDistance = 7500 -- How far the NPC can see (In WU. Increasing may impact performance)
+ENT.ViewAngle = 75 -- How far the NPC can see (Based on a cone system)
 ENT.CanWander = true
-ENT.WanderChance = 60
-ENT.CanSetEnemy = true
-ENT.CanChaseEnemy = true
-ENT.MeleeAngle = 45
-ENT.HearingDistance = 900
-ENT.ReactsToSound = true
-ENT.Faction = "FACTION_NONE"
-ENT.FriendlyToPlayers = false
+ENT.WanderChance = 60 -- The change that the NPC will wander while idle
+ENT.CanSetEnemy = true -- Can the NPC set its' enemy? (Can be changed at anytime in the code)
+ENT.CanChaseEnemy = true -- Can the NPC chase its' enemy? (Can be changed at anytime in the code)
+ENT.MeleeAngle = 45 -- How far the melee attack reaches (Based on a cone system) Example: NPC <) Enemy
+ENT.ReactsToSound = true -- Will the NPC react to hearing noises?
+ENT.HearingDistance = 900 -- How far the NPC can hear noises
+ENT.Faction = "FACTION_NONE" -- Required for every NPC. Use the same one amongst your NPCs to make them allies (Only supports one faction per NPC as a way to reduce in-game lag)
+ENT.FriendlyToPlayers = false -- Is the NPC friendly to players?
 ENT.Confidence = 2 -- Obsolete
-ENT.UseDefaultPoseParameters = true
+ENT.UseDefaultPoseParameters = true -- Can the NPC use pose parameters? (turn head, body, etc.)
 ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
-ENT.DefaultPoseParamaterSpeed = 20
-ENT.ReversePoseParameters = false
-ENT.ForceReloadAnimation = false
-ENT.GlobalAnimationSpeed = 1
-ENT.AllowPropDamage = true
+ENT.DefaultPoseParamaterSpeed = 20 -- The rate at which the pose parameter will adjust (similar to turning speed)
+ENT.ReversePoseParameters = false -- Reverse pose parameters if they were not properly made
+ENT.ForceReloadAnimation = false -- Obsolete
+ENT.GlobalAnimationSpeed = 1 -- Determines *most* animation speeds (doesn't effect walkframes)
+ENT.HasAlertAnimation = false -- Does the NPC play an alerted animation when spotting an enemy?
+ENT.AlertAnimationChance = 5 -- Chance the animation will play
+ENT.AllowPropDamage = true -- If set to true, the NPC will damage/effect props when it melee attacks
 ENT.AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
-ENT.UnfreezeProps = false
+ENT.UnfreezeProps = false -- Unfreeze props when they're hit?
 ENT.PropAttackForce = Vector(0,0,0) -- Forward, Right, Up
 ENT.UseDefaultWeaponThink = true -- True = use the default think code in the weapon, False = use your own
 ENT.OverrideWalkAnimation = false -- Replace with an animation name to use
 ENT.OverrideRunAnimation = false -- Replace with an animation name to use
-ENT.UsePlayermodelMovement = false
-ENT.FallingHeight = 15
+ENT.UsePlayermodelMovement = false -- If set to true, it will utilize player animations properly (GMod, CSS, L4D, etc.)
+ENT.PlayermodelMovementSpeed_Forward = 1 -- Ranges between -1 and 1 (0 being no movement at all)
+ENT.PlayermodelMovementSpeed_Backward = -1 -- Ranges between -1 and 1 (0 being no movement at all)
+ENT.PlayermodelMovementSpeed_Left = -1 -- Ranges between -1 and 1 (0 being no movement at all)
+ENT.PlayermodelMovementSpeed_Right = 1 -- Ranges between -1 and 1 (0 being no movement at all)
+ENT.FallingHeight = 15 -- Determines how many WU until the NPC thinks it is falling
 
 	-- Air AI Variables --
-ENT.FlyUpOnSpawn = true
-ENT.FlyUpOnSpawn_Time = 2
-ENT.FlyRandomDistance = 400
+ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
+ENT.FlyUpOnSpawn_Time = 2 -- Time until the NPC stops hovering upward
+ENT.FlyRandomDistance = 400 -- Maximum distance to hover upward
 
 	-- Swim AI Variables --
-ENT.Swim_CheckYawDistance = 250
-ENT.Swim_CheckPitchDistance = 75
+ENT.Swim_CheckYawDistance = 250 -- Max yaw change
+ENT.Swim_CheckPitchDistance = 75 -- Max pitch change
 ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this to target
 
 	-- Damage Variables --
-ENT.IsEssential = false
-ENT.Bleeds = true
+ENT.IsEssential = false -- Can the NPC die?
+ENT.Bleeds = true -- Does the NPC create blood particles?
 ENT.BloodEffect = {}
 ENT.LeavesBlood = false -- Don't need to set this to false if the table below is empty, it'll just not make decals
 ENT.AutomaticallySetsUpDecals = false -- Not finished yet
 ENT.BloodDecal = {}
-ENT.HasAlertAnimation = false
-ENT.AlertAnimationChance = 5
-ENT.HasFlinchAnimation = false
-ENT.FlinchChance = 10
-ENT.TurnsOnDamage = true
+ENT.HasFlinchAnimation = false -- Does the NPC flinch when attacked?
+ENT.FlinchChance = 10 -- Chance the NPC will flinch
+ENT.TurnsOnDamage = true -- Does the NPC turn when damaged (No present enemy)
 ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
-ENT.HasDeathRagdoll = true
+ENT.HasDeathRagdoll = true -- Does the NPC leave a ragdoll when killed?
 ENT.DeathRagdollType = "prop_ragdoll"
-ENT.DeathRagdollKeepOverrides = true
-ENT.HasDeathAnimation = false
-ENT.ExtraDeathTime = 0
+ENT.DeathRagdollKeepOverrides = true -- Does the ragdoll keep changes on the NPC? (Material, color, etc.)
+ENT.HasDeathAnimation = false -- Does the NPC play a death animation when killed?
+ENT.ExtraDeathTime = 0 -- Extra added time after the NPC dies (Useful for death animations)
 
 	-- Possessor Variables --
-ENT.Possessor_CanBePossessed = true
-ENT.Possessor_UseBoneCamera = false
-ENT.Possessor_BoneCameraName = 1
+ENT.Possessor_CanBePossessed = true -- Can the NPC be possessed?
+ENT.Possessor_UseBoneCamera = false -- Does the possessor camera follow a bone?
+ENT.Possessor_BoneCameraName = 1 -- Bone ID
 ENT.Possessor_BoneCameraForward = 0
 ENT.Possessor_BoneCameraRight = 0
 ENT.Possessor_BoneCameraUp = 0
-ENT.Possessor_MaxMoveDistanceForward = 300
+ENT.Possessor_MaxMoveDistanceForward = 300 -- These four variables determine how far the posessor checks to move the NPC. Lowering the numbers may cause problems
 ENT.Possessor_MaxMoveDistanceLeft = 125
 ENT.Possessor_MaxMoveDistanceRight = 125
 ENT.Possessor_MaxMoveDistanceBackward = 150
 ENT.Possessor_MinMoveDistance = 55
 ENT.Possessor_CanTurnWhileAttacking = true
-ENT.Possessor_CanMove = true
-ENT.Possessor_CanSprint = true
+ENT.Possessor_CanMove = true -- Can the possessed NPC move?
+ENT.Possessor_CanSprint = true -- Can the possessed NPC sprint?
 ENT.Possessor_CanFaceTrace_Walking = false
 ENT.Possessor_CanFaceTrace_Running = false
 ENT.PossessorView = {
@@ -109,15 +114,15 @@ ENT.PossessorView = {
 	-- Tables --
 ENT.tbl_Animations = {}
 ENT.tbl_Sounds = {}
-ENT.tbl_Sentences = {}
-ENT.tbl_ImmuneTypes = {}
-ENT.tbl_Capabilities = {}
+ENT.tbl_Sentences = {} -- Basically the Half-Life 1 sentence system
+ENT.tbl_ImmuneTypes = {} -- DMG_ types the NPC won't take damage from
+ENT.tbl_Capabilities = {} -- CAP_ types for the NPC
 
 	-- Sound Variables --
-ENT.SoundDirectory = nil
+ENT.SoundDirectory = nil -- The sound directory of the NPC. Not necessary unless you use SetupSoundTables
 ENT.SetupSoundTables = false -- Won't be as accurate as you setting them up yourself | there's also a weird issue where SNPCs can sometimes "share" sounds
 ENT.CheckForLoopsInSoundDirectory = true -- Makes sure looping sounds don't get added
-ENT.UseTimedSteps = false
+ENT.UseTimedSteps = false -- Will the NPC's footstep sounds be based on the below sound timers?
 ENT.NextFootSound_Walk = 0.45
 ENT.NextFootSound_Run = 0.45
 ENT.WalkSoundVolume = 70
@@ -138,7 +143,7 @@ ENT.PainSoundChanceB = 4
 ENT.DeathSoundVolume = 80
 ENT.DeathSoundPitch = 100
 
-	-- Misc Variables --
+	-- Misc Variables (Don't touch) --
 ENT.NextFootSoundT_Walk = 0
 ENT.NextFootSoundT_Run = 0
 ENT.NextIdleSoundT = 0
@@ -429,7 +434,7 @@ function ENT:Possess_Move(possessor)
 				-- self:SetSchedule(SCHED_FORCED_GO)
 			end
 			if self.UsePlayermodelMovement then
-				self:SetPoseParameter("move_x",1)
+				self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 				self:SetPoseParameter("move_y",0)
 			end
 		elseif (possessor:KeyDown(IN_BACK)) then
@@ -477,7 +482,7 @@ function ENT:Possess_Move(possessor)
 				self:TASKFUNC_WALKLASTPOSITION()
 			end
 			if self.UsePlayermodelMovement then
-				self:SetPoseParameter("move_x",-1)
+				self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Backward) -- -1
 				self:SetPoseParameter("move_y",0)
 			end
 		elseif (possessor:KeyDown(IN_MOVELEFT)) then
@@ -524,7 +529,7 @@ function ENT:Possess_Move(possessor)
 			end
 			if self.UsePlayermodelMovement then
 				self:SetPoseParameter("move_x",0)
-				self:SetPoseParameter("move_y",-1)
+				self:SetPoseParameter("move_y",self.PlayermodelMovementSpeed_Left) -- -1
 			end
 		elseif (possessor:KeyDown(IN_MOVERIGHT)) then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
@@ -570,7 +575,7 @@ function ENT:Possess_Move(possessor)
 			end
 			if self.UsePlayermodelMovement then
 				self:SetPoseParameter("move_x",0)
-				self:SetPoseParameter("move_y",1)
+				self:SetPoseParameter("move_y",self.PlayermodelMovementSpeed_Right) -- 1
 			end
 		elseif (!possessor:KeyDown(IN_SPEED) && !possessor:KeyDown(IN_MOVERIGHT) && !possessor:KeyDown(IN_MOVELEFT) && !possessor:KeyDown(IN_BACK) && !possessor:KeyDown(IN_FORWARD)) then
 			self:StopCompletely()
@@ -708,15 +713,23 @@ function ENT:LoadObjectData(datamod,dataname) // Similar to PredatorCZ's system,
 	return objectcache
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetNPCModel(mdl)
+	if mdl == nil then
+		if table.Count(self.ModelTable) > 0 then
+			self:SetModel(self:SelectFromTable(self.ModelTable))
+		end
+	else
+		self:SetModel(mdl)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Initialize()
 	self:SetSpawnEffect(false)
 	self.CPTBase_NPC = true
 	self:SetNWBool("IsCPTBase_NPC",true)
 	self:SetNWEntity("cpt_SpokenPlayer",NULL)
 	self:SetNWString("cpt_Faction",self.Faction)
-	if table.Count(self.ModelTable) > 0 then
-		self:SetModel(self:SelectFromTable(self.ModelTable))
-	end
+	self:SetNPCModel()
 	self:DrawShadow(true)
 	self:SetHullSizeNormal()
 	if self.CollisionBounds != Vector(0,0,0) then
@@ -741,6 +754,8 @@ function ENT:Initialize()
 	-- self:SetMovementType(MOVETYPE_STEP)
 	self:SetCollisionGroup(COLLISION_GROUP_NPC)
 	self:SetEnemy(NULL)
+	self.RenderMode = RENDERMODE_NORMAL
+	self:SetNPCRenderMode(RENDERMODE_NORMAL)
 	self.HasSetTypeOnSpawn = false
 	self.IsPossessed = false
 	self.Possessor = nil
@@ -1022,6 +1037,10 @@ function ENT:Think()
 	if self.IsPlayingSequence == true then
 		self.CurrentSchedule = nil
 		self.CurrentTask = nil
+	end
+	if !self:IsMoving() then
+		self:SetPoseParameter("move_x",0)
+		self:SetPoseParameter("move_y",0)
 	end
 	if self:IsWalking() then
 		self:SetMovementAnimation("Walk")
@@ -1556,36 +1575,17 @@ function ENT:UpdateEnemies()
 		newenemy = self:LocateEnemies()
 	end
 	if newenemy == nil then return end
-	-- if newenemy == self then return end
 	if newenemy:IsPlayer() then
 		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNWBool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
-		-- if self:CheckConfidence(newenemy) == "attack!" then
-			self:SetRelationship(newenemy,D_HT,true)
-		-- elseif self:CheckConfidence(newenemy) == "run!" then
-			-- self:SetRelationship(newenemy,D_FR,true)
-		-- end
+		self:SetRelationship(newenemy,D_HT,true)
 	else
-		-- if self:CheckConfidence(newenemy) == "attack!" then
-			self:SetRelationship(newenemy,D_HT)
-		-- elseif self:CheckConfidence(newenemy) == "run!" then
-			-- self:SetRelationship(newenemy,D_FR)
-		-- end
+		self:SetRelationship(newenemy,D_HT)
 	end
 	local findenemy = self:GetClosestEntity(self.tbl_EnemyMemory)
 	self:SetEnemy(findenemy)
 	if lastenemy != findenemy then
 		self:OnEnemyChanged(findenemy)
 	end
-	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
-		table.insert(self.tbl_EnemyMemory,newenemy)
-		self.EnemyMemoryCount = self.EnemyMemoryCount +1
-		local oldcount = self.EnemyMemoryCount -1
-		if self.EnemyMemoryCount > 0 && lastenemy != newenemy then
-			self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,newenemy)
-			return
-		end
-	end
-	-- return enemymemory
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateMemory()
@@ -1839,11 +1839,29 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetNPCRenderMode(rend)
+	self:SetRenderMode(rend)
+	self.RenderMode = rend
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetNPCRenderMode()
+	return self.RenderMode
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetRagdollEntity(ent)
+	self.RagdollEntity = ent
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetRagdollEntity()
+	return self.RagdollEntity
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateNPCRagdoll(dmg,dmginfo)
 	local mdl = self:GetModel()
 	local pos = self:GetPos()
 	local ang = self:GetAngles()
 	local skin = self:GetSkin()
+	local rend = self:GetNPCRenderMode()
 	local rbg = self:GetColor()
 	local mat = self:GetMaterial()
 	if self.IsRagdolled == true then
@@ -1881,6 +1899,7 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 		end
 	end
 	if self.DeathRagdollKeepOverrides == true then
+		ragdoll:SetRenderMode(rend)
 		ragdoll:SetColor(rbg)
 		ragdoll:SetMaterial(mat)
 	end
@@ -1921,6 +1940,12 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 			end
 		end
 	end
+	for i = 0,ragdoll:GetBoneCount() -1 do
+		if i > 0 then
+			ragdoll:ManipulateBonePosition(i,self:GetManipulateBonePosition(i))
+			ragdoll:ManipulateBoneAngles(i,self:GetManipulateBoneAngles(i))
+		end
+	end
 	ragdoll:SetVelocity(dmgforce /20)
 	local the_ragdoll = ragdoll
 	timer.Simple(GetConVarNumber("cpt_corpselifetime"),function()
@@ -1928,6 +1953,7 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 			the_ragdoll:Fire("FadeAndRemove","",0)
 		end
 	end)
+	self:SetRagdollEntity(the_ragdoll)
 	self:OnDeath_CreatedCorpse(the_ragdoll)
 	return the_ragdoll
 end
@@ -2061,40 +2087,44 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 					if self.HasMutated == true && (self.MutationType == "damage" or self.MutationType == "both") then
 						dmg = math.Round(dmg *1.65)
 					end
-					local dif = GetConVarNumber("cpt_aidifficulty")
-					local finaldmg
-					if dif == 1 then
-						finaldmg = dmg *0.5
-					elseif dif == 2 then
-						finaldmg = dmg
-					elseif dif == 3 then
-						finaldmg = dmg *2
-					elseif dif == 4 then
-						finaldmg = dmg *4
-					end
-					dmginfo:SetDamage(finaldmg)
-					dmginfo:SetAttacker(self)
-					dmginfo:SetInflictor(self)
-					dmginfo:SetDamageType(dmgtype)
-					dmginfo:SetDamagePosition(dmgpos)
-					hitpos = dmgpos
-					if force then
-						dmginfo:SetDamageForce(force)
-					end
-					if(OnHit) then
-						OnHit(ent,dmginfo)
-					end
-					table.insert(tblhit,ent)
-					ent:TakeDamageInfo(dmginfo)
-					if ent:IsPlayer() then
-						if viewPunch then
-							ent:ViewPunch(viewPunch)
-						else
-							ent:ViewPunch(Angle(math.random(-1,1)*dmg,math.random(-1,1)*dmg,math.random(-1,1)*dmg))
+					if dmgtype != DMG_FROST then
+						local dif = GetConVarNumber("cpt_aidifficulty")
+						local finaldmg
+						if dif == 1 then
+							finaldmg = dmg *0.5
+						elseif dif == 2 then
+							finaldmg = dmg
+						elseif dif == 3 then
+							finaldmg = dmg *2
+						elseif dif == 4 then
+							finaldmg = dmg *4
 						end
-					elseif ent:GetClass() == "npc_turret_floor" then
-						ent:Fire("selfdestruct","",0)
-						ent:GetPhysicsObject():ApplyForceCenter(self:GetForward() *10000)
+						dmginfo:SetDamage(finaldmg)
+						dmginfo:SetAttacker(self)
+						dmginfo:SetInflictor(self)
+						dmginfo:SetDamageType(dmgtype)
+						dmginfo:SetDamagePosition(dmgpos)
+						hitpos = dmgpos
+						if force then
+							dmginfo:SetDamageForce(force)
+						end
+						if(OnHit) then
+							OnHit(ent,dmginfo)
+						end
+						table.insert(tblhit,ent)
+						ent:TakeDamageInfo(dmginfo)
+						if ent:IsPlayer() then
+							if viewPunch then
+								ent:ViewPunch(viewPunch)
+							else
+								ent:ViewPunch(Angle(math.random(-1,1)*dmg,math.random(-1,1)*dmg,math.random(-1,1)*dmg))
+							end
+						elseif ent:GetClass() == "npc_turret_floor" then
+							ent:Fire("selfdestruct","",0)
+							ent:GetPhysicsObject():ApplyForceCenter(self:GetForward() *10000)
+						end
+					else
+						util.DoFrostDamage(dmg,ent,self)
 					end
 				end
 			end
@@ -2227,10 +2257,12 @@ function ENT:GetEntitiesByDistance(tbl)
 	local close = {}
 	local result = NULL
 	for _,v in pairs(tbl) do
-		if (v:Health() <= 0 || !v:Alive() || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1)) then
+		if IsValid(v) && (v:Health() <= 0 || !v:Alive() || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1)) then
 			close[v] = -69
 		else
-			close[v] = self:GetPos():Distance(v:GetPos())
+			if IsValid(v) then
+				close[v] = self:GetPos():Distance(v:GetPos())
+			end
 		end
 		if close[v] == -69 then
 			table.remove(close,close[v])
@@ -2262,6 +2294,97 @@ function ENT:SetMovementAnimation(_Animation)
 	if self:GetMovementAnimation() != anim then
 		self:SetMovementActivity(anim)
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompatibility)
+	-- if self.IsSLVBaseNPC then
+		-- local TAct
+		-- local bFaceEnemy
+		-- local fcDone
+		-- local bDontResetAct
+		-- local bDontStopMoving
+		-- if activity then
+			-- TAct = activity
+		-- end
+		-- if facetarget then
+			-- bFaceEnemy = facetarget
+		-- end
+		-- if usetime then
+			-- fcDone = usetime
+		-- end
+		-- if addtime then
+			-- bDontResetAct = addtime
+		-- end
+		-- if slvbackwardscompatibility then
+			-- bDontStopMoving = slvbackwardscompatibility
+		-- end
+		-- self:SLVPlayActivity(TAct,bFaceEnemy,fcDone,bDontResetAct,bDontStopMoving)
+		-- return
+	-- end
+	local fly = false
+	local usegesture = false
+	local usesequence = false
+	local extratime = nil
+	if usetime then
+		if CurTime() < self.NextAnimT then return end
+	end
+	if addtime == nil then
+		extratime = 0
+	else
+		extratime = addtime
+	end
+	if type(activity) == "number" then
+		activity = activity
+	else
+		if string.find(activity,"cptges_") then
+			usegesture = true
+		elseif string.find(activity,"cptseq_") then
+			usesequence = true
+		else
+			activity = self:TranslateStringToNumber(activity)
+		end
+	end
+	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,self.GlobalAnimationSpeed) return end
+	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),self.GlobalAnimationSpeed) return end
+	if activity == nil then return end
+	if self:AnimationLength(activity) == 0 then return end
+	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
+	if fly == true then self:PlayActivity_Fly(activity) return end
+	self:StopProcessing()
+	self.CanChaseEnemy = false
+	local sched = ai_sched_cpt.New(activity)
+	local task = "TASK_PLAY_SEQUENCE"
+	if (self:IsMoving() or self.CurrentSchedule) then
+		self:StopMoving()
+		self:StopMoving()
+		self:StartEngineTask(GetTaskID("TASK_RESET_ACTIVITY"),0)
+	end
+	if facetarget then
+		if(facetarget == 1) then
+			task = "TASK_PLAY_SEQUENCE_FACE_TARGET"
+		elseif(facetarget == 2) then
+			task = "TASK_PLAY_SEQUENCE_FACE_ENEMY"
+		else
+			task = "TASK_PLAY_SEQUENCE"
+		end
+	end
+	self:ClearSchedule()
+	sched:EngTask(task,activity)
+	self:StartSchedule(sched)
+	self.CurrentAnimation = activity
+	self.IsPlayingActivity = true
+	self:MaintainActivity()
+	self:OnStartedAnimation(activity)
+	self.NextAnimT = CurTime() +self:AnimationLength(activity)
+	timer.Simple(self:AnimationLength(activity) +extratime,function()
+		if self:IsValid() then
+			self:SetNPCState(NPC_STATE_NONE)
+			self.IsPlayingActivity = false
+			self.CanChaseEnemy = true
+			self:OnFinishedAnimation(activity)
+		end
+	end)
+	return activity
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetMovementAnimation()

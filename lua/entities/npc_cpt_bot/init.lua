@@ -39,10 +39,12 @@ ENT.ModelTable = {
 	-- "models/player/zombie_soldier.mdl"
 }
 ENT.StartHealth = 100
+ENT.CanUseTaunts = true
 ENT.UseDefaultWeaponThink = true
 ENT.TurnsOnDamage = false
 ENT.CanSeeAllEnemies = false
 ENT.Faction = "FACTION_PLAYER"
+ENT.FriendlyToPlayers = true
 ENT.Team = "No Team"
 
 ENT.BloodEffect = {"blood_impact_red_01"}
@@ -180,6 +182,8 @@ function ENT:BeforeBotCreated()
 			"weapon_cpt_galil",
 			"weapon_cpt_pistol",
 			"weapon_cpt_shotgun",
+			"weapon_cpt_pipe",
+
 			"weapon_cpt_css_knife",
 			"weapon_cpt_css_m16",
 			"weapon_cpt_css_fiveseven",
@@ -213,6 +217,7 @@ function ENT:BeforeBotCreated()
 			"weapon_cpt_galil",
 			"weapon_cpt_pistol",
 			"weapon_cpt_shotgun",
+			"weapon_cpt_pipe",
 		}
 	end
 end

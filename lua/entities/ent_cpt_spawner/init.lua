@@ -41,12 +41,14 @@ function ENT:Initialize()
 	self.bInitialized = true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnThink_WhileDisabled() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink_BeforeActivated() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.bInitialized != true then return end
 	self:OnThink_BeforeActivated()
-	if self.IsActivated == false then return end
+	if self.IsActivated == false then self:OnThink_WhileDisabled() return end
 	if self.MaxSpawnableNPCs != -1 then
 		if self.TotalSpawnedNPCs >= self.MaxSpawnableNPCs then
 			self:Remove()

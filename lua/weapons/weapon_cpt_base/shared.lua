@@ -76,8 +76,13 @@ SWEP.Primary.Automatic		= false
 SWEP.Primary.Ammo			= "9×19mm" // Default CPTBase Ammo
 SWEP.NPCFireRate = 0.1
 SWEP.tbl_NPCFireTimes = {0}
+SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
+SWEP.NPC_FireDistance = 2500
+SWEP.NPC_FireDistanceStop = 500
+SWEP.NPC_FireDistanceMoveAway = 200
 SWEP.NPC_Spread = nil
 SWEP.NPC_CurrentReloadTime = 2
+SWEP.NPC_AttackGestureSpeedOverride = false -- Set to a number to enable (Default is 1)
 // These 2 variables are obsolete
 -- SWEP.NPC_FireTime = 0 -- Shoot timer
 -- SWEP.NPC_FireRateAmount = 1 -- How many times it runs the shoot code
@@ -702,6 +707,9 @@ function SWEP:OnPrimaryAttack_NPC()
 		local speed = 1
 		if self.DefaultHoldType == "pistol" then
 			speed = 0.5
+		end
+		if self.NPC_AttackGestureSpeedOverride != false then
+			speed = self.NPC_AttackGestureSpeedOverride
 		end
 		self.Owner:PlayNPCGesture(self.NPC_FireAnimation,2,speed)
 		self:AfterPrimaryAttack_NPC()

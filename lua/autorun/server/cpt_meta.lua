@@ -4,6 +4,7 @@ local ENT_Meta = FindMetaTable("Entity")
 local NPC_Meta = FindMetaTable("NPC")
 local PLY_Meta = FindMetaTable("Player")
 local WPN_Meta = FindMetaTable("Weapon")
+local NBT_Meta = FindMetaTable("NextBot")
 
 if (SERVER) then
 	NPC_STATE_LOST = 8
@@ -63,11 +64,22 @@ function NPC_Meta:SetNPCEnemy(ent)
 end
 
 function util.DoFrostDamage(dmg,ent,attacker)
+	local dif = GetConVarNumber("cpt_aidifficulty")
+	local finaldmg
+	if dif == 1 then
+		finaldmg = dmg *0.5
+	elseif dif == 2 then
+		finaldmg = dmg
+	elseif dif == 3 then
+		finaldmg = dmg *2
+	elseif dif == 4 then
+		finaldmg = dmg *4
+	end
 	local function DoDamage()
 		if ent:IsValid() then
 			if ent:Health() <= 0 then return end
 			local dmginfo = DamageInfo()
-			dmginfo:SetDamage(dmg)
+			dmginfo:SetDamage(finaldmg)
 			if attacker:IsValid() then
 				dmginfo:SetAttacker(attacker)
 				dmginfo:SetInflictor(attacker)
@@ -174,6 +186,7 @@ function NPC_Meta:CreateRagdolledNPC(vel,caller)
 			end
 		end
 	end
+	self:SetRagdollEntity(self.Ragdoll_CPT)
 	timer.Simple(self.RagdollRecoveryTime,function()
 		if self:IsValid() then
 			if self.Ragdoll_CPT:IsValid() then
@@ -689,14 +702,11 @@ function ENT_Meta:SetRelationship(ent,value,isplayer)
 	end
 	if (value == D_HT) && self.tbl_EnemyMemory != nil && !table.HasValue(self.tbl_EnemyMemory,ent) then
 		table.insert(self.tbl_EnemyMemory,ent)
-		-- local oldcount = self.EnemyMemoryCount
-		-- local lastenemy = self:GetEnemy()
-		-- local newenemy = ent
-		-- self.EnemyMemoryCount = self.EnemyMemoryCount +1
-		-- if self.EnemyMemoryCount > 0 && lastenemy != newenemy then
-			-- self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,newenemy)
-			-- return
-		-- end
+		self.EnemyMemoryCount = self.EnemyMemoryCount +1
+		local oldcount = self.EnemyMemoryCount -1
+		if self.EnemyMemoryCount > 0 && self:GetEnemy() != ent then
+			self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,ent)
+		end
 	end
 end
 
@@ -974,24 +984,25 @@ function NPC_Meta:IsFalling(max)
 	end
 end
 
-function ENT_Meta:GetClosestEntity(tbl)
-	return self:GetEntitiesByDistance(tbl)[1]
-end
+-- function ENT_Meta:GetClosestEntity(tbl)
+	-- return self:GetEntitiesByDistance(tbl)[1]
+-- end
 
-function ENT_Meta:GetEntitiesByDistance(tbl)
-	local disttbl = {}
-	for _,v in ipairs(tbl) do
-		if v:IsValid() then
-			disttbl[v] = self:FindCenterDistance(v)
-		elseif !v:IsValid() && table.HasValue(disttbl,v) then
-			disttbl[v] = nil
-			table.remove(disttbl,v)
-		end
-	end
-	return table.SortByKey(disttbl,true)
-end
+-- function ENT_Meta:GetEntitiesByDistance(tbl)
+	-- local disttbl = {}
+	-- for _,v in ipairs(tbl) do
+		-- if v:IsValid() then
+			-- disttbl[v] = self:FindCenterDistance(v)
+		-- elseif !v:IsValid() && table.HasValue(disttbl,v) then
+			-- disttbl[v] = nil
+			-- table.remove(disttbl,v)
+		-- end
+	-- end
+	-- return table.SortByKey(disttbl,true)
+-- end
 
 function NPC_Meta:PlayAnimation(_Animation,facetarget,timed)
+	if self.IsSLVBaseNPC then self:PlayAnimation(_Animation,facetarget,timed) return end
 	if !self.tbl_Animations[_Animation] then return end
 	local tbl = self:SelectFromTable(self.tbl_Animations[_Animation])
 	if string.find(tbl,"cptseq_") then
@@ -1111,6 +1122,7 @@ function NPC_Meta:GiveNPCWeapon(weapon,ismelee)
 end
 
 function NPC_Meta:FaceEnemy()
+	if self.IsSLVBaseNPC then self:SLVFaceEnemy() return end
 	if !IsValid(self:GetEnemy()) then return end
 	self:SetTarget(self:GetEnemy())
 	local _faceenemy = ai_sched_cpt.New("_faceenemy")
@@ -1176,74 +1188,6 @@ function NPC_Meta:PlaySequence(sequence,animrate)
 			self:SetNPCState(NPC_STATE_NONE)
 		end
 	end)
-end
-
-function NPC_Meta:PlayActivity(activity,facetarget,usetime,addtime)
-	local fly = false
-	local usegesture = false
-	local usesequence = false
-	local extratime = nil
-	-- if self.IsPlayingActivity then return end
-	if usetime then
-		if CurTime() < self.NextAnimT then return end
-	end
-	if addtime == nil then
-		extratime = 0
-	else
-		extratime = addtime
-	end
-	if type(activity) == "number" then
-		activity = activity
-	else
-		if string.find(activity,"cptges_") then
-			usegesture = true
-		elseif string.find(activity,"cptseq_") then
-			usesequence = true
-		else
-			activity = self:TranslateStringToNumber(activity)
-		end
-	end
-	if usegesture == true then self:PlayNPCGesture(string.Replace(activity,"cptges_",""),2,self.GlobalAnimationSpeed) return end
-	if usesequence == true then self:PlaySequence(string.Replace(activity,"cptseq_",""),self.GlobalAnimationSpeed) return end
-	if activity == nil then return end
-	if self:AnimationLength(activity) == 0 then return end
-	if self:GetMoveType() == MOVETYPE_FLY then fly = true end
-	if fly == true then self:PlayActivity_Fly(activity) return end
-	self:StopProcessing()
-	self.CanChaseEnemy = false
-	local sched = ai_sched_cpt.New(activity)
-	local task = "TASK_PLAY_SEQUENCE"
-	if (self:IsMoving() or self.CurrentSchedule) then
-		self:StopMoving()
-		self:StopMoving()
-		self:StartEngineTask(GetTaskID("TASK_RESET_ACTIVITY"),0)
-	end
-	if facetarget then
-		if(facetarget == 1) then
-			task = "TASK_PLAY_SEQUENCE_FACE_TARGET"
-		elseif(facetarget == 2) then
-			task = "TASK_PLAY_SEQUENCE_FACE_ENEMY"
-		else
-			task = "TASK_PLAY_SEQUENCE"
-		end
-	end
-	self:ClearSchedule()
-	sched:EngTask(task,activity)
-	self:StartSchedule(sched)
-	self.CurrentAnimation = activity
-	self.IsPlayingActivity = true
-	self:MaintainActivity()
-	self:OnStartedAnimation(activity)
-	self.NextAnimT = CurTime() +self:AnimationLength(activity)
-	timer.Simple(self:AnimationLength(activity) +extratime,function()
-		if self:IsValid() then
-			self:SetNPCState(NPC_STATE_NONE)
-			self.IsPlayingActivity = false
-			self.CanChaseEnemy = true
-			self:OnFinishedAnimation(activity)
-		end
-	end)
-	return activity
 end
 
 function NPC_Meta:OnFinishedAnimation(activity) end
@@ -1321,7 +1265,8 @@ function ENT_Meta:CheckCanSee(ent,cone)
 	end
 end
 
-function ENT_Meta:FindInCone(ent,cone)
+function ENT_Meta:FindInCone(ent,cone,slvbasebackwardscompatibility)
+	if self.IsSLVBaseNPC then self:SLVFindInCone(deg,cone,slvbasebackwardscompatibility) return end
 	if ent == nil then return end
 	if type(ent) == "Vector" then
 		return (self:GetForward():Dot(((ent) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
@@ -1420,10 +1365,26 @@ function NPC_Meta:DebugChat(text)
 	end
 end
 
+function NBT_Meta:IsNextbot()
+	if self.Type == "nextbot" then
+		return true
+	else
+		return false
+	end
+end
+
 function ENT_Meta:IsNextbot()
-	if self.Type == "nextbot" then return true else return false end
+	if self.Type == "nextbot" then
+		return true
+	else
+		return false
+	end
 end
 
 function ENT_Meta:IsProp()
-	if string.find(self:GetClass(),"prop") then return true else return false end
+	if string.find(self:GetClass(),"prop") then
+		return true
+	else
+		return false
+	end
 end

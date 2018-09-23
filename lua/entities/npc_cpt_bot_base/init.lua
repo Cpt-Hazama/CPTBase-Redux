@@ -7,10 +7,12 @@ ENT.UseDefaultWeaponThink = true
 ENT.TurnsOnDamage = false
 ENT.UsePlayermodelMovement = true
 ENT.CanUseTaunts = false
+ENT.CanUseChat = true
 
 ENT.Faction = "FACTION_BOT"
 ENT.Team = "Team1"
 ENT.ShootCone = 70
+ENT.FallingHeight = 22
 
 ENT.LeavesBlood = true -- Don't need to set this to false if the table below is empty, it'll just not make decals
 ENT.BloodDecal = {"Blood"}
@@ -116,7 +118,7 @@ function ENT:SetupHoldtypes(wep,ht)
 		wep:SetNPCIdleAnimation(ACT_HL2MP_IDLE_MELEE2)
 		wep:SetNPCWalkAnimation(ACT_HL2MP_WALK_MELEE2)
 		wep:SetNPCRunAnimation(ACT_HL2MP_RUN_MELEE2)
-		wep:SetNPCFireAnimation("range_melee2")
+		wep:SetNPCFireAnimation("range_melee2_b")
 		self.JumpAnimation = ACT_HL2MP_JUMP_MELEE2
 		self.JumpSequence = "jump_melee2"
 	elseif ht == "grenade" then
@@ -193,12 +195,17 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:NPCPLY_Chat()
 	if GetConVar("cpt_bot_chat"):GetInt() == 0 then return end
+	if !self.CanUseChat then return end
 	self.IsUsingChat = true
 	if self:GetEnemy() != nil then
 		timer.Simple(3,function()
 			if self:IsValid() then
 				self.IsUsingChat = false
-				self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatIdle))
+				if self.Team != "No Team" then
+					self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatIdle))
+				else
+					self:PlayerChat(self.FakeName .. ": " .. self:SelectFromTable(self.tbl_ChatIdle))
+				end
 				-- if CLIENT then
 					-- chat.AddText(Color(0,255,0),self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatIdle))
 				-- end
@@ -209,7 +216,11 @@ function ENT:NPCPLY_Chat()
 		timer.Simple(3,function()
 			if self:IsValid() then
 				self.IsUsingChat = false
-				self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatCombat))
+				if self.Team != "No Team" then
+					self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatCombat))
+				else
+					self:PlayerChat(self.FakeName .. ": " .. self:SelectFromTable(self.tbl_ChatCombat))
+				end
 				-- if CLIENT then
 					-- chat.AddText(Color(0,255,0),self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatCombat))
 				-- end
@@ -339,14 +350,34 @@ function ENT:JumpRandomly()
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_Primary(possessor)
+	if IsValid(self:GetActiveWeapon()) then
+		if self.ReloadingWeapon == false then
+			self:GetActiveWeapon():CanFire(true)
+		else
+			self:GetActiveWeapon():CanFire(false)
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_Jump(possessor)
+	if self.CanUseJump == false then return end
+	self:SetGroundEntity(NULL)
+	self:PlaySequence(self.JumpSequence,3)
+	self:SetLocalVelocity(Vector(math.Rand(-150,150),math.Rand(-150,150),270))
+	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
+	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoWeaponTrace()
 	if !IsValid(self:GetActiveWeapon()) then return end
 	local wep = self:GetActiveWeapon()
-	if wep.DefaultHoldType == "knife" then return true end
+	if (wep.DefaultHoldType == "knife" || wep.DefaultHoldType == "fist" || wep.DefaultHoldType == "melee" || wep.DefaultHoldType == "melee2") then return true end
 	local tracedata = {}
 	tracedata.start = wep:GetAttachment(1).Pos
-	tracedata.endpos = self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()
-	tracedata.filter = {self,wep}
+	tracedata.endpos = self:GetEnemy():GetPos() -- For whatever reason, this allows them to shoot small enemies :/
+	-- tracedata.endpos = self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()
+	tracedata.filter = {self}
 	local tr = util.TraceLine(tracedata)
 	return tr.Hit
 end
@@ -356,6 +387,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 	if(disp == D_HT) then
 		if IsValid(self:GetActiveWeapon()) then
 			local wep = self:GetActiveWeapon()
+			-- print(self:DoWeaponTrace())
 			if nearest > wep.NPC_EnemyFarDistance then
 				if self:CanPerformProcess() then
 					self:ChaseEnemy()
@@ -371,7 +403,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 					if math.random(1,math.random(12,25)) == 1 then
 						self:MoveAway(false)
 					end
-				elseif /*!self:FindInCone(enemy,self.ShootCone) &&*/ enemy:Visible(self) && !self.IsMovingAround then
+				elseif !self:FindInCone(enemy,self.ShootCone) && enemy:Visible(self) && !self.IsMovingAround then
 					self:FaceEnemy()
 					if self:IsMoving() then self:StopCompletely() end
 				elseif !enemy:Visible(self) then

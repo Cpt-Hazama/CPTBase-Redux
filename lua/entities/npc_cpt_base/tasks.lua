@@ -13,7 +13,7 @@ function ENT:TASKFUNC_RUNTOPOS()
 	_runtoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_runtoposition)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -24,7 +24,7 @@ function ENT:TASKFUNC_WALKTOPOS()
 	_walktoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_walktoposition)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -34,7 +34,7 @@ function ENT:TASKFUNC_FOLLOWPLAYER()
 	-- _followplayer:EngTask("TASK_RUN_PATH",0)
 	self:StartSchedule(_followplayer)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -45,7 +45,7 @@ function ENT:TASKFUNC_LASTPOSITION()
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Run") // New change
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -57,7 +57,7 @@ function ENT:TASKFUNC_WALKLASTPOSITION()
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Walk")
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -69,7 +69,7 @@ function ENT:TASKFUNC_RUNLASTPOSITION()
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Run")
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -86,7 +86,7 @@ function ENT:Hide(move)
 	self:StartSchedule(_hidetask)
 	self:SetMovementAnimation(moveanim)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -126,7 +126,7 @@ function ENT:TASKFUNC_GETPATHANDGO()
 	getpathandchasetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(getpathandchasetask)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -139,7 +139,7 @@ function ENT:TASKFUNC_CHASE()
 	_chasetaskfunc:EngTask("TASK_FACE_ENEMY",0)
 	self:StartSchedule(_chasetaskfunc)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end
 
@@ -150,6 +150,6 @@ function ENT:TASKFUNC_WANDER()
 	_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_wandertaskfunc)
 	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",1)
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
 end

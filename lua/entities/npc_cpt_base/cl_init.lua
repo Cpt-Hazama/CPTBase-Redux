@@ -2,8 +2,10 @@ include('shared.lua')
 
 ENT.RenderGroup = RENDERGROUP_BOTH
 
+function ENT:Initialize() end
+
 function ENT:Draw()
-	self.Entity:DrawModel()
+	self:DrawModel()
 	if self.OnDraw then self:OnDraw() end
 end
 
@@ -11,7 +13,7 @@ function ENT:Think()
 	if self.OnClientThink then self:OnClientThink() end
 end
 
-function ENT:DrawTranslucent() end
+function ENT:DrawTranslucent() self:Draw() end
 
 function ENT:BuildBonePositions(NumBones,NumPhysBones) end
 
