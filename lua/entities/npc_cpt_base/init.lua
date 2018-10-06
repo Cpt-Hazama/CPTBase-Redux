@@ -26,6 +26,7 @@ ENT.RagdollRecoveryTime = 5 -- How long until the NPC gets up
 ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 
 	-- AI Variables --
+ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
 ENT.IsBlind = false -- Is the NPC blind? (Experimental)
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
@@ -769,6 +770,7 @@ function ENT:Initialize()
 	self.IdleAnimation = ACT_IDLE
 	self.NextIdleAnimationT = 0
 	self.IsRagdolled = false
+	self.AlreadyResetPoseParamaters = false
 	self.LoopedSounds = {}
 	self.tblBlackList = {}
 	self.tbl_AddToEnemies = {}
@@ -802,7 +804,12 @@ function ENT:Initialize()
 	self.NextSwimDirection_PitchT = 0
 	self.TimeSinceLastTimeFalling = 0
 	self.tbl_Speakers = {}
+	self.tbl_RegisteredNodes = {}
 	self.NPC_Enemy = nil
+	self.Enemy = NULL
+	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
+		self.UseCPTBaseAINavigation = true
+	end
 	self.tbl_Inventory = {
 		["Primary"] = nil,
 		["Melee"] = nil,
@@ -960,16 +967,16 @@ function ENT:UpdateRelations() // Obsolete
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-local AlreadyResetPoseParamaters = false
 function ENT:CheckPoseParameters()
-	if self:CheckForValidMemory() <= 0 then
-		if AlreadyResetPoseParamaters == false then
-			AlreadyResetPoseParamaters = true
+	-- if self:CheckForValidMemory() == 0 then
+	if !IsValid(self:GetEnemy()) then
+		if self.AlreadyResetPoseParamaters == false then
+			self.AlreadyResetPoseParamaters = true
 			self:ClearPoseParameters()
 			self:ClearMemory()
 		end
 	else
-		AlreadyResetPoseParamaters = false
+		self.AlreadyResetPoseParamaters = false
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1385,15 +1392,19 @@ function ENT:ChaseTarget(ent,uselastpos,pos)
 	if self.IsPossessed == true then return end
 	if IsValid(ent) then
 		self:OnChaseEnemy(ent)
-		if uselastpos == false then
-			self:SetTarget(ent)
-			self:TASKFUNC_GETPATHANDGO()
+		if self.UseCPTBaseAINavigation then
+			self:TASKFUNC_CPTBASENAVIGATE(ent)
 		else
-			if pos == nil then
-				pos = ent:GetPos()
+			if uselastpos == false then
+				self:SetTarget(ent)
+				self:TASKFUNC_GETPATHANDGO()
+			else
+				if pos == nil then
+					pos = ent:GetPos()
+				end
+				self:SetLastPosition(pos)
+				self:TASKFUNC_LASTPOSITION()
 			end
-			self:SetLastPosition(pos)
-			self:TASKFUNC_LASTPOSITION()
 		end
 	end
 end
@@ -1581,10 +1592,14 @@ function ENT:UpdateEnemies()
 	else
 		self:SetRelationship(newenemy,D_HT)
 	end
+	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
+		table.insert(self.tbl_EnemyMemory,newenemy)
+	end
 	local findenemy = self:GetClosestEntity(self.tbl_EnemyMemory)
-	self:SetEnemy(findenemy)
-	if lastenemy != findenemy then
-		self:OnEnemyChanged(findenemy)
+	self.Enemy = findenemy
+	self:SetEnemy(self.Enemy)
+	if lastenemy != self.Enemy then
+		self:OnEnemyChanged(self.Enemy)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1727,7 +1742,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 				self:SetState(NPC_STATE_ALERT)
 			end
 			-- print(self:CanPerformProcess(),self.IsPlayingSequence)
-			if self.TurnsOnDamage && self:CanPerformProcess() && DoIgnore != true then
+			if !self.IsPossessed && self.TurnsOnDamage && self:CanPerformProcess() && DoIgnore != true then
 				self:StopCompletely()
 				if _Inflictor != NULL then
 					self:TASKFUNC_FACEPOSITION(_Inflictor:GetPos())
@@ -2250,25 +2265,71 @@ function ENT:GetClosestEntity(tbl)
 	-- local target = self:GetEntitiesByDistance(tbl)[1]
 	-- if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
 	-- print(self:GetEntitiesByDistance(tbl)[1])
-	return self:GetEntitiesByDistance(tbl)[1]
+	-- return self:GetEntitiesByDistance(tbl)[1]
+	return self:GetEntitiesByDistance(tbl)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetEntitiesByDistance(tbl)
 	local close = {}
+	local endtbl = {}
 	local result = NULL
 	for _,v in pairs(tbl) do
-		if IsValid(v) && (v:Health() <= 0 || !v:Alive() || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1)) then
-			close[v] = -69
-		else
-			if IsValid(v) then
+		if IsValid(v) then
+			close[v] = self:GetPos():Distance(v:GetPos())
+		end
+		-- print(v,close[v])
+	end
+	endtbl = table.SortByKey(close,true)
+	result = endtbl[1]
+	-- if self:GetClass() == "npc_cpt_scpunity_106" then
+		-- PrintTable(close)
+		-- print("Selected: " .. tostring(result))
+	-- end
+	return result
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetClosestNodes(tbl,ent)
+	local close = {}
+	local endtbl = {}
+	local result = NULL
+	for _,v in pairs(tbl) do
+		if IsValid(v) then
+			if self:GetPos():Distance(v:GetPos()) <= 375 && self:Visible(self) then
 				close[v] = self:GetPos():Distance(v:GetPos())
+			else
+				if table.HasValue(close,v) then
+					table.remove(close,close[v])
+				end
 			end
 		end
-		if close[v] == -69 then
-			table.remove(close,close[v])
+	end
+	endtbl = table.SortByKey(close,true)
+
+	local closeV = {}
+	local endtblV = {}
+	local resultV = NULL
+	for _,v in pairs(endtbl) do
+		if IsValid(v) then
+			-- if !ent:Visible(v) then
+				-- table.remove(endtbl,close[v])
+				-- self:PlayerChat("Removed node " .. tostring(v))
+			-- end
+			closeV[v] = ent:GetPos():Distance(v:GetPos())
 		end
 	end
-	return table.SortByKey(close,false)
+	endtblV = table.SortByKey(closeV,true)
+	resultV = endtblV[1]
+	return resultV:GetPos()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FindWanderNodes(tbl)
+	local close = {}
+	for _,v in ipairs(tbl) do
+		if IsValid(v) && v:GetPos():Distance(self:GetPos()) <= 375 then
+			table.insert(close,v)
+		end
+	end
+	return close
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetMovementAnimation(_Animation)
@@ -2397,4 +2458,24 @@ function ENT:GetDistanceToVector(pos,type)
 	elseif type == 2 then
 		return self:NearestPoint(pos)
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotMoveForward()
+	self:SetPoseParameter("move_x",1)
+	self:SetPoseParameter("move_y",0)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotMoveBackward()
+	self:SetPoseParameter("move_x",-1)
+	self:SetPoseParameter("move_y",0)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotMoveLeft()
+	self:SetPoseParameter("move_x",0)
+	self:SetPoseParameter("move_y",-1)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotMoveRight()
+	self:SetPoseParameter("move_x",0)
+	self:SetPoseParameter("move_y",1)
 end

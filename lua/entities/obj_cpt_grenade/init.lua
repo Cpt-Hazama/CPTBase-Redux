@@ -89,8 +89,12 @@ end
 function ENT:Explode()
 	if self.IsDead == false then
 		self.IsDead = true
-		util.CreateCustomExplosion(self:GetPos(),400,350,self,"hefg_explosion","cptbase/explode.wav",false,90)
-		self:EmitSound("cptbase/explode_shockwave.wav",100,90)
+		-- util.CreateCustomExplosion(self:GetPos(),400,350,self,"hefg_explosion","cptbase/explode.wav",false,90)
+		util.CreateCustomExplosion(self:GetPos(),400,350,self,"hefg_explosion","cptbase/explode_heavy.mp3",false,140)
+		local epos = self:GetPos()
+		timer.Simple(0.6,function()
+			sound.Play("cptbase/explode_shockwave.wav",epos,120,100 *GetConVarNumber("host_timescale"))
+		end)
 		if self.AlreadyIgnited == false then
 			self.AlreadyIgnited = true
 			for _,v in ipairs(ents.FindInSphere(self:GetPos(),350)) do

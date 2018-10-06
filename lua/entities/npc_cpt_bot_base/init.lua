@@ -8,6 +8,7 @@ ENT.TurnsOnDamage = false
 ENT.UsePlayermodelMovement = true
 ENT.CanUseTaunts = false
 ENT.CanUseChat = true
+ENT.CanJump = true
 
 ENT.Faction = "FACTION_BOT"
 ENT.Team = "Team1"
@@ -20,6 +21,8 @@ ENT.BloodDecal = {"Blood"}
 ENT.UseTimedSteps = true
 ENT.NextFootSound_Walk = 0.4
 ENT.NextFootSound_Run = 0.3
+
+ENT.tbl_Animations = {["Walk"] = {ACT_WALK},["Run"] = {ACT_RUN}}
 
 ENT.tbl_ChatIdle = {}
 
@@ -303,14 +306,11 @@ function ENT:MoveAway(force)
 			self:SetLastPosition(self:GetPos() +trypos)
 			self:TASKFUNC_RUNLASTPOSITION()
 			if trynum == 1 then
-				self:SetPoseParameter("move_x",-1)
-				self:SetPoseParameter("move_y",0)
+				self:BotMoveBackward()
 			elseif trynum == 2 then
-				self:SetPoseParameter("move_x",0)
-				self:SetPoseParameter("move_y",-1)
+				self:BotMoveLeft()
 			else
-				self:SetPoseParameter("move_x",0)
-				self:SetPoseParameter("move_y",1)
+				self:BotMoveRight()
 			end
 			self.IsMovingAround = true
 			self.NextMoveAroundT = CurTime() +2
@@ -342,6 +342,7 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:JumpRandomly()
+	if self.CanJumpAround == false then return end
 	self:SetGroundEntity(NULL)
 	-- self:PlayActivity(ACT_HL2MP_JUMP_AR2)
 	self:PlaySequence(self.JumpSequence,3)
@@ -361,6 +362,7 @@ function ENT:Possess_Primary(possessor)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Jump(possessor)
+	if self.CanJumpAround == false then return end
 	if self.CanUseJump == false then return end
 	self:SetGroundEntity(NULL)
 	self:PlaySequence(self.JumpSequence,3)
@@ -392,6 +394,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 				if self:CanPerformProcess() then
 					self:ChaseEnemy()
 					self:SetPoseParameter("move_x",1)
+					self:BotMoveForward()
 				end
 			end
 			if self.CanUseJump == true && math.random(1,70) == 1 && enemy:Visible(self) then
@@ -410,6 +413,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 					wep:CanFire(false)
 					self:ChaseEnemy()
 					self:SetPoseParameter("move_x",1)
+					self:BotMoveForward()
 				end
 				if nearest <= wep.NPC_FireDistanceStop && !self.IsMovingAround then
 					self:SetAngles(Angle(0,(enemy:GetPos() -self:GetPos()):Angle().y,0))
@@ -421,6 +425,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 				wep:CanFire(false)
 				self:ChaseEnemy()
 				self:SetPoseParameter("move_x",1)
+				self:BotMoveForward()
 			else
 				wep:CanFire(false)
 			end

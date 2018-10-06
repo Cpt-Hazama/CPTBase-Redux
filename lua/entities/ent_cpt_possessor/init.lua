@@ -159,6 +159,7 @@ function ENT:StopPossessing(remove)
 	if IsValid(self.PossessedNPC) then
 		self.PossessedNPC.CanChaseEnemy = true
 		self.PossessedNPC.IsPossessed = false
+		self.PossessedNPC.Possessor = NULL
 		for i = 0,self.PossessedNPC:GetBoneCount() -1 do
 			ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
 		end

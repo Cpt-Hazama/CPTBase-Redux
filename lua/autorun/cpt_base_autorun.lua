@@ -22,6 +22,10 @@ CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 
 CPTBase.AddConVar("cpt_corpselifetime",100)
+CPTBase.AddConVar("cpt_debug_nodegraph",1)
+CPTBase.AddConVar("cpt_debug_showcptnodegraph",0)
+CPTBase.AddConVar("cpt_debug_cancreategraph",0)
+CPTBase.AddConVar("cpt_aiusecustomnodes",0)
 CPTBase.AddConVar("cpt_aidifficulty",2) -- 1 = Easy, 2 = Normal, 3 = Hard, 4 = Hell
 
 game.AddAmmoType({name="9×19mm",dmgtype=DMG_BULLET})

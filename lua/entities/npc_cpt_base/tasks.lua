@@ -119,6 +119,34 @@ function ENT:TASKFUNC_FACEPOSITION(pos)
 	self:StartSchedule(_facepositiontask)
 end
 
+local nextnodet = CurTime()
+function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
+	if self.UseCPTBaseAINavigation == false then return end
+	if self:GetPos():Distance(ent:GetPos()) < 375 then
+		self:SetTarget(ent)
+		self:TASKFUNC_GETPATHANDGO()
+		return
+	end
+	if CurTime() > nextnodet then
+		for _,nodes in ipairs(ents.GetAll()) do
+			if IsValid(nodes) && nodes:GetClass() == "cpt_ai_node" && self:Visible(nodes) then
+				if !table.HasValue(self.tbl_RegisteredNodes,nodes) then
+					table.insert(self.tbl_RegisteredNodes,nodes)
+				end
+			end
+		end
+		nextnodet = CurTime() +0.3
+	end
+	if self.tbl_RegisteredNodes != nil && table.Count(self.tbl_RegisteredNodes) > 0 then
+		local nodes = self:GetClosestNodes(self.tbl_RegisteredNodes,ent)
+		self:SetLastPosition(nodes)
+		self:TASKFUNC_RUNTOPOS()
+		if self.UsePlayermodelMovement then
+			self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+		end
+	end
+end
+
 function ENT:TASKFUNC_GETPATHANDGO()
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "getpathandchasetask" then return end
 	local getpathandchasetask = ai_sched_cpt.New("getpathandchasetask")
@@ -144,12 +172,34 @@ function ENT:TASKFUNC_CHASE()
 end
 
 function ENT:TASKFUNC_WANDER()
-	local _wandertaskfunc = ai_sched_cpt.New("_wandertaskfunc")
-	_wandertaskfunc:EngTask("TASK_GET_PATH_TO_RANDOM_NODE",400)
-	-- _wandertaskfunc:EngTask("TASK_WALK_PATH",0)
-	_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
-	self:StartSchedule(_wandertaskfunc)
-	if self.UsePlayermodelMovement then
-		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+	if self.UseCPTBaseAINavigation then
+		if CurTime() > nextnodet then
+			for _,nodes in ipairs(ents.GetAll()) do
+				if IsValid(nodes) && nodes:GetClass() == "cpt_ai_node" && self:Visible(nodes) then
+					if !table.HasValue(self.tbl_RegisteredNodes,nodes) then
+						table.insert(self.tbl_RegisteredNodes,nodes)
+					end
+				end
+			end
+			nextnodet = CurTime() +0.3
+		end
+		if self.tbl_RegisteredNodes != nil && table.Count(self.tbl_RegisteredNodes) > 0 then
+			local nodes = self:FindWanderNodes(self.tbl_RegisteredNodes)
+			local node = self:GetClosestNodes(nodes,self:SelectFromTable(nodes))
+			self:SetLastPosition(node)
+			self:TASKFUNC_WALKTOPOS()
+			if self.UsePlayermodelMovement then
+				self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+			end
+		end
+	else
+		local _wandertaskfunc = ai_sched_cpt.New("_wandertaskfunc")
+		_wandertaskfunc:EngTask("TASK_GET_PATH_TO_RANDOM_NODE",400)
+		-- _wandertaskfunc:EngTask("TASK_WALK_PATH",0)
+		_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+		self:StartSchedule(_wandertaskfunc)
+		if self.UsePlayermodelMovement then
+			self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+		end
 	end
 end

@@ -26,10 +26,14 @@ function NPC_Meta:SetInvisible(inv)
 	self:DrawShadow(not inv)
 end
 
-function NPC_Meta:SpawnEntityAtSelf(class)
+function NPC_Meta:SpawnEntityAtSelf(class,useclearpos)
 	if SERVER then
 		local ent = ents.Create(class)
-		ent:SetPos(self:GetPos())
+		if useclearpos then
+			ent:SetClearPos(self:GetPos())
+		else
+			ent:SetPos(self:GetPos())
+		end
 		ent:SetAngles(self:GetAngles())
 		ent:Spawn()
 	end
