@@ -1,0 +1,13 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "cpthazama/iceshader"
+	"$bumpmap" "cpthazama/icenormal"
+	"$normalmapalphaenvmapmask" 1
+	"$envmapcontrast" 0
+	"$translucent" 1
+	"$envmapsaturation" 1.5
+	"$envmaptint" "[1 1 1]"
+	"$selfillum" 1
+	"$envmap" "effects/icemap"
+	"$translucent" "1"
+}

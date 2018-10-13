@@ -62,7 +62,8 @@ ENT.PlayermodelMovementSpeed_Forward = 1 -- Ranges between -1 and 1 (0 being no 
 ENT.PlayermodelMovementSpeed_Backward = -1 -- Ranges between -1 and 1 (0 being no movement at all)
 ENT.PlayermodelMovementSpeed_Left = -1 -- Ranges between -1 and 1 (0 being no movement at all)
 ENT.PlayermodelMovementSpeed_Right = 1 -- Ranges between -1 and 1 (0 being no movement at all)
-ENT.FallingHeight = 15 -- Determines how many WU until the NPC thinks it is falling
+ENT.FallingHeight = 32 -- Determines how many WU until the NPC thinks it is falling
+ENT.HasFallingAnimation = false -- Set to true for them to play an idle while falling
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
@@ -683,7 +684,16 @@ function ENT:OnSpawn_Fly()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:WhileFalling() end
+function ENT:WhileFalling()
+	if self.HasFallingAnimation then
+		local fall = self:GetIdleAnimation()
+		if type(fall) == "string" then
+			fall = self:TranslateStringToNumber(fall)
+		end
+		self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),fall)
+		self:MaintainActivity()
+	end
+end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnLand() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -825,6 +835,7 @@ function ENT:Initialize()
 		for _,cap in ipairs(self.tbl_Capabilities) do
 			if type(cap) == "number" then
 				self:CapabilitiesAdd(bit.bor(cap))
+				if cap == CAP_MOVE_JUMP then self.HasFallingAnimation = true end
 			end
 		end
 	end
@@ -2150,8 +2161,11 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 	else
 		self:OnMissEntity()
 	end
+	self:OnDoDamage(didhit,tblhit,hitpos)
 	table.Empty(tblhit)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnDoDamage(didhitsomething,hitents,hitpos) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnHitEntity(hitents,hitpos)
 	if self.tbl_Sounds["Strike"] == nil then

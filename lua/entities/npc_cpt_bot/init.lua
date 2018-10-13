@@ -141,13 +141,39 @@ ENT.tbl_Animations = {
 	["Idle"] = {ACT_HL2MP_IDLE_AR2},
 }
 
--- ENT.tbl_Weapons = {
-	-- "weapon_cpt_ar2",
-	-- "weapon_cpt_ar3",
-	-- "weapon_cpt_galil",
-	-- "weapon_cpt_pistol",
-	-- "weapon_cpt_shotgun",
--- }
+ENT.tbl_Weapons = {
+	"weapon_cpt_ar2",
+	"weapon_cpt_ar3",
+	"weapon_cpt_galil",
+	"weapon_cpt_pistol",
+	"weapon_cpt_shotgun",
+	"weapon_cpt_pipe",
+	"weapon_cpt_css_knife",
+	"weapon_cpt_css_m16",
+	"weapon_cpt_css_fiveseven",
+	"weapon_cpt_css_awp",
+	"weapon_cpt_css_aug",
+	"weapon_cpt_css_famas",
+	"weapon_cpt_css_g3",
+	"weapon_cpt_css_glock",
+	"weapon_cpt_css_m3super",
+	"weapon_cpt_css_mp5",
+	"weapon_cpt_css_p90",
+	"weapon_cpt_css_p228",
+	"weapon_cpt_css_sg550",
+	"weapon_cpt_css_sg552",
+	"weapon_cpt_css_ump",
+	"weapon_cpt_css_usp",
+	"weapon_cpt_css_xm1014",
+	"weapon_cpt_css_ak47",
+	"weapon_cpt_css_galil",
+	"weapon_cpt_css_mac10",
+	"weapon_cpt_css_deagle",
+	"weapon_cpt_css_dualelite",
+	"weapon_cpt_css_tmp",
+	"weapon_cpt_css_m249",
+	"weapon_cpt_css_scout",
+}
 
 ENT.UseTimedSteps = true
 ENT.NextFootSound_Walk = 0.45
@@ -161,6 +187,7 @@ ENT.tbl_Sounds = {
 }
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnBotCreated()
+	self.NextTauntPT = 0
 	if GetConVar("cpt_bot_seeenemies"):GetInt() == 1 then
 		self.CanSeeAllEnemies = true
 	elseif GetConVar("cpt_bot_seeenemies"):GetInt() == 0 then
@@ -174,50 +201,35 @@ function ENT:OnBotCreated()
 	-- self:SetColor(Vector(150/255,0/255,0/255))
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:BeforeBotCreated()
-	if FindLuaFile("autorun/cpt_css_autorun.lua") then
-		self.tbl_Weapons = {
-			"weapon_cpt_ar2",
-			"weapon_cpt_ar3",
-			"weapon_cpt_galil",
-			"weapon_cpt_pistol",
-			"weapon_cpt_shotgun",
-			"weapon_cpt_pipe",
-
-			"weapon_cpt_css_knife",
-			"weapon_cpt_css_m16",
-			"weapon_cpt_css_fiveseven",
-			"weapon_cpt_css_awp",
-			"weapon_cpt_css_aug",
-			"weapon_cpt_css_famas",
-			"weapon_cpt_css_g3",
-			"weapon_cpt_css_glock",
-			"weapon_cpt_css_m3super",
-			"weapon_cpt_css_mp5",
-			"weapon_cpt_css_p90",
-			"weapon_cpt_css_p228",
-			"weapon_cpt_css_sg550",
-			"weapon_cpt_css_sg552",
-			"weapon_cpt_css_ump",
-			"weapon_cpt_css_usp",
-			"weapon_cpt_css_xm1014",
-			"weapon_cpt_css_ak47",
-			"weapon_cpt_css_galil",
-			"weapon_cpt_css_mac10",
-			"weapon_cpt_css_deagle",
-			"weapon_cpt_css_dualelite",
-			"weapon_cpt_css_tmp",
-			"weapon_cpt_css_m249",
-			"weapon_cpt_css_scout",
-		}
-	else
-		self.tbl_Weapons = {
-			"weapon_cpt_ar2",
-			"weapon_cpt_ar3",
-			"weapon_cpt_galil",
-			"weapon_cpt_pistol",
-			"weapon_cpt_shotgun",
-			"weapon_cpt_pipe",
-		}
+function ENT:Possess_Duck(possessor)
+	if CurTime() > self.NextTauntPT then
+		self:PlayTaunt(true)
+		self.NextTauntPT = CurTime() +10
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_Reload(possessor)
+	if IsValid(self:GetActiveWeapon()) then
+		if self:GetActiveWeapon():Clip1() < self:GetActiveWeapon().Primary.DefaultClip then
+			self:GetActiveWeapon():NPC_Reload()
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BeforeBotCreated()
+	-- if FindLuaFile("autorun/cpt_scpsl_autorun.lua") then
+		-- local tb = {
+			-- "weapon_cpt_scpsl_e11",
+			-- "weapon_cpt_scpsl_e11v2",
+			-- "weapon_cpt_scpsl_ar762",
+			-- "weapon_cpt_scpsl_logicer",
+			-- "weapon_cpt_scpsl_com15",
+			-- "weapon_cpt_scpsl_p90",
+			-- "weapon_cpt_scpsl_hk417",
+			-- "weapon_cpt_scpsl_mp7",
+			-- "weapon_cpt_scpsl_microhid",
+			-- "weapon_cpt_scpsl_sbx7",
+		-- }
+		-- table.insert(self.tbl_Weapons,tb)
+	-- end
 end

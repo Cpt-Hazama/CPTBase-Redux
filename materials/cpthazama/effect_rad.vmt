@@ -1,0 +1,25 @@
+"VertexLitGeneric"
+{
+ 	"$model" 1
+    "$nocull" "1"
+	"$basetexture" "cpthazama/effect_rad"
+	"$texture2" "cpthazama/effect_rad"
+	"$translucent" "1"
+	"$alpha" "0"
+	"$additive" "1"
+	"Proxies"
+	{
+		"TextureScroll"
+		{
+			"texturescrollvar" "$basetexturetransform"
+			"texturescrollrate" 1.5
+			"texturescrollangle" 90
+		}
+		"TextureScroll"
+		{
+			"texturescrollvar" "$texture2transform"
+			"texturescrollrate" 3
+			"texturescrollangle" 150
+		}
+	}
+}

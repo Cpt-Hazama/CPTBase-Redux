@@ -21,8 +21,9 @@ CPTBase.AddNPC("Puker Zombie","npc_cpt_pukerzombie","CPTBase Redux")
 CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 
+CPTBase.AddConVar("cpt_allowspecialdmg",1)
 CPTBase.AddConVar("cpt_corpselifetime",100)
-CPTBase.AddConVar("cpt_debug_nodegraph",1)
+CPTBase.AddConVar("cpt_debug_nodegraph",0)
 CPTBase.AddConVar("cpt_debug_showcptnodegraph",0)
 CPTBase.AddConVar("cpt_debug_cancreategraph",0)
 CPTBase.AddConVar("cpt_aiusecustomnodes",0)
@@ -56,6 +57,7 @@ end)
 
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.IsPossessing = false
+	ply.CPTBase_EF_RAD = 0
 	ply:SetNWBool("CPTBase_IsPossessing",false)
 	ply:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 end)

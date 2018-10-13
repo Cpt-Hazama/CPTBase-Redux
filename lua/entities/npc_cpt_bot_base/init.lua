@@ -9,6 +9,7 @@ ENT.UsePlayermodelMovement = true
 ENT.CanUseTaunts = false
 ENT.CanUseChat = true
 ENT.CanJump = true
+ENT.HasFallingAnimation = true
 
 ENT.Faction = "FACTION_BOT"
 ENT.Team = "Team1"
@@ -233,7 +234,8 @@ function ENT:NPCPLY_Chat()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:PlayTaunt()
+function ENT:PlayTaunt(override)
+	if override != true && self.IsPossessed then return end
 	local tbl = {
 		[1] = {anim="taunt_cheer",snd="common/null.wav"},
 		[2] = {anim="taunt_dance",snd="vo/npc/male01/likethat.wav"},
@@ -328,6 +330,7 @@ end
 function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	self:MoveAway(false)
 	if self.CanUseJump == true && math.random(1,4) == 1 then
+		if self.IsPossessed then return end
 		self:JumpRandomly()
 	end
 	if hitbox == 1 then

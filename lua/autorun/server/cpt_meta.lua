@@ -10,6 +10,8 @@ if (SERVER) then
 	NPC_STATE_LOST = 8
 	MOVETYPE_SWIM = 12
 	DMG_FROST = 10
+	DMG_RAD = 11
+	DMG_POI = 12
 	util.AddNetworkString("cpt_ControllerView")
 end
 
@@ -63,11 +65,135 @@ function NPC_Meta:GetNPCEnemy()
 	end
 end
 
+function NPC_Meta:Deaths()
+	return 0
+end
+
 function NPC_Meta:SetNPCEnemy(ent)
 	self.NPC_Enemy = ent
 end
 
-function util.DoFrostDamage(dmg,ent,attacker)
+// util.AddAttackEffect(self,enemy,8,DMG_POI,1.5,10)
+function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
+	if GetConVarNumber("cpt_allowspecialdmg") == 0 then return end
+	local finaldmg = AdaptCPTBaseDamage(dmg)
+	local deaths = ent:Deaths()
+	local EFDeath = delay *lp
+	local fTime = true
+	local function SpawnEFM(ent,mat)
+		if SERVER then
+			local efm = ents.Create("cpt_effect_manager")
+			efm:SetEffectTime(EFDeath)
+			efm:SetEffectedEntity(ent)
+			efm:SetEffectType(mat)
+			efm:Spawn()
+		end
+	end
+	if ef == DMG_RAD then
+		if ent.CPTBase_ExperiencingEFDamage_RAD == nil then
+			ent.CPTBase_ExperiencingEFDamage_RAD = false
+		end
+		if ent.CPTBase_EF_RAD == nil then
+			ent.CPTBase_EF_RAD = 0
+		end
+		if ent.CPTBase_EF_RAD >= 400 then ent:Kill() return end
+		if ent.CPTBase_ExperiencingEFDamage_RAD then return end
+		ent.CPTBase_ExperiencingEFDamage_RAD = true
+		SpawnEFM(ent,"cpthazama/effect_rad")
+		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_RAD = false end end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				if ent.CPTBase_EF_RAD >= 400 then ent:Kill() return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_RADIATION)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				ent:TakeDamageInfo(dmginfo)
+				ent:EmitSound("player/geiger3.wav",60,100)
+				if ent:IsPlayer() then ent:ChatPrint("RADS +" .. tostring(math.Round(lp *1.5))) end
+				ent.CPTBase_EF_RAD = ent.CPTBase_EF_RAD +math.Round(lp *1.5)
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	elseif ef == DMG_POI then
+		if ent.CPTBase_ExperiencingEFDamage_POI == nil then
+			ent.CPTBase_ExperiencingEFDamage_POI = false
+		end
+		if ent.CPTBase_ExperiencingEFDamage_POI then return end
+		ent.CPTBase_ExperiencingEFDamage_POI = true
+		SpawnEFM(ent,"cpthazama/effect_poison")
+		if fTime then
+			ent:EmitSound("cpthazama/fallout4/fx/FX_Effect_Damage_Poison_01.mp3",60,100)
+			fTime = false
+		end
+		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_POI = false end end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_POISON)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				ent:TakeDamageInfo(dmginfo)
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	elseif ef == DMG_FROST then
+		if ent.CPTBase_ExperiencingEFDamage_FROST == nil then
+			ent.CPTBase_ExperiencingEFDamage_FROST = false
+		end
+		if ent.CPTBase_ExperiencingEFDamage_FROST then return end
+		ent.CPTBase_ExperiencingEFDamage_FROST = true
+		SpawnEFM(ent,"cpthazama/effect_frozen")
+		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_FROST = false end end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_GENERIC)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				ent:TakeDamageInfo(dmginfo)
+				-- for i = 0,ent:GetBoneCount() -1 do
+					-- ParticleEffect("cpt_projectile_freeze_explode",ent:GetBonePosition(i),Angle(0,0,0),nil)
+				-- end
+				if ent:Health() <= 0 then
+					ent:EmitSound("physics/glass/glass_impact_bullet4.wav",70,100)
+				else
+					ent:EmitSound("ambient/materials/footsteps_glass1.wav",50,math.random(125,150))
+				end
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	end
+end
+
+function AdaptCPTBaseDamage(dmg)
 	local dif = GetConVarNumber("cpt_aidifficulty")
 	local finaldmg
 	if dif == 1 then
@@ -79,31 +205,7 @@ function util.DoFrostDamage(dmg,ent,attacker)
 	elseif dif == 4 then
 		finaldmg = dmg *4
 	end
-	local function DoDamage()
-		if ent:IsValid() then
-			if ent:Health() <= 0 then return end
-			local dmginfo = DamageInfo()
-			dmginfo:SetDamage(finaldmg)
-			if attacker:IsValid() then
-				dmginfo:SetAttacker(attacker)
-				dmginfo:SetInflictor(attacker)
-			end
-			dmginfo:SetDamageType(DMG_GENERIC)
-			if attacker:IsValid() then
-				dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
-			end
-			ent:TakeDamageInfo(dmginfo)
-			for i = 0,ent:GetBoneCount() -1 do
-				ParticleEffect("cpt_projectile_freeze_explode",ent:GetBonePosition(i),Angle(0,0,0),nil)
-			end
-			if ent:Health() <= 0 then
-				sound.Play("physics/glass/glass_impact_bullet4.wav",ent:GetPos(),70,100)
-			else
-				sound.Play("ambient/materials/footsteps_glass1.wav",ent:GetPos(),40,140)
-			end
-		end
-	end
-	timer.Create("CPTBase_DoFrostDamage_" .. math.Rand(1,99999),1,5,function() DoDamage() end)
+	return finaldmg
 end
 
 function NPC_Meta:SetArmor(amount)

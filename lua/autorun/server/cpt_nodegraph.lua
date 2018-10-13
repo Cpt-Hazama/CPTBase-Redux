@@ -1,5 +1,12 @@
 if !CPTBase then return end
 -------------------------------------------------------------------------------------------------------------------
+/*
+	To do:
+		- Fix stack error
+		- Add more node support types
+		- Create a cpt_ai_node_manager entity that saves all node data to improve performance by 5x
+*/
+
 CPTBASE_NODE_GROUND = 1
 CPTBASE_NODE_AIR = 2
 CPTBASE_NODE_CLIMB = 3

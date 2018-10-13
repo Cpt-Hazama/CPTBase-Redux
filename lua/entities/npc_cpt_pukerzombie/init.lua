@@ -76,7 +76,7 @@ function ENT:DoAttack()
 	self:PlayAnimation("Attack",2)
 	self:PlaySound("Attack")
 	self.IsAttacking = true
-	timer.Simple(self.MeleeAttackHitTime,function()
+	timer.Simple(self.MeleeAttackHitTime *self:GetPlaybackRate(),function()
 		if self:IsValid() then
 			self:DoDamage(self.MeleeAttackDamageDistance,self.MeleeAttackDamage,self.MeleeAttackType)
 		end
@@ -91,12 +91,12 @@ function ENT:DoRangeAttack()
 		self:StopCompletely()
 		self:PlayAnimation("RangeAttack",2)
 		self.IsRangeAttacking = true
-		timer.Simple(0.1,function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.3,function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.5,function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.7,function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.8,function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_bloody_break.wav"),75,100) ParticleEffect("blood_impact_yellow_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self) end end)
-		timer.Simple(self.RangeAttackThrowTime,function()
+		timer.Simple(0.1 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.3 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.5 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.7 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.8 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_bloody_break.wav"),75,100) ParticleEffect("blood_impact_yellow_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self) end end)
+		timer.Simple(self.RangeAttackThrowTime *self:GetPlaybackRate(),function()
 			if self:IsValid() then
 				if self:GetBodygroup(1) == 1 then
 					self:SetBodygroup(1,0)
@@ -157,7 +157,7 @@ function ENT:OnDeath(dmg,dmginfo,hitbox)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
-	print(self:CanPerformProcess())
+	-- print(self:CanPerformProcess())
 	if(disp == D_HT) then
 		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
 			self:DoAttack()
@@ -167,7 +167,7 @@ function ENT:HandleSchedules(enemy,dist,nearest,disp)
 		end
 		if nearest <= 200 then self.tbl_Animations["Run"] = {ACT_RUN} else self.tbl_Animations["Run"] = {ACT_WALK} end
 		if self:CanPerformProcess() then
-			print('ok')
+			-- print('ok')
 			self:ChaseEnemy()
 		end
 	elseif(disp == D_FR) then

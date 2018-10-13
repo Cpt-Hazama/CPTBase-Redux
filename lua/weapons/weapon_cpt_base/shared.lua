@@ -80,7 +80,7 @@ SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
 SWEP.NPC_FireDistance = 2500
 SWEP.NPC_FireDistanceStop = 500
 SWEP.NPC_FireDistanceMoveAway = 200
-SWEP.NPC_Spread = nil
+SWEP.NPC_Spread = 7
 SWEP.NPC_CurrentReloadTime = 2
 SWEP.NPC_AttackGestureSpeedOverride = false -- Set to a number to enable (Default is 1)
 // These 2 variables are obsolete
