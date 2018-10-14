@@ -62,6 +62,7 @@ function ENT:OnTouch(data,phys)
 		else
 			self:EmitSound(Sound("npc/antlion_grub/squashed.wav"),75,100)
 		end
+		util.AddAttackEffect(self:GetEntityOwner(),self:GetHitEntity(),4,DMG_POI,1,3)
 		self:Remove()
 	end
 end

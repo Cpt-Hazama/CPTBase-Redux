@@ -64,6 +64,9 @@ ENT.PlayermodelMovementSpeed_Left = -1 -- Ranges between -1 and 1 (0 being no mo
 ENT.PlayermodelMovementSpeed_Right = 1 -- Ranges between -1 and 1 (0 being no movement at all)
 ENT.FallingHeight = 32 -- Determines how many WU until the NPC thinks it is falling
 ENT.HasFallingAnimation = false -- Set to true for them to play an idle while falling
+ENT.CanRagdollEnemies = false -- Can the NPC ragdoll players/NPCs?
+ENT.RagdollEnemyChance = 5 -- Chance the enemy will be ragdolled upon being hit
+ENT.RagdollEnemyVelocity = Vector(0,0,0)
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
@@ -1988,15 +1991,41 @@ function ENT:OnDeath_CreatedCorpse(the_ragdoll) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CheckBeforeRagdollEnemy(ent) return true end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:RagdollEnemy(dist,vel)
-	for _,ent in ipairs(ents.FindInSphere(self:GetPos(),dist)) do
-		if ent:IsValid() && self:IsValid() && self:Visible(ent) && ent:Health() > 0 then
-			if (ent:IsNPC() && ent != self && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) && self:FindInCone(ent,self.MeleeAngle) then
-				if ent.CanBeRagdolled == false then return end
-				if ent.IsRagdolled == true then return end
-				if self:GetClosestPoint(ent) <= dist then
-					if self:CheckBeforeRagdollEnemy(ent) then
-						ent:CreateRagdolledNPC(vel,self)
+function ENT:RagdollEnemy(dist,vel,tblents)
+	if tblents == nil then
+		for _,ent in ipairs(ents.FindInSphere(self:GetPos() +self:GetForward() *1,dist)) do
+			if ent:IsValid() && self:IsValid() && self:Visible(ent) then
+				if (((ent:IsNPC() && ent != self) || ent:IsPlayer() && ent.CPTBase_HasBeenRagdolled != true) && self:Disposition(ent) != D_LI) && self:FindInCone(ent,self.MeleeAngle) then
+					if ent:IsNPC() && ent.CanBeRagdolled != true then return end
+					if ent:IsNPC() && ent.IsRagdolled != false then return end
+					if ent:Health() <= 0 then return end
+					if self:GetClosestPoint(ent) <= dist then
+						if self:CheckBeforeRagdollEnemy(ent) then
+							if ent:IsNPC() then
+								ent:CreateRagdolledNPC(vel,self)
+							else
+								ent:CreateRagdolledPlayer(vel,self)
+							end
+						end
+					end
+				end
+			end
+		end
+	else
+		for _,ent in ipairs(tblents) do
+			if ent:IsValid() && self:IsValid() && self:Visible(ent) then
+				if (((ent:IsNPC() && ent != self) || ent:IsPlayer() && ent.CPTBase_HasBeenRagdolled != true) && self:Disposition(ent) != D_LI) && self:FindInCone(ent,self.MeleeAngle) then
+					if ent:IsNPC() && ent.CanBeRagdolled != true then return end
+					if ent:IsNPC() && ent.IsRagdolled != false then return end
+					if ent:Health() <= 0 then return end
+					if self:GetClosestPoint(ent) <= dist then
+						if self:CheckBeforeRagdollEnemy(ent) then
+							if ent:IsNPC() then
+								ent:CreateRagdolledNPC(vel,self)
+							else
+								ent:CreateRagdolledPlayer(vel,self)
+							end
+						end
 					end
 				end
 			end
@@ -2138,6 +2167,11 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 							OnHit(ent,dmginfo)
 						end
 						table.insert(tblhit,ent)
+						if self.CanRagdollEnemies then
+							if math.random(1,self.RagdollEnemyChance) == 1 then
+								self:RagdollEnemy(dist,self.RagdollEnemyVelocity,tblhit)
+							end
+						end
 						ent:TakeDamageInfo(dmginfo)
 						if ent:IsPlayer() then
 							if viewPunch then

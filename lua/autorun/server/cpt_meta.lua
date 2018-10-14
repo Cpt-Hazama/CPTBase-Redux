@@ -23,6 +23,77 @@ function FindGameFile(filedir)
 	return file.Exists(filedir,"GAME")
 end
 
+function PLY_Meta:GetCPTBaseRagdoll()
+	return self.CPTBase_Ragdoll
+end
+
+function PLY_Meta:SetCPTBaseRagdoll(ent)
+	self.CPTBase_Ragdoll = ent
+end
+
+function PLY_Meta:SpawnCPTBaseRagdoll(ent,velocity,caller)
+	if SERVER then
+		local rag = ents.Create("prop_ragdoll")
+		rag:SetModel(ent:GetModel())
+		rag:SetPos(ent:GetPos())
+		rag:SetAngles(ent:GetAngles())
+		rag:Spawn()
+		rag:SetCollisionGroup(1)
+		if self:IsOnFire() then
+			rag:Ignite(math.random(8,10),1)
+		end
+		rag:SetVelocity(self:GetVelocity())
+		for i = 1,128 do
+			local bonephys = rag:GetPhysicsObjectNum(i)
+			if IsValid(bonephys) then
+				local bonepos,boneang = self:GetBonePosition(rag:TranslatePhysBoneToBone(i))
+				if(bonepos) then
+					bonephys:SetPos(bonepos)
+					bonephys:SetAngles(boneang)
+					if IsValid(caller) then
+						-- bonephys:ApplyForceCenter(caller:GetPos() -rag:GetForward() *velocity.x +rag:GetRight() *velocity.y +rag:GetUp() *velocity.z)
+						bonephys:SetVelocity(rag:GetVelocity() +caller:GetForward() *velocity.x +caller:GetRight() *velocity.y +caller:GetUp() *velocity.z)
+					end
+				end
+			end
+		end
+		ent.LastRagdollMoveT = CurTime() +3
+		ent:SetCPTBaseRagdoll(rag)
+		ent.RagdollHealthCPTBase = self:Health()
+		ent.RagdollArmorCPTBase = self:Armor()
+		ent.CPTBase_RagdollWeapons = {}
+		for k,v in pairs(self:GetWeapons()) do
+			table.insert(self.CPTBase_RagdollWeapons,v:GetClass())
+		end
+		ent.CPTBase_HasBeenRagdolled = true
+	end
+end
+
+function PLY_Meta:CPTBaseUnRagdoll()
+	if IsValid(self:GetCPTBaseRagdoll()) then
+		local pos = self:GetCPTBaseRagdoll():GetPos()
+		local ang = self:GetCPTBaseRagdoll():GetAngles()
+		self:SetPos(pos)
+		self:SetAngles(ang)
+		self:GetCPTBaseRagdoll():Remove()
+		self:UnSpectate()
+		self:KillSilent()
+		self:Spawn()
+		self:SetPos(pos)
+		self:SetAngles(ang)
+		self:SetHealth(self.RagdollHealthCPTBase)
+		self:SetArmor(self.RagdollArmorCPTBase)
+		for k,v in pairs(self.CPTBase_RagdollWeapons) do
+			self:Give(v)
+		end
+	end
+end
+
+function PLY_Meta:CreateRagdolledPlayer(vel,caller)
+	local velocity = vel or Vector(-300,0,300)
+	self:SpawnCPTBaseRagdoll(self,velocity,caller)
+end
+
 function NPC_Meta:SetInvisible(inv)
 	self:SetNoDraw(inv)
 	self:DrawShadow(not inv)
@@ -76,6 +147,7 @@ end
 // util.AddAttackEffect(self,enemy,8,DMG_POI,1.5,10)
 function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 	if GetConVarNumber("cpt_allowspecialdmg") == 0 then return end
+	if (!ent:IsNPC() && !ent:IsPlayer()) then return end
 	local finaldmg = AdaptCPTBaseDamage(dmg)
 	local deaths = ent:Deaths()
 	local EFDeath = delay *lp
@@ -100,7 +172,12 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 		if ent.CPTBase_ExperiencingEFDamage_RAD then return end
 		ent.CPTBase_ExperiencingEFDamage_RAD = true
 		SpawnEFM(ent,"cpthazama/effect_rad")
-		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_RAD = false end end)
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_RAD = false
+			end
+		end)
 		local function DoDamage()
 			if ent:IsValid() then
 				if ent:Deaths() > deaths then return end
@@ -117,7 +194,9 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				ent:TakeDamageInfo(dmginfo)
+				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
 				ent:EmitSound("player/geiger3.wav",60,100)
 				if ent:IsPlayer() then ent:ChatPrint("RADS +" .. tostring(math.Round(lp *1.5))) end
 				ent.CPTBase_EF_RAD = ent.CPTBase_EF_RAD +math.Round(lp *1.5)
@@ -135,7 +214,12 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			ent:EmitSound("cpthazama/fallout4/fx/FX_Effect_Damage_Poison_01.mp3",60,100)
 			fTime = false
 		end
-		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_POI = false end end)
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_POI = false
+			end
+		end)
 		local function DoDamage()
 			if ent:IsValid() then
 				if ent:Deaths() > deaths then return end
@@ -151,7 +235,9 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				ent:TakeDamageInfo(dmginfo)
+				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
 			end
 		end
 		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
@@ -162,7 +248,12 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 		if ent.CPTBase_ExperiencingEFDamage_FROST then return end
 		ent.CPTBase_ExperiencingEFDamage_FROST = true
 		SpawnEFM(ent,"cpthazama/effect_frozen")
-		timer.Simple(EFDeath,function() if IsValid(ent) then ent.CPTBase_ExperiencingEFDamage_FROST = false end end)
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_FROST = false
+			end
+		end)
 		local function DoDamage()
 			if ent:IsValid() then
 				if ent:Deaths() > deaths then return end
@@ -178,7 +269,9 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				ent:TakeDamageInfo(dmginfo)
+				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
 				-- for i = 0,ent:GetBoneCount() -1 do
 					-- ParticleEffect("cpt_projectile_freeze_explode",ent:GetBonePosition(i),Angle(0,0,0),nil)
 				-- end
@@ -287,8 +380,8 @@ function NPC_Meta:CreateRagdolledNPC(vel,caller)
 			if(bonepos) then
 				bonephys:SetPos(bonepos)
 				bonephys:SetAngles(boneang)
-				-- bonephys:AddVelocity(velocity)
-				bonephys:ApplyForceCenter(caller:GetPos() -self:GetForward() *velocity.x +self:GetRight() *velocity.y +self:GetUp() *velocity.z)
+				bonephys:SetVelocity(self.Ragdoll_CPT:GetVelocity() +caller:GetForward() *velocity.x +caller:GetRight() *velocity.y +caller:GetUp() *velocity.z)
+				-- bonephys:ApplyForceCenter(caller:GetPos() -self.Ragdoll_CPT:GetForward() *velocity.x +self.Ragdoll_CPT:GetRight() *velocity.y +self.Ragdoll_CPT:GetUp() *velocity.z)
 			end
 		end
 	end

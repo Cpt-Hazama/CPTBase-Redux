@@ -51,6 +51,7 @@ function ENT:OnTouch(data,phys)
 				self:GetHitEntity().bSelfDestruct = true
 			end
 		end
+		util.AddAttackEffect(self:GetEntityOwner(),self:GetHitEntity(),5,DMG_POI,0.5,10)
 		self:EmitSound(Sound(self:GetImpactSound()),self.ImpactSoundVolume,self.ImpactSoundPitch)
 		self:Remove()
 	end

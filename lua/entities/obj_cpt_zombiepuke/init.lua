@@ -50,6 +50,7 @@ function ENT:OnTouch(data,phys)
 				self:GetHitEntity().bSelfDestruct = true
 			end
 		end
+		util.AddAttackEffect(self:GetEntityOwner(),self:GetHitEntity(),2,DMG_POI,1,10)
 		self:EmitSound(Sound("npc/antlion_grub/squashed.wav"),75,100)
 		self:Remove()
 	end

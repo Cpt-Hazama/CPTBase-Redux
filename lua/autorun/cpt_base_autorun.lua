@@ -58,9 +58,65 @@ end)
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.IsPossessing = false
 	ply.CPTBase_EF_RAD = 0
+	ply.CPTBase_ExperiencingEFDamage_RAD = false
+	ply.CPTBase_ExperiencingEFDamage_POI = false
+	ply.CPTBase_ExperiencingEFDamage_FROST = false
+	ply.CPTBase_Ragdoll = NULL
+	ply.CPTBase_HasBeenRagdolled = false
+	ply.LastRagdollMoveT = CurTime()
 	ply:SetNWBool("CPTBase_IsPossessing",false)
 	ply:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 end)
+
+if SERVER then
+	hook.Add("Think","CPTBase_PlayerRagdolling",function()
+		for _,v in ipairs(player.GetAll()) do
+			if IsValid(v) && v.CPTBase_HasBeenRagdolled then
+				if IsValid(v:GetCPTBaseRagdoll()) then
+					-- v:GodEnable()
+					v:GodDisable()
+					v:StripWeapons()
+					v:Spectate(OBS_MODE_CHASE)
+					v:SpectateEntity(v:GetCPTBaseRagdoll())
+					v:SetMoveType(MOVETYPE_OBSERVER)
+					if v:GetCPTBaseRagdoll():GetVelocity():Length() > 10 then
+						v.LastRagdollMoveT = CurTime() +5
+					end
+					if CurTime() > v.LastRagdollMoveT then
+						v:CPTBaseUnRagdoll()
+						-- v:GodDisable()
+					end
+				end
+			end
+		end
+	end)
+
+	hook.Add("PlayerDeath","CPTBase_PlayerRagdollingDeath",function(v,inflictor,attacker)
+		if v.CPTBase_HasBeenRagdolled && IsValid(v:GetCPTBaseRagdoll()) then
+			if IsValid(v:GetRagdollEntity()) then
+				local ent = v:GetCPTBaseRagdoll()
+				local rag = v:GetRagdollEntity()
+				rag:SetPos(ent:GetPos())
+				rag:SetAngles(ent:GetAngles())
+				if ent:IsOnFire() then
+					rag:Ignite(math.random(8,10),1)
+				end
+				rag:SetVelocity(ent:GetVelocity())
+				for i = 1,128 do
+					local bonephys = rag:GetPhysicsObjectNum(i)
+					if IsValid(bonephys) then
+						local bonepos,boneang = ent:GetBonePosition(rag:TranslatePhysBoneToBone(i))
+						if(bonepos) then
+							bonephys:SetPos(bonepos)
+							bonephys:SetAngles(boneang)
+						end
+					end
+				end
+			end
+			v:GetCPTBaseRagdoll():Remove()
+		end
+	end)
+end
 
 if CLIENT then
 	hook.Add("PlayerStartVoice","CPTBase_SetVoiceData",function(ply)
