@@ -33,7 +33,7 @@ function ENT:SetEffectType(ef)
 end
 
 function ENT:Think()
-	if !IsValid(self:GetEffectedEntity()) || IsValid(self:GetEffectedEntity()) && !self:GetEffectedEntity():Alive() then
+	if !IsValid(self:GetEffectedEntity()) || IsValid(self:GetEffectedEntity()) && (((self:GetEffectedEntity():IsNPC() or self:GetEffectedEntity():IsPlayer()) && !self:GetEffectedEntity():Alive())) then
 		self:Remove()
 	end
 end

@@ -12,6 +12,7 @@ if (SERVER) then
 	DMG_FROST = 10
 	DMG_RAD = 11
 	DMG_POI = 12
+	DMG_AFTERBURN = 13
 	util.AddNetworkString("cpt_ControllerView")
 end
 
@@ -159,6 +160,23 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			efm:SetEffectedEntity(ent)
 			efm:SetEffectType(mat)
 			efm:Spawn()
+			timer.Simple(0.02,function()
+				if IsValid(ent) then
+					if ent:IsPlayer() && IsValid(ent:GetCPTBaseRagdoll()) then
+						local efm = ents.Create("cpt_effect_manager")
+						efm:SetEffectTime(EFDeath)
+						efm:SetEffectedEntity(ent:GetCPTBaseRagdoll())
+						efm:SetEffectType(mat)
+						efm:Spawn()
+					elseif ent:IsNPC() && IsValid(ent.Ragdoll_CPT) then
+						local efm = ents.Create("cpt_effect_manager")
+						efm:SetEffectTime(EFDeath)
+						efm:SetEffectedEntity(ent.Ragdoll_CPT)
+						efm:SetEffectType(mat)
+						efm:Spawn()
+					end
+				end
+			end)
 		end
 	end
 	if ef == DMG_RAD then
@@ -230,6 +248,40 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 					dmginfo:SetInflictor(attacker)
 				end
 				dmginfo:SetDamageType(DMG_POISON)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	elseif ef == DMG_AFTERBURN then
+		if ent.CPTBase_ExperiencingEFDamage_AFTERBURN == nil then
+			ent.CPTBase_ExperiencingEFDamage_AFTERBURN = false
+		end
+		if ent.CPTBase_ExperiencingEFDamage_AFTERBURN then return end
+		ent.CPTBase_ExperiencingEFDamage_AFTERBURN = true
+		SpawnEFM(ent,"cpthazama/effect_fire")
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_AFTERBURN = false
+			end
+		end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_BURN)
 				if attacker:IsValid() then
 					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
 				else

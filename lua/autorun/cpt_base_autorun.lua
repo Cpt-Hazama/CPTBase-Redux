@@ -18,6 +18,7 @@ CPTBase.AddNPC("Combine Soldier","npc_cpt_csoldier","CPTBase Redux")
 // Zombies + Enemy Aliens
 CPTBase.AddNPC("Parasite","npc_cpt_parasite","CPTBase Redux")
 CPTBase.AddNPC("Puker Zombie","npc_cpt_pukerzombie","CPTBase Redux")
+CPTBase.AddNPC("Infectious Zombie","npc_cpt_scientistzombie","CPTBase Redux")
 CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 
@@ -60,6 +61,7 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.CPTBase_EF_RAD = 0
 	ply.CPTBase_ExperiencingEFDamage_RAD = false
 	ply.CPTBase_ExperiencingEFDamage_POI = false
+	ply.CPTBase_ExperiencingEFDamage_AFTERBURN = false
 	ply.CPTBase_ExperiencingEFDamage_FROST = false
 	ply.CPTBase_Ragdoll = NULL
 	ply.CPTBase_HasBeenRagdolled = false
