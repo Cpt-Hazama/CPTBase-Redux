@@ -66,7 +66,7 @@ ENT.FallingHeight = 32 -- Determines how many WU until the NPC thinks it is fall
 ENT.HasFallingAnimation = false -- Set to true for them to play an idle while falling
 ENT.CanRagdollEnemies = false -- Can the NPC ragdoll players/NPCs?
 ENT.RagdollEnemyChance = 5 -- Chance the enemy will be ragdolled upon being hit
-ENT.RagdollEnemyVelocity = Vector(0,0,0)
+ENT.RagdollEnemyVelocity = Vector(0,0,0) -- Forward/Backward, Left/Right, Up/Down | 100 = forward/ -100 = backward, 100 = right/ -100 = left, 100 = up/ -100 = down
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
@@ -112,6 +112,7 @@ ENT.Possessor_CanMove = true -- Can the possessed NPC move?
 ENT.Possessor_CanSprint = true -- Can the possessed NPC sprint?
 ENT.Possessor_CanFaceTrace_Walking = false
 ENT.Possessor_CanFaceTrace_Running = false
+ENT.Possessor_UsePossessorViewTable = false
 ENT.PossessorView = {
 	Pos = {Right = 0,Forward = 0,Up = 0}
 }
@@ -746,8 +747,9 @@ function ENT:Initialize()
 	self:SetNPCModel()
 	self:DrawShadow(true)
 	self:SetHullSizeNormal()
+	self:SetCollisionGroup(COLLISION_GROUP_NPC)
 	if self.CollisionBounds != Vector(0,0,0) then
-		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),-(Vector(self.CollisionBounds.x,self.CollisionBounds.y,0)))
+		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
 	end
 	self:SetSolid(SOLID_BBOX)
 	self:SetMaxYawSpeed(self.MaxTurnSpeed)
@@ -766,7 +768,6 @@ function ENT:Initialize()
 	self:SetHealth(self.StartHealth)
 	self:SetMaxHealth(self.StartHealth)
 	-- self:SetMovementType(MOVETYPE_STEP)
-	self:SetCollisionGroup(COLLISION_GROUP_NPC)
 	self:SetEnemy(NULL)
 	self.RenderMode = RENDERMODE_NORMAL
 	self:SetNPCRenderMode(RENDERMODE_NORMAL)
@@ -1818,8 +1819,11 @@ function ENT:DoFlinch(dmg,dmginfo,hitbox)
 			self:PlayNPCSentence("Pain")
 		end
 		self:PlayAnimation("Pain")
+		self:OnFlinch(dmg,dmginfo,hitbox)
 	end
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnFlinch(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnTakePain(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -2203,9 +2207,13 @@ function ENT:OnDoDamage(didhitsomething,hitents,hitpos) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnHitEntity(hitents,hitpos)
 	if self.tbl_Sounds["Strike"] == nil then
-		self:EmitSound("npc/zombie/claw_strike" .. math.random(1,3) .. ".wav",55,100)
+		for _,v in ipairs(hitents) do
+			if IsValid(v) then v:EmitSound("npc/zombie/claw_strike" .. math.random(1,3) .. ".wav",55,100) end
+		end
 	else
-		self:EmitSound(self:SelectFromTable(self.tbl_Sounds["Strike"]),55,100)
+		for _,v in ipairs(hitents) do
+			if IsValid(v) then v:EmitSound(self:SelectFromTable(self.tbl_Sounds["Strike"]),55,100) end
+		end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -2409,7 +2417,7 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 	-- if self.IsSLVBaseNPC then
 		-- local TAct
 		-- local bFaceEnemy
-		-- local fcDone
+		-- local onScriptEnd
 		-- local bDontResetAct
 		-- local bDontStopMoving
 		-- if activity then
@@ -2419,7 +2427,7 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 			-- bFaceEnemy = facetarget
 		-- end
 		-- if usetime then
-			-- fcDone = usetime
+			-- onScriptEnd = usetime
 		-- end
 		-- if addtime then
 			-- bDontResetAct = addtime
@@ -2427,7 +2435,7 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 		-- if slvbackwardscompatibility then
 			-- bDontStopMoving = slvbackwardscompatibility
 		-- end
-		-- self:SLVPlayActivity(TAct,bFaceEnemy,fcDone,bDontResetAct,bDontStopMoving)
+		-- self:SLVPlayActivity(TAct,bFaceEnemy,onScriptEnd,bDontResetAct,bDontStopMoving)
 		-- return
 	-- end
 	local fly = false

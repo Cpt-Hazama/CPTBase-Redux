@@ -2,7 +2,7 @@ include('shared.lua')
 
 ENT.RenderGroup = RENDERGROUP_BOTH
 
-function ENT:Initialize() end
+function ENT:Initialize() self:OnClientInit() end
 
 function ENT:Draw()
 	self:DrawModel()
@@ -26,6 +26,8 @@ function ENT:DoRagdollBone(PhysBoneNum,BoneNum) end
 function ENT:OnRestore() end
 
 	//-- Custom Functions --\\
+
+function ENT:OnClientInit() end
 
 function ENT:OnDraw() end
 

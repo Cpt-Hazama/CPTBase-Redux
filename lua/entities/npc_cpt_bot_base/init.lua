@@ -168,12 +168,14 @@ function ENT:SetupHoldtypes(wep,ht)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:WhileFalling()
+	if !self.CanJump then return end
 	self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),self.JumpAnimation)
 	self:MaintainActivity()
 	self.CanUseJump = false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnLand()
+	if !self.CanJump then return end
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
 	self:StartEngineTask(GetTaskID("TASK_RESET_ACTIVITY"),ACT_IDLE)
@@ -331,6 +333,7 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	self:MoveAway(false)
 	if self.CanUseJump == true && math.random(1,4) == 1 then
 		if self.IsPossessed then return end
+		if !self.CanJump then return end
 		self:JumpRandomly()
 	end
 	if hitbox == 1 then
@@ -345,6 +348,8 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:JumpRandomly()
+	if !self.CanUseJump then return end
+	if !self.CanJump then return end
 	if self.CanJumpAround == false then return end
 	self:SetGroundEntity(NULL)
 	-- self:PlayActivity(ACT_HL2MP_JUMP_AR2)

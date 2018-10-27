@@ -150,8 +150,9 @@ end
 function ENT:TASKFUNC_GETPATHANDGO()
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "getpathandchasetask" then return end
 	local getpathandchasetask = ai_sched_cpt.New("getpathandchasetask")
-	getpathandchasetask:EngTask("TASK_GET_PATH_TO_TARGET",0)
+	getpathandchasetask:EngTask("TASK_GET_PATH_TO_ENEMY",0)
 	getpathandchasetask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	getpathandchasetask:EngTask("TASK_FACE_ENEMY",0)
 	self:StartSchedule(getpathandchasetask)
 	if self.UsePlayermodelMovement then
 		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)

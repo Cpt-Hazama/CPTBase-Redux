@@ -13,6 +13,8 @@ if (SERVER) then
 	DMG_RAD = 11
 	DMG_POI = 12
 	DMG_AFTERBURN = 13
+	DMG_DARKENERGY = 14
+	DMG_ELEC = 15
 	util.AddNetworkString("cpt_ControllerView")
 end
 
@@ -67,6 +69,7 @@ function PLY_Meta:SpawnCPTBaseRagdoll(ent,velocity,caller)
 			table.insert(self.CPTBase_RagdollWeapons,v:GetClass())
 		end
 		ent.CPTBase_HasBeenRagdolled = true
+		ent:ChatPrint("Hint: Spam your 'W' key to get up faster!")
 	end
 end
 
@@ -254,6 +257,80 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
 				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	elseif ef == DMG_DARKENERGY then
+		if ent.CPTBase_ExperiencingEFDamage_DE == nil then
+			ent.CPTBase_ExperiencingEFDamage_DE = false
+		end
+		if ent.CPTBase_ExperiencingEFDamage_DE then return end
+		ent.CPTBase_ExperiencingEFDamage_DE = true
+		SpawnEFM(ent,"cpthazama/effect_darkenergy")
+		if fTime then
+			-- ent:EmitSound("weapons/physcannon/energy_disintegrate4.wav",60,100)
+			ent:EmitSound("ambient/energy/whiteflash.wav",60,100)
+			fTime = false
+		end
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_DE = false
+			end
+		end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_DROWN)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				if ent:IsValid() then
+					ent:TakeDamageInfo(dmginfo)
+				end
+			end
+		end
+		timer.Create("CPTBase_DoEffectDamage_" .. math.Rand(1,99999),delay,lp,function() DoDamage() end)
+	elseif ef == DMG_ELEC then
+		if ent.CPTBase_ExperiencingEFDamage_ELEC == nil then
+			ent.CPTBase_ExperiencingEFDamage_ELEC = false
+		end
+		if ent.CPTBase_ExperiencingEFDamage_ELEC then return end
+		ent.CPTBase_ExperiencingEFDamage_ELEC = true
+		SpawnEFM(ent,"cpthazama/effect_tesla")
+		timer.Simple(EFDeath,function()
+			if IsValid(ent) then
+				if ent:Deaths() > deaths then return end
+				ent.CPTBase_ExperiencingEFDamage_ELEC = false
+			end
+		end)
+		local function DoDamage()
+			if ent:IsValid() then
+				if ent:Deaths() > deaths then return end
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(finaldmg)
+				if attacker:IsValid() then
+					dmginfo:SetAttacker(attacker)
+					dmginfo:SetInflictor(attacker)
+				end
+				dmginfo:SetDamageType(DMG_SHOCK)
+				if attacker:IsValid() then
+					dmginfo:SetDamagePosition(ent:NearestPoint(attacker:GetPos() +attacker:OBBCenter()))
+				else
+					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
+				end
+				if ent:IsValid() then
+					ent:EmitSound("ambient/energy/spark" .. math.random(1,6) .. ".wav",70,100)
 					ent:TakeDamageInfo(dmginfo)
 				end
 			end
@@ -1201,13 +1278,13 @@ end
 
 function WPN_Meta:PlayerChat(text)
 	for _,v in ipairs(player.GetAll()) do
-		v:ChatPrint(text)
+		v:ChatPrint(tostring(text))
 	end
 end
 
 function NPC_Meta:PlayerChat(text)
 	for _,v in ipairs(player.GetAll()) do
-		v:ChatPrint(text)
+		v:ChatPrint(tostring(text))
 	end
 end
 
@@ -1534,6 +1611,33 @@ function NPC_Meta:GetHealth()
 	return self:Health()
 end
 
+function PlayGlobalSound(snd)
+	for _,v in ipairs(player.GetAll()) do
+		-- local playsnd = CreateSound(v,snd)
+		-- playsnd:SetSoundLevel(0.2)
+		-- playsnd:Play()
+		v:EmitSound(snd,0.2,100)
+	end
+end
+
+function PlaySentenceSoundTable(tb)
+	/*
+		Example:
+		tb = {
+			[1] = {snd="vo/your.wav",t=0},
+			[2] = {snd="vo/mom.wav",t=0.7},
+			[3] = {snd="vo/is.wav",t=1.2},
+			[4] = {snd="vo/gay.wav",t=1.6},
+		}
+	*/
+	local function PlaySentenceSound(i)
+		PlayGlobalSound(tb[i].snd)
+	end
+	for i = 1, #tb do
+		timer.Simple(tb[i].t,function() PlaySentenceSound(i) end)
+	end
+end
+
 function Color2Byte(color)
 	return bit.lshift(math.floor(color.r *7 /255),5) +bit.lshift(math.floor(color.g *7 /255),2) +math.floor(color.b *3 /255)
 end
@@ -1638,4 +1742,76 @@ function ENT_Meta:IsProp()
 	else
 		return false
 	end
+end
+
+function NPC_Meta:GetSoundScriptLength(scriptName,scriptFile,scriptUseGAMEPath) // ("!HG_ALERT1","scripts/vj_hlr_sentences.txt",true) = finds the script file in /scripts/ | ("!HG_ALERT1","vjbase/hlr/vj_hlr_sentences.txt",false) = finds the script file in your /data/ folder
+	scriptName = string.Replace(scriptName,"!","")
+	if scriptFile == nil then
+		scriptFile = "scripts/sentences.txt"
+	end
+	if scriptUseGAMEPath == nil then
+		scriptUseGAMEPath = true
+	end
+	local scriptFile = file.Read(scriptFile,scriptUseGAMEPath) // "scripts/vj_hlr_sentences.txt"
+	local scriptSenStart = string.find(scriptFile,scriptName)
+	if !scriptSenStart then return 0 end
+	local scriptLenStart = string.find(scriptFile,"Len ",scriptSenStart) +4
+	local scriptLenEnd = string.find(scriptFile,"}",scriptLenStart) -1
+	local scriptLenEndB = string.find(scriptFile,"%s",scriptLenStart)
+	if scriptLenEndB && scriptLenEndB < scriptLenEnd then
+		scriptLenEnd = scriptLenEndB -1
+	end
+	return tonumber(string.sub(scriptFile,scriptLenStart,scriptLenEnd))
+end
+
+function NPC_Meta:PlaySoundScript(scriptName,scriptListener,onScriptEnd,scriptSpeaker,scriptRadius,scriptVolume,scriptAttenuation,scriptDoRepeat,scriptStopOthers,scriptConcurrent,scriptToActivator,scriptFile,scriptUseGAMEPath) // Credits to Silverlan. Nobody would've figured this out without him imo
+	scriptSpeaker = scriptSpeaker || self
+	scriptListener = scriptListener || self
+
+	local HLScript = ents.Create("scripted_sentence")
+	HLScript:SetPos(self:GetPos())
+	HLScript:SetKeyValue("sentence",scriptName)
+	local sSpeaker
+	if scriptSpeaker:GetName() == "" then
+		sSpeaker = scriptSpeaker:GetClass()
+	else
+		sSpeaker = scriptSpeaker:GetName()
+	end
+	HLScript:SetKeyValue("entity",sSpeaker)
+	local sListener
+	if scriptListener:GetName() != "" && !scriptListener:IsPlayer() then
+		sListener = scriptListener:GetName()
+	else
+		sListener = scriptListener:GetClass()
+	end
+	HLScript:SetKeyValue("listener",sListener)
+	HLScript:SetKeyValue("radius",scriptRadius || 2)
+	HLScript:SetKeyValue("volume",scriptVolume || 10)
+	HLScript:SetKeyValue("attenuation",scriptAttenuation || 1)
+	local sFlags = 0
+	if !scriptDoRepeat then
+		sFlags = sFlags +1
+	end
+	if scriptStopOthers then
+		sFlags = sFlags +4
+	end
+	if scriptConcurrent then
+		sFlags = sFlags +8
+	end
+	if scriptToActivator then
+		sFlags = sFlags +16
+	end
+	HLScript:SetKeyValue("spawnflags",sFlags)
+	if onScriptEnd then
+		timer.Simple(self:GetSoundScriptLength(scriptName),function()
+			if IsValid(self) then
+				onScriptEnd()
+			end
+		end)
+	end
+	HLScript:Spawn()
+	HLScript:Activate()
+	HLScript:Fire("BeginSentence","",0)
+	HLScript:Fire("kill","",0.1)
+	self:PlayerChat("Created sentence " .. scriptName)
 end

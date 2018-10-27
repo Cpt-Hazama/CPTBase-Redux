@@ -7,6 +7,8 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_NONE)
 	self:SetSolid(SOLID_NONE)
 	self:SetPos(Vector(0,0,0))
+	self:SetNoDraw(true)
+	self:DrawShadow(false)
 end
 
 /*

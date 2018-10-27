@@ -21,7 +21,12 @@ function ENT:PossessTheNPC()
 	if self.PossessedNPC.Possessor_UseBoneCamera then
 		self.PossessorView:SetPos(self.PossessedNPC:GetBonePosition(self.PossessedNPC.Possessor_BoneCameraName) +self.PossessedNPC:GetUp() *self.PossessedNPC.Possessor_BoneCameraUp  +self.PossessedNPC:GetRight() *self.PossessedNPC.Possessor_BoneCameraRight  +self.PossessedNPC:GetForward() *self.PossessedNPC.Possessor_BoneCameraForward)
 	else
-		self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+		if self.PossessedNPC.Possessor_UsePossessorViewTable then
+			self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+		else
+			local min,max = self.PossessedNPC:GetCollisionBounds()
+			self.PossessorView:SetPos(self.PossessedNPC:GetPos() +(self:GetUp() *(max.z)))
+		end
 	end
 	self.PossessorView:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
 	self.PossessorView:SetParent(self.PossessedNPC)

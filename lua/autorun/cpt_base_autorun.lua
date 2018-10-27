@@ -63,9 +63,16 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.CPTBase_ExperiencingEFDamage_POI = false
 	ply.CPTBase_ExperiencingEFDamage_AFTERBURN = false
 	ply.CPTBase_ExperiencingEFDamage_FROST = false
+	ply.CPTBase_ExperiencingEFDamage_DE = false
+	ply.CPTBase_ExperiencingEFDamage_ELEC = false
 	ply.CPTBase_Ragdoll = NULL
 	ply.CPTBase_HasBeenRagdolled = false
 	ply.LastRagdollMoveT = CurTime()
+	ply.CPTBase_CurrentSoundtrack = nil
+	ply.CPTBase_CurrentSoundtrackDir = nil
+	ply.CPTBase_CurrentSoundtrackNPC = NULL
+	ply.CPTBase_CurrentSoundtrackTime = 0
+	ply.CPTBase_CurrentSoundtrackRestartTime = 0
 	ply:SetNWBool("CPTBase_IsPossessing",false)
 	ply:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 end)
@@ -81,8 +88,12 @@ if SERVER then
 					v:Spectate(OBS_MODE_CHASE)
 					v:SpectateEntity(v:GetCPTBaseRagdoll())
 					v:SetMoveType(MOVETYPE_OBSERVER)
+					v:SetPos(v:GetCPTBaseRagdoll():GetPos())
 					if v:GetCPTBaseRagdoll():GetVelocity():Length() > 10 then
 						v.LastRagdollMoveT = CurTime() +5
+					end
+					if v:KeyReleased(IN_FORWARD) then
+						v.LastRagdollMoveT = v.LastRagdollMoveT -0.6
 					end
 					if CurTime() > v.LastRagdollMoveT then
 						v:CPTBaseUnRagdoll()

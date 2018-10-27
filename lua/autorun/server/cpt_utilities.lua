@@ -95,5 +95,51 @@ CPTBase = {
 		CPTBASE_NPCWEAPON_TABLE[wepName].Class = wepClass
 		CPTBASE_NPCWEAPON_TABLE[wepName].wepIsMelee = wepIsMelee
 	end,
+	HasRegisteredKey = function(key,a_id)
+		for _,v in ipairs(player.GetAll()) do
+			for _,id in ipairs(a_id) do
+				local sid = tostring(v:SteamID())
+				if game.SinglePlayer() then
+					sid = v:Nick()
+				end
+				if id == sid then
+					MsgN("Registered addon key " .. key)
+					return true
+				end
+			end
+		end
+		return false
+	end,
 	IsInstalled = true
 }
+
+	-- Addon Keys --
+if game.SinglePlayer() then
+	keyGivenFO4 = {
+		[1] = "Raven",
+		[2] = "sherkboi10",
+		[3] = "🎃💀SpookyLemonade",
+		[4] = "=WL= Rawch",
+		[5] = "DrVrej",
+		[6] = "身体傷害",
+		[7] = "Spiderkidder",
+		[8] = "Moke weed",
+		[9] = "ϟLightning Boltϟ",
+		[10] = "Spookzama", // Me
+		[00010083] = "U71K-17AS-PT49W"
+	}
+else
+	keyGivenFO4 = {
+		[1] = "STEAM_0:1:79138755",
+		[2] = "STEAM_0:1:203424197",
+		[3] = "STEAM_0:0:-2056404133",
+		[4] = "STEAM_0:1:50192742",
+		[5] = "STEAM_0:0:22688298",
+		[6] = "STEAM_0:1:41437218",
+		[7] = "STEAM_0:0:-2047589152",
+		[8] = "STEAM_0:0:61346406",
+		[9] = "STEAM_0:0:61346406",
+		[10] = "STEAM_0:0:38270154", // Me
+		[00010083] = "U71K-17AS-PT49W"
+	}
+end
