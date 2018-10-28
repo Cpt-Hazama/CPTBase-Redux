@@ -31,6 +31,25 @@ function NPC_Meta:CreateThemeSong(track,len)
 	end
 end
 
+function NPC_Meta:StopATrack(track,fade)
+	for _,v in ipairs(player.GetAll()) do
+		if v.CPTBase_CurrentSoundtrack != nil then
+			if v.CPTBase_CurrentSoundtrackNPC == self && v.CPTBase_CurrentSoundtrackDir == track then
+				if !fade then
+					v.CPTBase_CurrentSoundtrack:Stop()
+				else
+					v.CPTBase_CurrentSoundtrack:FadeOut(fade)
+				end
+				v.CPTBase_CurrentSoundtrack = nil
+				v.CPTBase_CurrentSoundtrackDir = nil
+				v.CPTBase_CurrentSoundtrackNPC = NULL
+				v.CPTBase_CurrentSoundtrackTime = nil
+				v.CPTBase_CurrentSoundtrackRestartTime = nil
+			end
+		end
+	end
+end
+
 function NPC_Meta:StopAllThemeSongs()
 	for _,v in ipairs(player.GetAll()) do
 		if v.CPTBase_CurrentSoundtrack != nil then

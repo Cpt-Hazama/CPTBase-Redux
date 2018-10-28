@@ -1607,6 +1607,13 @@ function PLY_Meta:FindInCone(ent,cone)
 	return (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -self:GetPos() +self:GetForward() *15):GetNormalized()) > math.cos(math.rad(cone)))
 end
 
+function ENT_Meta:IsFriendlyToMe(ent)
+	if self:Disposition(ent) == D_LI || self:Disposition(ent) == D_NU then
+		return true
+	end
+	return false
+end
+
 function NPC_Meta:GetHealth()
 	return self:Health()
 end
