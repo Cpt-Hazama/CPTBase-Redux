@@ -1614,6 +1614,10 @@ function ENT_Meta:IsFriendlyToMe(ent)
 	return false
 end
 
+function ENT_Meta:ApplyParticle(pS,pA)
+	ParticleEffectAttach(pS,PATTACH_POINT_FOLLOW,self,pA)
+end
+
 function NPC_Meta:GetHealth()
 	return self:Health()
 end

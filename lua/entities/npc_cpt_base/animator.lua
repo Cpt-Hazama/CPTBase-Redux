@@ -42,38 +42,17 @@ function ENT:DefineLUABone(boneName,luaID)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 /*
-	Concept:
-	ENT:OnInit()
-		local tblSequence = {
-			["Name"] = "$CZOMBIE",
-			["Sequence"] = "attackSwing",
-			["FPS"] = 30,
-			["Loop"] = false,
-			["Events"] = {[1] = "event_emit Attack",[2] = "event_mattack"}
-		}
-		local tblFrameData = {
-			[1] = {
-					"Valve.Biped_Pelvis" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_Head1" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_ForearmR" = {pos=Vector(0,0,0),ang=Angle(0,0,0)}
-				},
-			[2] = {
-					"Valve.Biped_Pelvis" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_Head1" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_ForearmR" = {pos=Vector(0,0,0),ang=Angle(0,0,0)}
-				},
-			[3] = {
-					"Valve.Biped_Pelvis" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_Head1" = {pos=Vector(0,0,0),ang=Angle(0,0,0)},
-					"Valve.Biped_ForearmR" = {pos=Vector(0,0,0),ang=Angle(0,0,0)}
-				},
-		}
-		self:CreateLUAAnimation(tblSequence,tblFrameData)
-	end
+	local tblFrame1 = {
+		[1] = {bone="Valve.Biped_Pelvis",pos=Vector(0,0,0),ang=Angle(0,0,0)},
+		[2] = {bone="Valve.Biped_Head1",pos=Vector(0,0,0),ang=Angle(0,0,0)},
+		[3] = {bone="Valve.Biped_ForearmR",pos=Vector(0,0,0),ang=Angle(0,0,0)},
+	}
+	local tblFrame2 = {
+		[1] = {bone="Valve.Biped_Pelvis",pos=Vector(0,0,5),ang=Angle(5,0,0)},
+		[2] = {bone="Valve.Biped_Head1",pos=Vector(0,5,0),ang=Angle(0,5,0)},
+		[3] = {bone="Valve.Biped_ForearmR",pos=Vector(0,5,0),ang=Angle(0,0,5)},
+	}
 */
-function ENT:CreateLUAAnimation(tblSequence,tblFrameData)
-	table.insert(BASE_ANIMATIONS,tblSequence["Name"])
-end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UseLUABasedAnimation(sequenceName)
 	local fps = 30

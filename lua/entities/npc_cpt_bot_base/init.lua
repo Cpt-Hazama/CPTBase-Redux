@@ -251,6 +251,8 @@ function ENT:PlayTaunt(override)
 	self:EmitSound(Sound(selected.snd),75,100)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotThink() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink()
 	if self.IsPossessed then
 		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
@@ -270,6 +272,7 @@ function ENT:OnThink()
 		self:NPCPLY_Chat()
 		self.NextChatT = CurTime() +math.Rand(5,50)
 	end
+	self:BotThink()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FootStepCode()
@@ -383,8 +386,14 @@ function ENT:DoWeaponTrace()
 	if !IsValid(self:GetActiveWeapon()) then return end
 	local wep = self:GetActiveWeapon()
 	if (wep.DefaultHoldType == "knife" || wep.DefaultHoldType == "fist" || wep.DefaultHoldType == "melee" || wep.DefaultHoldType == "melee2") then return true end
+	local at
+	if wep:GetAttachment(1) == nil then
+		at = wep:GetPos()
+	else
+		at = wep:GetAttachment(1).Pos
+	end
 	local tracedata = {}
-	tracedata.start = wep:GetAttachment(1).Pos
+	tracedata.start = at
 	tracedata.endpos = self:GetEnemy():GetPos() -- For whatever reason, this allows them to shoot small enemies :/
 	-- tracedata.endpos = self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()
 	tracedata.filter = {self}
