@@ -1518,8 +1518,6 @@ function NPC_Meta:PlaySequence(sequence,animrate)
 	end)
 end
 
-function NPC_Meta:OnFinishedAnimation(activity) end
-
 function NPC_Meta:PlayActivity_Fly(activity,usetime)
 	if usetime then
 		if CurTime() < self.NextAnimT then return end

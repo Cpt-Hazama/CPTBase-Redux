@@ -183,6 +183,7 @@ function ENT:HandleFlying(enemy,dist,nearest)
 		self:SetAngles(Angle(0,(self:FindCenter(self:GetEnemy()) -self:FindCenter(self)):Angle().y,0))
 		self:SetLocalVelocity(fly)
 	end
+	if self.BackAwayDistance == nil then return end
 	if nearest < self.BackAwayDistance then
 		local fly = (util.RandomVectorAroundPos(tr.HitPos,self.FlyRandomDistance) +self:GetPos() +self:GetVelocity() *15):GetNormal() *self:GetFlySpeed()
 		self:SetAngles(Angle(0,(self:FindCenter(self:GetEnemy()) -self:FindCenter(self)):Angle().y,0))
@@ -828,6 +829,7 @@ function ENT:Initialize()
 		["Primary"] = nil,
 		["Melee"] = nil,
 	}
+	self:UpdateSight(self.SightDistance,self.FindEntitiesDistance)
 	
 	if self.LeavesBlood == true then
 		-- if self.AutomaticallySetsUpDecals then
@@ -859,6 +861,11 @@ function ENT:Initialize()
 	self:SetInit()
 	self:AfterInit()
 	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UpdateSight(sight,find)
+	self.SightDistance = sight
+	self.FindEntitiesDistance = find
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetupBloodDecals()
@@ -1333,6 +1340,50 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:MovementType()
 	return self.MoveType
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FlyRandom(checkDistForward,checkDistUp,checkDistDown,checkDistLeft,checkDistRight,chanceMove)
+	if checkDistForward == nil then checkDistForward = 700 end
+	if checkDistUp == nil then checkDistUp = 400 end
+	if checkDistDown == nil then checkDistDown = 200 end
+	if checkDistLeft == nil then checkDistLeft = 200 end
+	if checkDistRight == nil then checkDistRight = 200 end
+	if chanceMove == nil then chanceMove = 10 end
+	if self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +self:GetUp() *-checkDistDown,{self},true).Hit then
+		self:SetLocalVelocity(((Vector(0,0,0) +self:GetUp() *1) +self:GetVelocity():GetNormal()) *self:GetFlySpeed())
+	end
+	if self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +self:GetUp() *checkDistUp,{self},true).Hit then
+		self:SetLocalVelocity(((Vector(0,0,0) +self:GetUp() *-1) +self:GetVelocity():GetNormal()) *self:GetFlySpeed())
+	end
+	local vel = self:GetForward() *1
+	if !self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +self:GetForward() *checkDistForward,{self},true).Hit then
+		vel = self:GetForward() *1
+		if math.random(1,chanceMove) == 1 then
+			local mC = math.random(1,4)
+			if mC == 1 then
+				self:SetLocalVelocity(((Vector(0,0,0) +self:GetUp() *-1) +self:GetVelocity():GetNormal()) *self:GetFlySpeed())
+			elseif mC == 2 then
+				//vel = self:GetRight() *1
+				self:TurnToDegree(self:GetMaxYawSpeed(),self:GetPos() +self:GetRight() *checkDistRight,true,42)
+			elseif mC == 3 then
+				//vel = self:GetRight() *-1
+				self:TurnToDegree(self:GetMaxYawSpeed(),self:GetPos() +self:GetRight() *checkDistLeft,true,42)
+			else
+				//vel = self:GetForward() *-1
+				self:TurnToDegree(self:GetMaxYawSpeed(),self:GetPos() +self:GetForward() *-checkDistForward,true,42)
+			end
+		end
+	elseif self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +self:GetForward() *checkDistForward,{self},true).Hit then
+		vel = self:GetForward() *1
+		if !self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +self:GetRight() *checkDistForward,{self},true).Hit then
+			-- vel = self:GetRight() *1
+			self:TurnToDegree(self:GetMaxYawSpeed(),self:GetPos() +self:GetRight() *checkDistForward,true,42)
+		else
+			-- vel = self:GetRight() *-1
+			self:TurnToDegree(self:GetMaxYawSpeed(),self:GetPos() +self:GetRight() *-checkDistForward,true,42)
+		end
+	end
+	self:SetLocalVelocity(((Vector(0,0,0) +vel) +self:GetVelocity():GetNormal()) *self:GetFlySpeed())
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FootStepCode()
@@ -2503,6 +2554,8 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 	end)
 	return activity
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnFinishedAnimation(activity) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetMovementAnimation()
 	return self:GetMovementActivity()
