@@ -1143,8 +1143,52 @@ function ENT_Meta:FindCenter(ent)
 	return ent:GetPos() +ent:OBBCenter()
 end
 
+function ENT_Meta:Zelus_PlaySound(sSound,hSNDLV) -- Community contribution by Ivan
+	if hSound == "Die" || hSound == "Death" then
+		self:EmitSound(self.m_tbSounds[hSound][math.random(1,#self.m_tbSounds[hSound])])
+	else
+		if self.m_tbActiveCSound[1] ~= nil then
+			if self.m_tbActiveCSound[1]:IsPlaying() then
+				self.m_tbActiveCSound[1]:Stop()
+			end
+		end
+ 		if self.m_tbSounds[sSound] then
+			sSound = table.Random(self.m_tbSounds[sSound])
+		end
+ 		local str = sSound
+		local i = SoundDuration(str)
+		local tmStart = CurTime()
+ 		local hCSP = CreateSound(self,str,self:EntIndex())
+		local tbCSP = {[1]=hCSP,[2]=sSound}
+		hCSP:Play()
+		self.m_tbActiveCSound = tbCSP
+ 		if hSNDLV then
+			hCSP:SetSoundLevel(hSNDLV)
+		end
+ 		local _i = self:EntIndex()
+		hook.Add("Think",_i.."_AI_SoundRegulate",function()
+			if CurTime() > tmStart + i then
+				hCSP:Stop()
+				hook.Remove("Think",_i.."_AI_SoundRegulate")
+			end
+ 			if !IsValid(self) && sSound ~= "Death" then
+				hCSP:Stop()
+				hook.Remove("Think",_i.."_AI_SoundRegulate")
+			end
+		end)
+ 		self:CallOnRemove("hkRemovePlayedSound",function()
+			if self.m_tbActiveCSound then
+				if self.m_tbActiveCSound[1] && self.m_tbActiveCSound[1]:IsPlaying() then
+					self.m_tbActiveCSound[1]:Stop()
+				end
+			end
+		end)
+	end
+end
+
 function NPC_Meta:PlaySound(_Sound,_SoundLevel,_SoundVolume,_SoundPitch,_UseDotPlay)
 	if self.IsSLVBaseNPC == true then return self:slvPlaySound(_Sound) end
+	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_PlaySound(_Sound,_SoundLevel) end -- Community contribution by Ivan
 	if !self.tbl_Sounds[_Sound] then return end
 	local _SelectSound,__Sound = self:CreatePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
 	if _UseDotPlay then self:OnPlaySound(__Sound,_Sound) return end
@@ -1239,7 +1283,21 @@ function NPC_Meta:CreateDamage(ent,dmg,attacker,dmgtype)
 	ent:TakeDamageInfo(dmginfo)
 end
 
+function ENT_Meta:Zelus_MoveToPosition(hPos) -- Community contribution by Ivan
+	local i = self:GetAIMoveType()
+	if (i == AI_MOVETYPE_NULL) || (i == i == AI_MOVETYPE_STATIONARY) then return end
+	if i == AI_MOVETYPE_GROUND then
+		--self:MoveToPosition_GRND(hPos)
+		self:WalkToPosition(hPos,bChase)
+	elseif i == AI_MOVETYPE_AIRBORNE --[[&& !self:FlyingCustomized()]] then
+		self:FlyToPosition(hPos,self:GetFlySpeed())
+	elseif i == AI_MOVETYPE_AQUATIC then
+		self:MoveToPosition_AQU(hPos,bChase)
+	end
+end
+
 function NPC_Meta:MoveToPosition(pos)
+	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_MoveToPosition(pos) end -- Community contribution by Ivan
 	local tr = util.TraceLine({
 		start = pos +Vector(0,0,100),
 		endpos = pos -Vector(0,0,100),
