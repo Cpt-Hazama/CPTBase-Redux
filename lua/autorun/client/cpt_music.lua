@@ -16,6 +16,7 @@ end
 
 function NPC_Meta:CreateThemeSong(track,len)
 	for _,v in ipairs(player.GetAll()) do
+		if GetConVarNumber("cpt_allowmusic") == 0 then return end
 		if v.CPTBase_CurrentSoundtrack == nil then
 			v.CPTBase_CurrentSoundtrack = CreateSound(v,track)
 			v.CPTBase_CurrentSoundtrack:SetSoundLevel(0.2)
@@ -73,9 +74,9 @@ hook.Add("Think","CPTBase_ThemeSystemThink",function()
 			LocalPlayer().CPTBase_CurrentSoundtrackRestartTime = nil
 		end
 		if LocalPlayer().CPTBase_CurrentSoundtrack != nil && RealTime() > LocalPlayer().CPTBase_CurrentSoundtrackTime then
-			LocalPlayer().CPTBase_CurrentSoundtrack:FadeOut(4)
+			LocalPlayer().CPTBase_CurrentSoundtrack:FadeOut(2)
 			local prevNPC = LocalPlayer().CPTBase_CurrentSoundtrackNPC
-			timer.Simple(4,function()
+			timer.Simple(2,function()
 				if IsValid(LocalPlayer()) then
 					if IsValid(LocalPlayer().CPTBase_CurrentSoundtrackNPC) && prevNPC == LocalPlayer().CPTBase_CurrentSoundtrackNPC then
 						LocalPlayer().CPTBase_CurrentSoundtrack:Stop()

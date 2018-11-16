@@ -2,15 +2,16 @@ include('shared.lua')
 
 function ENT:Draw()
 	-- self:DrawModel()
+	print("Hello")
 end
 
 ENT.NextEffectBlendT = 0
 ENT.EffectBlend = 1
 function ENT:Initialize()
 	local ENTInd = self:EntIndex()
-	hook.Add("RenderScreenspaceEffects","CPTBase_EffectOverlay" .. ENTInd, function()
+	hook.Add("RenderScreenspaceEffects","CPTBase_EffectManagerOverlay" .. ENTInd, function()
 		if !IsValid(self) then
-			hook.Remove("RenderScreenspaceEffects","CPTBase_EffectOverlay" .. ENTInd)
+			hook.Remove("RenderScreenspaceEffects","CPTBase_EffectManagerOverlay" .. ENTInd)
 			return
 		end
 		local EffectTime = self:GetNetworkedInt("EFtime")

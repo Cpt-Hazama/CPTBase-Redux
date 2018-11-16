@@ -15,6 +15,9 @@ if (SERVER) then
 	DMG_AFTERBURN = 13
 	DMG_DARKENERGY = 14
 	DMG_ELEC = 15
+	AITYPE_NUETRAL = 1
+	AITYPE_NORMAL = 2
+	AITYPE_AGGRESSIVE = 3
 	util.AddNetworkString("cpt_ControllerView")
 end
 
@@ -200,7 +203,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				if ent.CPTBase_EF_RAD >= 400 then ent:Kill() return end
 				local dmginfo = DamageInfo()
@@ -215,7 +218,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:TakeDamageInfo(dmginfo)
 				end
 				ent:EmitSound("player/geiger3.wav",60,100)
@@ -242,7 +245,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(finaldmg)
@@ -256,7 +259,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:TakeDamageInfo(dmginfo)
 				end
 			end
@@ -281,7 +284,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(finaldmg)
@@ -295,7 +298,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:TakeDamageInfo(dmginfo)
 				end
 			end
@@ -315,7 +318,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(finaldmg)
@@ -329,7 +332,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:EmitSound("ambient/energy/spark" .. math.random(1,6) .. ".wav",70,100)
 					ent:TakeDamageInfo(dmginfo)
 				end
@@ -350,7 +353,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(finaldmg)
@@ -364,7 +367,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:TakeDamageInfo(dmginfo)
 				end
 			end
@@ -384,7 +387,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 			end
 		end)
 		local function DoDamage()
-			if ent:IsValid() then
+			if IsValid(ent) then
 				if ent:Deaths() > deaths then return end
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(finaldmg)
@@ -398,7 +401,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 				else
 					dmginfo:SetDamagePosition(ent:GetPos() +ent:OBBCenter())
 				end
-				if ent:IsValid() then
+				if IsValid(ent) then
 					ent:TakeDamageInfo(dmginfo)
 				end
 				-- for i = 0,ent:GetBoneCount() -1 do

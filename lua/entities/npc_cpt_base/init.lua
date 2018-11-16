@@ -26,6 +26,7 @@ ENT.RagdollRecoveryTime = 5 -- How long until the NPC gets up
 ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 
 	-- AI Variables --
+ENT.DefaultAIType = AITYPE_NORMAL
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
 ENT.IsBlind = false -- Is the NPC blind? (Experimental)
@@ -102,11 +103,11 @@ ENT.Possessor_BoneCameraName = 1 -- Bone ID
 ENT.Possessor_BoneCameraForward = 0
 ENT.Possessor_BoneCameraRight = 0
 ENT.Possessor_BoneCameraUp = 0
-ENT.Possessor_MaxMoveDistanceForward = 300 -- These four variables determine how far the posessor checks to move the NPC. Lowering the numbers may cause problems
-ENT.Possessor_MaxMoveDistanceLeft = 125
-ENT.Possessor_MaxMoveDistanceRight = 125
-ENT.Possessor_MaxMoveDistanceBackward = 150
-ENT.Possessor_MinMoveDistance = 55
+ENT.Possessor_MaxMoveDistanceForward = 400 -- These four variables determine how far the posessor checks to move the NPC. Lowering the numbers may cause problems
+ENT.Possessor_MaxMoveDistanceLeft = 250
+ENT.Possessor_MaxMoveDistanceRight = 250
+ENT.Possessor_MaxMoveDistanceBackward = 300
+ENT.Possessor_MinMoveDistance = 120
 ENT.Possessor_CanTurnWhileAttacking = true
 ENT.Possessor_CanMove = true -- Can the possessed NPC move?
 ENT.Possessor_CanSprint = true -- Can the possessed NPC sprint?
@@ -356,6 +357,10 @@ function ENT:Possess_Commands(possessor)
 	return self:Possess_CustomCommands(possessor)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetPossessorKey(key)
+	return self.Possessor:KeyDown(key)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_CustomCommands(possessor)
 	local w = possessor:KeyDown(IN_FORWARD)
 	local e = possessor:KeyDown(IN_USE)
@@ -399,16 +404,19 @@ function ENT:Possess_Move(possessor)
 				endpos = self:GetPos() +self:OBBCenter() +posAim *self.Possessor_MaxMoveDistanceForward,
 				filter = {self,possessor}
 			})
+			local domove = trace.HitPos
+			if trace.Hit then domove = trace.HitPos -trace.Normal *25 end -- No clipping please
 			if GetConVarNumber("cpt_usetracemovement") == 1 then
 				posMove = posTraceTest.HitPos +Vector(0,0,10)
 			else
 				-- posMove = self:GetPos() +self:GetForward() *self.Possessor_MaxMoveDistance
 				if trace.HitPos:Distance(self:GetPos()) <= self.Possessor_MinMoveDistance then
-					posMove = trace.HitPos +self:GetForward() *self.Possessor_MinMoveDistance +self:GetForward() *(-self:GetCollisionBounds().y)
+					posMove = domove +self:GetForward() *self.Possessor_MinMoveDistance +self:GetForward() *(-self:GetCollisionBounds().y)
 				else
-					posMove = trace.HitPos +self:GetForward() *(-self:GetCollisionBounds().y)
+					posMove = domove +self:GetForward() *(-self:GetCollisionBounds().y)
 				end
 			end
+			posMove = posMove +Vector(0,0,15)
 			-- if self.blockA == NULL || self.blockA == nil then
 				-- self.blockA = ents.Create("prop_dynamic")
 				-- self.blockA:SetModel("models/hunter/blocks/cube025x025x025.mdl")
@@ -482,6 +490,7 @@ function ENT:Possess_Move(possessor)
 				-- end)
 			-- end
 			-- posMove = self:GetPos() +(PlayersVectorBack *self.Possessor_MaxMoveDistanceBackward)
+			posMove = posMove +Vector(0,0,15)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
 				self:TASKFUNC_RUNLASTPOSITION()
@@ -527,6 +536,7 @@ function ENT:Possess_Move(possessor)
 					-- end
 				-- end)
 			-- end
+			posMove = posMove +Vector(0,0,15)
 			-- posMove = self:GetPos() +(possessor:GetRight() *-self.Possessor_MaxMoveDistanceLeft)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
@@ -573,6 +583,7 @@ function ENT:Possess_Move(possessor)
 					-- end
 				-- end)
 			-- end
+			posMove = posMove +Vector(0,0,15)
 			-- posMove = self:GetPos() +(possessor:GetRight() *self.Possessor_MaxMoveDistanceRight)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
@@ -742,6 +753,10 @@ end
 function ENT:Initialize()
 	self:SetSpawnEffect(false)
 	self.CPTBase_NPC = true
+	self:SetAIType(self.DefaultAIType)
+	if !IsValid(self:GetOwner()) then
+		self:SetOwner(self:GetCreator())
+	end
 	self:SetNWBool("IsCPTBase_NPC",true)
 	self:SetNWEntity("cpt_SpokenPlayer",NULL)
 	self:SetNWString("cpt_Faction",self.Faction)
@@ -2559,6 +2574,24 @@ function ENT:OnFinishedAnimation(activity) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetMovementAnimation()
 	return self:GetMovementActivity()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetAIType(ai)
+	self.AIType = ai
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetAIType()
+	return self.AIType
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlaySpawnAnimation(anim,face)
+	self:SetNoDraw(true)
+	timer.Simple(0.001,function()
+		if IsValid(self) then
+			self:SetNoDraw(false)
+			self:PlayAnimation(anim,face)
+		end
+	end)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetDistanceToVector(pos,type)

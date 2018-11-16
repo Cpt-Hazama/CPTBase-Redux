@@ -66,7 +66,9 @@ function ENT:PossessedNPC(possessed)
 	for _,v in ipairs(self.PossessedNPC.tbl_EnemyMemory) do
 		self.PossessedNPC:RemoveFromMemory(v)
 	end
-	self.PossessedNPC:StopProcessing()
+	if self.PossessedNPC:IsMoving() then
+		self.PossessedNPC:StopProcessing()
+	end
 	self.PossessedNPC:Possess_OnPossessed(self.Possessor)
 end
 

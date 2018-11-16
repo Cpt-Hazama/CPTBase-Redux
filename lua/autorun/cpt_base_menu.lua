@@ -5,14 +5,18 @@
 --------------------------------------------------*/
 CPTBase.AddConVar("cpt_bot_seeenemies","0")
 CPTBase.AddConVar("cpt_bot_chat","1")
+CPTBase.AddClientVar("cpt_allowmusic","1",false)
 -- CPTBase.AddConVar("cpt_bot_custommodel","models/player/kleiner.mdl")
-CPTBase.AddConVar("cpt_usetracemovement","0")
+CPTBase.AddClientVar("cpt_usetracemovement","0",true)
 
 if (CLIENT) then
 	local function CPTBaseMenu_SNPC(panel)
 		if !game.SinglePlayer() then
 			if !LocalPlayer():IsAdmin() or !LocalPlayer():IsSuperAdmin() then
 				panel:AddControl("Label",{Text = "Only Admins Can Access These Settings!"})
+				panel:AddControl("CheckBox",{ Label = "Allow Soundtrack?",Command = "cpt_allowmusic"})
+				panel:AddControl("CheckBox",{ Label = "Use Trace Movement",Command = "cpt_usetracemovement"})
+				panel:ControlHelp("If enabled, your possessed SNPC will move towards your cursor instead of a set direction.")
 				return
 			end
 		end
@@ -31,8 +35,6 @@ if (CLIENT) then
 		panel:AddControl("CheckBox",{ Label = "CPTBase Bots can use chat?",Command = "cpt_bot_chat"})
 		-- panel:AddControl("TextBox", {Label = "Custom CPTBase Bot model:", Command = "cpt_bot_custommodel", WaitForEnter = "0"})
 		panel:AddControl("CheckBox",{ Label = "Allow special damage types?",Command = "cpt_allowspecialdmg"})
-		panel:AddControl("CheckBox",{ Label = "Use Trace Movement",Command = "cpt_usetracemovement"})
-		panel:ControlHelp("If enabled, your possessed SNPC will move towards your cursor instead of a set direction.")
 		panel:AddControl("Slider", { Label 	= "Corpse Life Time", Command = "cpt_corpselifetime", Type = "Float", Min = "0", Max = "800"})
 		panel:AddControl("Slider", { Label 	= "AI Difficulty", Command = "cpt_aidifficulty", Type = "Float", Min = "1", Max = "4"})
 		panel:ControlHelp("1 = Easy, 2 = Normal, 3 = Hard, 4 = Hell (Only effects base values. Mods with custom functions will need to be updated by the mod owner)")

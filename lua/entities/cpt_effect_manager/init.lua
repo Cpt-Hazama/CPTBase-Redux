@@ -9,6 +9,7 @@ function ENT:Initialize()
 	self:SetPos(Vector(0,0,0))
 	self:SetNoDraw(true)
 	self:DrawShadow(false)
+	print('hi yes I spawned')
 end
 
 /*
@@ -35,6 +36,7 @@ function ENT:SetEffectType(ef)
 end
 
 function ENT:Think()
+	print('hi yes I spawned')
 	if !IsValid(self:GetEffectedEntity()) || IsValid(self:GetEffectedEntity()) && (((self:GetEffectedEntity():IsNPC() or self:GetEffectedEntity():IsPlayer()) && !self:GetEffectedEntity():Alive())) then
 		self:Remove()
 	end
