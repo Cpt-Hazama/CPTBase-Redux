@@ -873,8 +873,28 @@ function ENT:Initialize()
 	local idleanim = self:GetIdleAnimation()
 	if idleanim == nil then self:SetIdleAnimation(ACT_IDLE) end
 
+
 	self:SetInit()
 	self:AfterInit()
+	if self:GetHullType() == HULL_HUMAN then
+		self.Possessor_MaxMoveDistanceForward = 200
+		self.Possessor_MaxMoveDistanceLeft = 90
+		self.Possessor_MaxMoveDistanceRight = 90
+		self.Possessor_MaxMoveDistanceBackward = 150
+		self.Possessor_MinMoveDistance = 40
+	elseif self:GetHullType() == HULL_LARGE then
+		self.Possessor_MaxMoveDistanceForward = 400
+		self.Possessor_MaxMoveDistanceLeft = 250
+		self.Possessor_MaxMoveDistanceRight = 250
+		self.Possessor_MaxMoveDistanceBackward = 300
+		self.Possessor_MinMoveDistance = 120
+	elseif self:GetHullType() == HULL_TINY then
+		self.Possessor_MaxMoveDistanceForward = 70
+		self.Possessor_MaxMoveDistanceLeft = 70
+		self.Possessor_MaxMoveDistanceRight = 70
+		self.Possessor_MaxMoveDistanceBackward = 70
+		self.Possessor_MinMoveDistance = 20
+	end
 	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
