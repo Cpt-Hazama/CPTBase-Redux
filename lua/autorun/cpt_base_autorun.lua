@@ -41,6 +41,7 @@ function CPTBase_Chat(ply,spoke)
 	if (ply:IsAdmin() or ply:IsSuperAdmin()) && (string.sub(lowered,1,11) == "!setfaction") then
 		local in_faction = string.sub(string.upper(spoke),13)
 		ply.Faction = in_faction
+		ply:SetNWString("CPTBase_NPCFaction",in_faction)
 		ply:ChatPrint("Set faction to " .. in_faction)
 	end
 end
@@ -73,6 +74,9 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.CPTBase_CurrentSoundtrackNPC = NULL
 	ply.CPTBase_CurrentSoundtrackTime = 0
 	ply.CPTBase_CurrentSoundtrackRestartTime = 0
+	if ply:GetNWString("CPTBase_NPCFaction") == nil then
+		ply:SetNWString("CPTBase_NPCFaction","FACTION_PLAYER")
+	end
 	ply:SetNWBool("CPTBase_IsPossessing",false)
 	ply:SetNWEntity("CPTBase_PossessedNPCClass",nil)
 end)
@@ -80,6 +84,7 @@ end)
 if SERVER then
 	hook.Add("Think","CPTBase_PlayerRagdolling",function()
 		for _,v in ipairs(player.GetAll()) do
+			v:UpdateNPCFaction()
 			if IsValid(v) && v.CPTBase_HasBeenRagdolled then
 				if IsValid(v:GetCPTBaseRagdoll()) then
 					-- v:GodEnable()

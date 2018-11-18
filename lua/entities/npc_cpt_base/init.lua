@@ -837,6 +837,7 @@ function ENT:Initialize()
 	self.tbl_RegisteredNodes = {}
 	self.NPC_Enemy = nil
 	self.Enemy = NULL
+	self:SetNWString("CPTBase_NPCFaction",self.Faction)
 	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
 		self.UseCPTBaseAINavigation = true
 	end
@@ -1653,6 +1654,7 @@ function ENT:LocateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
 		if v:IsNPC() && v != self && v:Health() > 0 then
+			if v:GetClass() == "bullseye_strider_focus" then break end
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
 				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
@@ -1661,7 +1663,7 @@ function ENT:LocateEnemies()
 		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
 				if v.Faction == "FACTION_NOTARGET" then return end
-				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tblBlackList,v) then
 					return v
 				end
 			end

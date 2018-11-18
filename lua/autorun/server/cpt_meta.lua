@@ -969,6 +969,18 @@ function WPN_Meta:PlayWeaponAnimation(tbl)
 	self.Weapon:SendWeaponAnim(self.tbl_Animations[tbl][math.random(1,#self.tbl_Animations[tbl])])
 end
 
+function NPC_Meta:UpdateNPCFaction()
+	if self.Faction != self:GetNWString("CPTBase_NPCFaction") then
+		self.Faction = self:GetNWString("CPTBase_NPCFaction")
+	end
+end
+
+function PLY_Meta:UpdateNPCFaction()
+	if self.Faction != self:GetNWString("CPTBase_NPCFaction") then
+		self.Faction = self:GetNWString("CPTBase_NPCFaction")
+	end
+end
+
 function ENT_Meta:TranslateNumberToString(anim)
 	return self:GetSequenceName(anim)
 end
