@@ -6,6 +6,7 @@
 CPTBase.AddConVar("cpt_bot_seeenemies","0")
 CPTBase.AddConVar("cpt_bot_chat","1")
 CPTBase.AddClientVar("cpt_tool_faction","FACTION_NONE",false)
+CPTBase.AddClientVar("cpt_tool_bot_weapon","weapon_cpt_pipe",false)
 CPTBase.AddClientVar("cpt_allowmusic","1",false)
 -- CPTBase.AddConVar("cpt_bot_custommodel","models/player/kleiner.mdl")
 CPTBase.AddClientVar("cpt_usetracemovement","0",true)

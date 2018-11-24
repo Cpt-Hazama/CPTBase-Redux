@@ -656,6 +656,7 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		bullet.Damage = finaldmg
 		bullet.Callback = function(attacker,tr,dmginfo)
 			self:FiredBullet(attacker,tr,dmginfo)
+			self:ChangeNPCDamage(attacker,tr,dmginfo)
 		end
 		bullet.AmmoType = self.Primary.Ammo
 		self.Owner:FireBullets(bullet)
@@ -685,6 +686,14 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:FiredBullet(attacker,tr,dmginfo) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:ChangeNPCDamage(attacker,tr,dmginfo)
+	if IsValid(self.Owner) && self.Owner:IsNPC() && IsValid(tr.Entity) then
+		if self.Owner:Disposition(tr.Entity) == D_LI || self.Owner:Disposition(tr.Entity) == D_NU then
+			dmginfo:SetDamage(0)
+		end
+	end
+end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SecondaryAttack()
 	if self.HasIronsights == false then return false end

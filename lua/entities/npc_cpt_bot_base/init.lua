@@ -10,11 +10,13 @@ ENT.CanUseTaunts = false
 ENT.CanUseChat = true
 ENT.CanJump = true
 ENT.HasFallingAnimation = true
+ENT.CanFollowPlayer = false
 
 ENT.Faction = "FACTION_BOT"
 ENT.Team = "Team1"
 ENT.ShootCone = 70
 ENT.FallingHeight = 22
+ENT.IsCPTBaseBot = true
 
 ENT.LeavesBlood = true -- Don't need to set this to false if the table below is empty, it'll just not make decals
 ENT.BloodDecal = {"Blood"}
@@ -61,6 +63,10 @@ function ENT:SetInit()
 		end
 	end
 	self.ReloadingWeapon = false
+	self.IsFollowingPlayer = false
+	self.FollowingPlayer = NULL
+	self.MinFollowDistance = 0
+	self.NextUseT = 0
 	self.CanUseJump = true
 	self.NextTauntT = CurTime() +math.Rand(3,10)
 	self.NextChatT = CurTime() +math.Rand(3,10)
@@ -69,6 +75,65 @@ function ENT:SetInit()
 	self.IsMovingAround = false
 	self.NextMoveAroundT = 0
 	if self.OnBotCreated then self:OnBotCreated() end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FaceOwner(owner)
+	self:SetTarget(owner)
+	local facetarget = ai_sched_cpt.New("cptbase_bot_faceowner")
+	facetarget:EngTask("TASK_FACE_TARGET",0)
+	self:StartSchedule(facetarget)
+	self:LookAtPosition(self:FindCenter(owner),self.DefaultPoseParameters,self.DefaultPoseParamaterSpeed)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FollowAI()
+	if self.IsFollowingPlayer && self.FollowingPlayer != NULL then
+		local dist = self:GetClosestPoint(self.FollowingPlayer)
+		if self:Disposition(self.FollowingPlayer) != D_LI then
+			self.IsFollowingPlayer = false
+			self.FollowingPlayer = NULL
+		end
+		if dist > self.MinFollowDistance && self:CanPerformProcess() then
+			self:ChaseTarget(self.FollowingPlayer)
+		end
+		if !IsValid(self:GetEnemy()) then
+			if dist <= self.MinFollowDistance && self.FollowingPlayer:Visible(self) then
+				self:StopCompletely()
+				self:FaceOwner(self.FollowingPlayer)
+			end
+		else
+			if self:GetEnemy():Visible(self) then
+				self:SetAngles(Angle(0,(self:GetEnemy():GetPos() -self:GetPos()):Angle().y,0))
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnInputAccepted(event,activator)
+	if self.CanFollowPlayer && CurTime() > self.NextUseT && self.FriendlyToPlayers then
+		if event == "Use" && activator:IsPlayer() && activator:Alive() && GetConVarNumber("ai_ignoreplayers") == 0 then
+			if self.FollowingPlayer == NULL then
+				self.IsFollowingPlayer = true
+				self.FollowingPlayer = activator
+				if self.FakeName then
+					activator:ChatPrint(self.FakeName .. " will now follow you.")
+				else
+					activator:ChatPrint("This bot will now follow you.")
+				end
+				self.MinFollowDistance = math.random(120,150)
+				self.CanWander = false
+			elseif self.FollowingPlayer != NULL && activator == self.FollowingPlayer then
+				self.IsFollowingPlayer = false
+				self.FollowingPlayer = NULL
+				if self.FakeName then
+					activator:ChatPrint(self.FakeName .. " will no longer follow you.")
+				else
+					activator:ChatPrint("This bot will no longer follow you.")
+				end
+				self.CanWander = true
+			end
+		end
+		self.NextUseT = CurTime() +0.5
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetupHoldtypes(wep,ht)
@@ -264,6 +329,9 @@ function ENT:OnThink()
 			end
 		end
 	end
+	if !self.IsPossessed then
+		self:FollowAI()
+	end
 	if self.CanUseTaunts && !IsValid(self:GetEnemy()) && CurTime() > self.NextTauntT && math.random(1,80) == 1 then
 		self:PlayTaunt()
 		self.NextTauntT = CurTime() +math.Rand(15,30)
@@ -408,13 +476,13 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 			local wep = self:GetActiveWeapon()
 			-- print(self:DoWeaponTrace())
 			if nearest > wep.NPC_EnemyFarDistance then
-				if self:CanPerformProcess() then
+				if !self.IsFollowingPlayer && self:CanPerformProcess() then
 					self:ChaseEnemy()
 					self:SetPoseParameter("move_x",1)
 					self:BotMoveForward()
 				end
 			end
-			if self.CanUseJump == true && math.random(1,70) == 1 && enemy:Visible(self) then
+			if !!self.IsFollowingPlayer && self.CanUseJump == true && math.random(1,70) == 1 && enemy:Visible(self) then
 				self:JumpRandomly()
 			end
 			if nearest <= wep.NPC_FireDistance then
@@ -423,22 +491,22 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 					if math.random(1,math.random(12,25)) == 1 then
 						self:MoveAway(false)
 					end
-				elseif !self:FindInCone(enemy,self.ShootCone) && enemy:Visible(self) && !self.IsMovingAround then
+				elseif !self:FindInCone(enemy,self.ShootCone) && !self.IsFollowingPlayer && enemy:Visible(self) && !self.IsMovingAround then
 					self:FaceEnemy()
 					if self:IsMoving() then self:StopCompletely() end
-				elseif !enemy:Visible(self) then
+				elseif !enemy:Visible(self) && !self.IsFollowingPlayer then
 					wep:CanFire(false)
 					self:ChaseEnemy()
 					self:SetPoseParameter("move_x",1)
 					self:BotMoveForward()
 				end
-				if nearest <= wep.NPC_FireDistanceStop && !self.IsMovingAround then
+				if nearest <= wep.NPC_FireDistanceStop && !self.IsFollowingPlayer && !self.IsMovingAround then
 					self:SetAngles(Angle(0,(enemy:GetPos() -self:GetPos()):Angle().y,0))
 					if nearest <= wep.NPC_FireDistanceMoveAway then
 						self:MoveAway(false)
 					end
 				end
-			elseif enemy:Visible(self) && !self.IsMovingAround then
+			elseif enemy:Visible(self) && !self.IsFollowingPlayer && !self.IsMovingAround then
 				wep:CanFire(false)
 				self:ChaseEnemy()
 				self:SetPoseParameter("move_x",1)

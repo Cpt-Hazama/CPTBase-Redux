@@ -1,4 +1,45 @@
+CPTBase_Addons = {}
+
 CPTBase = {
+	AddToTable = function(tbl,data)
+		if tbl == nil || !tbl then
+			tbl = {}
+		end
+		table.insert(tbl,data)
+	end,
+	AddAddon = function(addonID,addonV)
+		if CPTBase_Addons == nil then
+			CPTBase_Addons = {}
+		end
+		table.insert(CPTBase_Addons,addonID)
+		table.insert(CPTBase_Addons[addonID],addonV)
+		-- PrintTable(CPTBase_Addons)
+		MsgN("Registering CPTBase addon ID " .. addonID .. ", reference version " .. addonV)
+	end,
+	FindAddon = function(addonID)
+		if CPTBase_Addons[addonID] then
+			MsgN("Found CPTBase addon ID " .. addonID)
+			return true
+		end
+		MsgN("Could not locate CPTBase addon ID " .. addonID)
+		return false
+	end,
+	IsAddonUpdated = function(addonID,desiredV)
+		local isUpdated = false
+		if CPTBase_Addons[addonID] then
+			if CPTBase_Addons[addonID] == desiredV then
+				isUpdated = true
+			end
+		end
+		if isUpdated == false then
+			for _,v in ipairs(player.GetAll()) do
+				v:ChatPrint("The addon " .. addonID .. " that you have installed is not the latest version!")
+				v:ChatPrint(tostring(CPTBase_Addons[addonID]))
+				v:ChatPrint(tostring(desiredV))
+			end
+		end
+		return isUpdated
+	end,
 	AddParticleSystem = function(cptDir,cptList)
 		game.AddParticles(cptDir)
 		local particlename = cptList

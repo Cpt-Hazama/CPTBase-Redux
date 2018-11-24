@@ -6,6 +6,8 @@
 AddCSLuaFile('server/cpt_utilities.lua')
 include('server/cpt_utilities.lua')
 
+-- CPTBase.AddAddon("cptbase","54")
+
 // Bots
 CPTBase.AddNPC("Player Bot","npc_cpt_bot","CPTBase Redux")
 

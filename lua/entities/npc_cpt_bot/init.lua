@@ -46,6 +46,7 @@ ENT.CanSeeAllEnemies = false
 ENT.Faction = "FACTION_PLAYER"
 ENT.FriendlyToPlayers = true
 ENT.Team = "No Team"
+ENT.CanFollowPlayer = true
 
 ENT.BloodEffect = {"blood_impact_red_01"}
 
