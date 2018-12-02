@@ -663,6 +663,8 @@ function ENT:Possess_Jump(possessor)
 	if self.DoLeapAttack then
 		if !IsValid(self:GetEnemy()) then possessor:ChatPrint("No Valid Enemy To Target") return end
 		self:DoLeapAttack()
+	elseif self.DoLongAttack then
+		self:DoLongAttack()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
