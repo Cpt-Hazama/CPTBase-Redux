@@ -681,6 +681,18 @@ function NPC_Meta:DoCustomTrace(enter,exit,filt,sendfulldata) -- :/
 	end
 end
 
+/*
+	local function callBack(t)
+		return math.sin(t *math.pi *2 /44100 *2000) *π
+	end
+	util.GenSound("genSound01",3,callBack)
+*/
+function util.GenerateSound(sndName,sndLen,callBack)
+	local generatedID = sndName .. tostring(math.Rand(0,999999))
+	sound.Generate(generatedID,44100,sndLen,callBack)
+	surface.PlaySound(generatedID)
+end
+
 function util.CreateSplashDamage(pos,dmg,dmgtype,dist,attacker)
 	for _,v in ipairs(ents.FindInSphere(pos,dist)) do
 		if v:IsValid() && (v:IsNPC() || v:IsPlayer()) && attacker:Disposition(v) != D_LI && v != attacker then

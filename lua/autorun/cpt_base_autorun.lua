@@ -24,6 +24,7 @@ CPTBase.AddNPC("Infectious Zombie","npc_cpt_scientistzombie","CPTBase Redux")
 CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
 
+CPTBase.AddConVar("cpt_npchearing_advanced",0)
 CPTBase.AddConVar("cpt_allowspecialdmg",1)
 CPTBase.AddConVar("cpt_corpselifetime",100)
 CPTBase.AddConVar("cpt_debug_nodegraph",0)

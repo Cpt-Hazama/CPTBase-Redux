@@ -15,14 +15,14 @@ end
 
 math.Median = function(tbl)
 	local count = #tbl
-	local mVal = math.ceil(count /2)
-	return tbl[mVal]
+	local val = math.ceil(count /2)
+	return tbl[val]
 end
 
 math.Mode = function(tb)
-	local tbValues = {}
+	local tbl = {}
 	for k,v in ipairs(tb) do
-		tbValues[#tbValues +1] = v
+		tbl[#tbl +1] = v
 	end
-	return tbValues[#tbValues] -tbValues[1]
+	return tbl[#tbl] -tbl[1]
 end

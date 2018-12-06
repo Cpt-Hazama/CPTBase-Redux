@@ -39,6 +39,7 @@ ENT.CanSetEnemy = true -- Can the NPC set its' enemy? (Can be changed at anytime
 ENT.CanChaseEnemy = true -- Can the NPC chase its' enemy? (Can be changed at anytime in the code)
 ENT.MeleeAngle = 45 -- How far the melee attack reaches (Based on a cone system) Example: NPC <) Enemy
 ENT.ReactsToSound = true -- Will the NPC react to hearing noises?
+ENT.UseAdvancedHearing = false -- Will the NPC use the advanced hearing system? Note that this can be VERY LAGGY
 ENT.HearingDistance = 900 -- How far the NPC can hear noises
 ENT.Faction = "FACTION_NONE" -- Required for every NPC. Use the same one amongst your NPCs to make them allies (Only supports one faction per NPC as a way to reduce in-game lag)
 ENT.FriendlyToPlayers = false -- Is the NPC friendly to players?
@@ -199,19 +200,6 @@ function ENT:HandleSchedules_Fly(enemy,dist,nearest,disp)
 	end
 	if(disp == D_HT) then
 		self:HandleFlying(enemy,dist,nearest)
-	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:OnHearSound(ent)
-	if self.ReactsToSound == false then return end
-	if self.IsPossessed == true then return end
-	if ent:Visible(self) then
-		self:SetTarget(ent)
-		self:SetSchedule(SCHED_TARGET_FACE)
-	elseif !ent:Visible(self) then
-		local NoisePos = util.RandomVectorAroundPos(self:FindCenter(ent),150,true)
-		self:SetLastPosition(NoisePos)
-		self:TASKFUNC_LASTPOSITION()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -899,6 +887,9 @@ function ENT:Initialize()
 		self.Possessor_MinMoveDistance = 20
 	end
 	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
+	if GetConVarNumber("cpt_npchearing_advanced") == 1 then
+		self.UseAdvancedHearing = true
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateSight(sight,find)
@@ -1166,17 +1157,63 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnStartedAnimation(activity) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnHearSound(ent)
+	if self.ReactsToSound == false then return end
+	if self.IsPossessed == true then return end
+	if ent:Visible(self) then
+		self:SetTarget(ent)
+		self:SetSchedule(SCHED_TARGET_FACE)
+	elseif !ent:Visible(self) then
+		local NoisePos = util.RandomVectorAroundPos(self:FindCenter(ent),150,true)
+		self:SetLastPosition(NoisePos)
+		self:TASKFUNC_LASTPOSITION()
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:AdvancedHearingCode(ent,vol,pos)
+	-- print(ent,vol,pos)
+	if !self.ReactsToSound then return end
+	if IsValid(self:GetEnemy()) then return end
+	if pos == nil then pos = ent:GetPos() end
+	local isENT = false
+	local threshold = ((self.HearingDistance *vol) *0.01)
+	if ent == self then return end
+	if ent:IsNPC() || ent:IsPlayer() then
+		isENT = true
+	end
+	local baseCheck = true
+	if isENT then
+		baseCheck = (self.Faction != ent.Faction && (ent.Faction != "FACTION_NONE" && ent.Faction != "FACTION_NOTARGET"))
+	end
+	if self:GetDistanceToVector(pos,1) <= threshold then
+		-- print("Found ENT " .. tostring(ent))
+		if isENT then
+			if self:Disposition(ent) != D_LI && baseCheck then
+				-- print("Checked disp")
+				if ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then print("CANT ACCESS PLAYER") return end
+				self:OnHearSound(ent)
+				-- print("SOUND")
+			end
+		else
+			self:OnHearSound(ent)
+			-- print("SOUND - NON ENEMY")
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HearingCode()
-	for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-		if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
-			if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
+	if self.ReactsToSound then
+		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
+			if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
+				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
+					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
+						self:OnHearSound(v)
+					end
+				end
+			elseif v:IsNPC() && v != self && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
 				if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 					self:OnHearSound(v)
 				end
-			end
-		elseif v:IsNPC() && v != self && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
-			if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
-				self:OnHearSound(v)
 			end
 		end
 	end
