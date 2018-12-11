@@ -21,6 +21,16 @@ if (SERVER) then
 	util.AddNetworkString("cpt_ControllerView")
 end
 
+function util.FindInSphere(pos,dist)
+	local tb = {}
+	for _,v in ipairs(ents.GetAll()) do
+		if v:GetPos():Distance(pos) <= dist then
+			table.insert(tb,v)
+		end
+	end
+	return tb
+end
+
 function FindLuaFile(luadir)
 	return file.Exists(luadir,"LUA")
 end
@@ -478,11 +488,12 @@ function ENT_Meta:DropNPCWeapon(pos,ang)
 	end
 end
 
-function NPC_Meta:CreateRagdolledNPC(vel,caller)
+function NPC_Meta:CreateRagdolledNPC(vel,caller,ovtype)
 	if self.CPTBase_NPC != true then return end
 	local velocity = vel or Vector(-300,0,300)
 	local mdl = self:GetModel()
 	local phy = string.Replace(mdl,".mdl",".phy")
+	local mtype = ovtype or "prop_ragdoll"
 	if !file.Exists(phy,"GAME") then return end // Checks if the model has physics
 	self.Ragdoll_CPT = ents.Create("prop_ragdoll")
 	self.Ragdoll_CPT:SetModel(self:GetModel())
@@ -490,6 +501,7 @@ function NPC_Meta:CreateRagdolledNPC(vel,caller)
 	self.Ragdoll_CPT:SetAngles(self:GetAngles())
 	self.Ragdoll_CPT:Spawn()
 	self.Ragdoll_CPT:Activate()
+	self.Ragdoll_CPT:SetModelScale(self:GetModelScale())
 	self.IsRagdolled = true
 	self:SetPersistent(true)
 	self:SetCollisionGroup(1)

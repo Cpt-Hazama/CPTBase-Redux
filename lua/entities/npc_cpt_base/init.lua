@@ -157,6 +157,158 @@ ENT.NextFootSoundT_Run = 0
 ENT.NextIdleSoundT = 0
 ENT.NextAlertSoundT = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Initialize()
+	self:SetSpawnEffect(false)
+	self.CPTBase_NPC = true
+	self:SetAIType(self.DefaultAIType)
+	if !IsValid(self:GetOwner()) then
+		self:SetOwner(self:GetCreator())
+	end
+	self:SetNWBool("IsCPTBase_NPC",true)
+	self:SetNWEntity("cpt_SpokenPlayer",NULL)
+	self:SetNWString("cpt_Faction",self.Faction)
+	self:SetNPCModel()
+	self:DrawShadow(true)
+	self:SetHullSizeNormal()
+	self:SetCollisionGroup(COLLISION_GROUP_NPC)
+	if self.CollisionBounds != Vector(0,0,0) then
+		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
+	end
+	self:SetSolid(SOLID_BBOX)
+	self:SetMaxYawSpeed(self.MaxTurnSpeed)
+	local dif = GetConVarNumber("cpt_aidifficulty")
+	local start = self.StartHealth
+	local hp
+	if dif == 1 then
+		hp = start *0.5
+	elseif dif == 2 then
+		hp = start
+	elseif dif == 3 then
+		hp = start *2
+	elseif dif == 4 then
+		hp = start *4
+	end
+	self:SetHealth(self.StartHealth)
+	self:SetMaxHealth(self.StartHealth)
+	-- self:SetMovementType(MOVETYPE_STEP)
+	self:SetEnemy(NULL)
+	self.RenderMode = RENDERMODE_NORMAL
+	self:SetNPCRenderMode(RENDERMODE_NORMAL)
+	self.HasSetTypeOnSpawn = false
+	self.IsPossessed = false
+	self.Possessor = nil
+	self.DidGetHit = false
+	self.tbl_EnemyMemory = {}
+	self.EnemyMemoryCount = 0
+	self:ClearMemory()
+	self.IsDead = false
+	self.HasStoppedMovingToAttack = false
+	self.NextAnimT = 0
+	self.IdleAnimation = ACT_IDLE
+	self.NextIdleAnimationT = 0
+	self.IsRagdolled = false
+	self.AlreadyResetPoseParamaters = false
+	self.LoopedSounds = {}
+	self.tblBlackList = {}
+	self.tbl_AddToEnemies = {}
+	self.bInSchedule = false
+	self.IsStartingUp = false
+	self.CurrentHeardEnemy = nil
+	self.NextHearSoundT = 0
+	self.IsPlayingSequence = false
+	self.IsPlayingActivity = false
+	self.NextMutT = 0
+	self.HasMutated = false
+	self.MutationHealth = math.Round(self.StartHealth /3.8)
+	local color
+	local colorchance = math.random(1,3)
+	if colorchance == 1 then
+		color = "green"
+		self.MutationType = "health"
+	elseif colorchance == 2 then
+		color = "red"
+		self.MutationType = "damage"
+	elseif colorchance == 3 then
+		color = "yellow"
+		self.MutationType = "both"
+	end
+	self.MutationEmbers = "cpt_mutationembers_" .. color
+	self.MutationGlow = "cpt_mutationglow_" .. color
+	self.LostWeapon = false
+	self.LastUsedWeapon = nil
+	self.IsSwimType = false
+	self.NextSwimDirection_YawT = 0
+	self.NextSwimDirection_PitchT = 0
+	self.TimeSinceLastTimeFalling = 0
+	self.tbl_Speakers = {}
+	self.tbl_RegisteredNodes = {}
+	self.NPC_Enemy = nil
+	self.Enemy = NULL
+	self:SetNWString("CPTBase_NPCFaction",self.Faction)
+	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
+		self.UseCPTBaseAINavigation = true
+	end
+	self.tbl_Inventory = {
+		["Primary"] = nil,
+		["Melee"] = nil,
+	}
+	self:UpdateSight(self.SightDistance,self.FindEntitiesDistance)
+	
+	if self.LeavesBlood == true then
+		-- if self.AutomaticallySetsUpDecals then
+			-- self:SetupBloodDecals()
+		-- end
+	end
+
+	if table.Count(self.tbl_Capabilities) > 0 then
+		for _,cap in ipairs(self.tbl_Capabilities) do
+			if type(cap) == "number" then
+				self:CapabilitiesAdd(bit.bor(cap))
+				if cap == CAP_MOVE_JUMP then self.HasFallingAnimation = true end
+			end
+		end
+	end
+
+	self:UpdateFriends()
+	self:UpdateEnemies()
+	self:UpdateRelations()
+
+	if self.SetupSoundTables == true then
+		if self.SoundDirectory == nil then MsgN("CPTBase warning: " .. self .. " has no sound directory. Please add a sound directory.") return end
+		self:FindSounds()
+	end
+
+	local idleanim = self:GetIdleAnimation()
+	if idleanim == nil then self:SetIdleAnimation(ACT_IDLE) end
+
+
+	self:SetInit()
+	self:AfterInit()
+	if self:GetHullType() == HULL_HUMAN then
+		self.Possessor_MaxMoveDistanceForward = 200
+		self.Possessor_MaxMoveDistanceLeft = 90
+		self.Possessor_MaxMoveDistanceRight = 90
+		self.Possessor_MaxMoveDistanceBackward = 150
+		self.Possessor_MinMoveDistance = 40
+	elseif self:GetHullType() == HULL_LARGE then
+		self.Possessor_MaxMoveDistanceForward = 400
+		self.Possessor_MaxMoveDistanceLeft = 250
+		self.Possessor_MaxMoveDistanceRight = 250
+		self.Possessor_MaxMoveDistanceBackward = 300
+		self.Possessor_MinMoveDistance = 120
+	elseif self:GetHullType() == HULL_TINY then
+		self.Possessor_MaxMoveDistanceForward = 70
+		self.Possessor_MaxMoveDistanceLeft = 70
+		self.Possessor_MaxMoveDistanceRight = 70
+		self.Possessor_MaxMoveDistanceBackward = 70
+		self.Possessor_MinMoveDistance = 20
+	end
+	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
+	if GetConVarNumber("cpt_npchearing_advanced") == 1 then
+		self.UseAdvancedHearing = true
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AfterInit() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink_Disabled() end
@@ -740,158 +892,6 @@ function ENT:SetNPCModel(mdl)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:Initialize()
-	self:SetSpawnEffect(false)
-	self.CPTBase_NPC = true
-	self:SetAIType(self.DefaultAIType)
-	if !IsValid(self:GetOwner()) then
-		self:SetOwner(self:GetCreator())
-	end
-	self:SetNWBool("IsCPTBase_NPC",true)
-	self:SetNWEntity("cpt_SpokenPlayer",NULL)
-	self:SetNWString("cpt_Faction",self.Faction)
-	self:SetNPCModel()
-	self:DrawShadow(true)
-	self:SetHullSizeNormal()
-	self:SetCollisionGroup(COLLISION_GROUP_NPC)
-	if self.CollisionBounds != Vector(0,0,0) then
-		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
-	end
-	self:SetSolid(SOLID_BBOX)
-	self:SetMaxYawSpeed(self.MaxTurnSpeed)
-	local dif = GetConVarNumber("cpt_aidifficulty")
-	local start = self.StartHealth
-	local hp
-	if dif == 1 then
-		hp = start *0.5
-	elseif dif == 2 then
-		hp = start
-	elseif dif == 3 then
-		hp = start *2
-	elseif dif == 4 then
-		hp = start *4
-	end
-	self:SetHealth(self.StartHealth)
-	self:SetMaxHealth(self.StartHealth)
-	-- self:SetMovementType(MOVETYPE_STEP)
-	self:SetEnemy(NULL)
-	self.RenderMode = RENDERMODE_NORMAL
-	self:SetNPCRenderMode(RENDERMODE_NORMAL)
-	self.HasSetTypeOnSpawn = false
-	self.IsPossessed = false
-	self.Possessor = nil
-	self.DidGetHit = false
-	self.tbl_EnemyMemory = {}
-	self.EnemyMemoryCount = 0
-	self:ClearMemory()
-	self.IsDead = false
-	self.HasStoppedMovingToAttack = false
-	self.NextAnimT = 0
-	self.IdleAnimation = ACT_IDLE
-	self.NextIdleAnimationT = 0
-	self.IsRagdolled = false
-	self.AlreadyResetPoseParamaters = false
-	self.LoopedSounds = {}
-	self.tblBlackList = {}
-	self.tbl_AddToEnemies = {}
-	self.bInSchedule = false
-	self.IsStartingUp = false
-	self.CurrentHeardEnemy = nil
-	self.NextHearSoundT = 0
-	self.IsPlayingSequence = false
-	self.IsPlayingActivity = false
-	self.NextMutT = 0
-	self.HasMutated = false
-	self.MutationHealth = math.Round(self.StartHealth /3.8)
-	local color
-	local colorchance = math.random(1,3)
-	if colorchance == 1 then
-		color = "green"
-		self.MutationType = "health"
-	elseif colorchance == 2 then
-		color = "red"
-		self.MutationType = "damage"
-	elseif colorchance == 3 then
-		color = "yellow"
-		self.MutationType = "both"
-	end
-	self.MutationEmbers = "cpt_mutationembers_" .. color
-	self.MutationGlow = "cpt_mutationglow_" .. color
-	self.LostWeapon = false
-	self.LastUsedWeapon = nil
-	self.IsSwimType = false
-	self.NextSwimDirection_YawT = 0
-	self.NextSwimDirection_PitchT = 0
-	self.TimeSinceLastTimeFalling = 0
-	self.tbl_Speakers = {}
-	self.tbl_RegisteredNodes = {}
-	self.NPC_Enemy = nil
-	self.Enemy = NULL
-	self:SetNWString("CPTBase_NPCFaction",self.Faction)
-	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
-		self.UseCPTBaseAINavigation = true
-	end
-	self.tbl_Inventory = {
-		["Primary"] = nil,
-		["Melee"] = nil,
-	}
-	self:UpdateSight(self.SightDistance,self.FindEntitiesDistance)
-	
-	if self.LeavesBlood == true then
-		-- if self.AutomaticallySetsUpDecals then
-			-- self:SetupBloodDecals()
-		-- end
-	end
-
-	if table.Count(self.tbl_Capabilities) > 0 then
-		for _,cap in ipairs(self.tbl_Capabilities) do
-			if type(cap) == "number" then
-				self:CapabilitiesAdd(bit.bor(cap))
-				if cap == CAP_MOVE_JUMP then self.HasFallingAnimation = true end
-			end
-		end
-	end
-
-	self:UpdateFriends()
-	self:UpdateEnemies()
-	self:UpdateRelations()
-
-	if self.SetupSoundTables == true then
-		if self.SoundDirectory == nil then MsgN("CPTBase warning: " .. self .. " has no sound directory. Please add a sound directory.") return end
-		self:FindSounds()
-	end
-
-	local idleanim = self:GetIdleAnimation()
-	if idleanim == nil then self:SetIdleAnimation(ACT_IDLE) end
-
-
-	self:SetInit()
-	self:AfterInit()
-	if self:GetHullType() == HULL_HUMAN then
-		self.Possessor_MaxMoveDistanceForward = 200
-		self.Possessor_MaxMoveDistanceLeft = 90
-		self.Possessor_MaxMoveDistanceRight = 90
-		self.Possessor_MaxMoveDistanceBackward = 150
-		self.Possessor_MinMoveDistance = 40
-	elseif self:GetHullType() == HULL_LARGE then
-		self.Possessor_MaxMoveDistanceForward = 400
-		self.Possessor_MaxMoveDistanceLeft = 250
-		self.Possessor_MaxMoveDistanceRight = 250
-		self.Possessor_MaxMoveDistanceBackward = 300
-		self.Possessor_MinMoveDistance = 120
-	elseif self:GetHullType() == HULL_TINY then
-		self.Possessor_MaxMoveDistanceForward = 70
-		self.Possessor_MaxMoveDistanceLeft = 70
-		self.Possessor_MaxMoveDistanceRight = 70
-		self.Possessor_MaxMoveDistanceBackward = 70
-		self.Possessor_MinMoveDistance = 20
-	end
-	if self.HasSetTypeOnSpawn == false then self:SetMovementType(MOVETYPE_STEP) end
-	if GetConVarNumber("cpt_npchearing_advanced") == 1 then
-		self.UseAdvancedHearing = true
-	end
-end
----------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateSight(sight,find)
 	self.SightDistance = sight
 	self.FindEntitiesDistance = find
@@ -1170,13 +1170,23 @@ function ENT:OnHearSound(ent)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:AdvancedHearingCode(ent,vol,pos)
+function ENT:AdvancedHearingCode(ent,vol,pos,dvol)
 	-- print(ent,vol,pos)
 	if !self.ReactsToSound then return end
 	if IsValid(self:GetEnemy()) then return end
 	if pos == nil then pos = ent:GetPos() end
 	local isENT = false
-	local threshold = ((self.HearingDistance *vol) *0.01)
+	-- local threshold = ((self.HearingDistance *vol) *0.01)
+	local threshold = (self.HearingDistance *dvol)
+	-- self:PlayerChat("----------------------------------------------")
+	-- self:PlayerChat("ent " .. ent:GetClass())
+	-- self:PlayerChat("vol " .. dvol)
+	-- self:PlayerChat("thres " .. threshold)
+	-- if self:GetDistanceToVector(pos,1) <= threshold then
+		-- self:PlayerChat("Can hear sound")
+	-- else
+		-- self:PlayerChat("Can't hear sound")
+	-- end
 	if ent == self then return end
 	if ent:IsNPC() || ent:IsPlayer() then
 		isENT = true
@@ -1190,7 +1200,7 @@ function ENT:AdvancedHearingCode(ent,vol,pos)
 		if isENT then
 			if self:Disposition(ent) != D_LI && baseCheck then
 				-- print("Checked disp")
-				if ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then print("CANT ACCESS PLAYER") return end
+				if ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then /*print("CANT ACCESS PLAYER")*/ return end
 				self:OnHearSound(ent)
 				-- print("SOUND")
 			end
@@ -1846,7 +1856,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			DoIgnore = true
 		end
 	end
-	if DoIgnore == false && self.IsDead == false /*&& self.IsRagdolled == false*/ && self.IsEssential == false && self:BeforeTakeDamage(dmg,_Hitbox) then
+	if DoIgnore == false && self.IsDead == false /*&& self.IsRagdolled == false*/ && self.IsEssential == false && self:BeforeTakeDamage(dmg,_Hitbox,dmginfo) then
 		local change = self:ChangeDamageOnHit(dmg,_Hitbox,dmginfo)
 		-- print(change)
 		self:SetHealth(self:Health() -change)
@@ -1854,7 +1864,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 		timer.Simple(0.01,function() if self:IsValid() && self.DidGetHit == true then self.DidGetHit = false end end)
 	end
 	if DoIgnore == false then
-		if self:BeforeTakeDamage(dmg,_Hitbox) == false then
+		if self:BeforeTakeDamage(dmg,_Hitbox,dmginfo) == false then
 			DoIgnore = true
 		end
 	end

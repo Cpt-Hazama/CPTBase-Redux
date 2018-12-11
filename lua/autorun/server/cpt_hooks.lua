@@ -36,7 +36,8 @@ hook.Add("EntityEmitSound","CPTBase_DetectEntitySounds",function(data)
 			local ent = data.Entity
 			local vol = data.SoundLevel
 			local pos = data.Pos
-			v:AdvancedHearingCode(ent,vol,pos)
+			local dvol = data.Volume
+			v:AdvancedHearingCode(ent,vol,pos,dvol)
 		end
 	end
 	return nil
