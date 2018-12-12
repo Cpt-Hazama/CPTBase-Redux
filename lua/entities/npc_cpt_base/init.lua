@@ -29,6 +29,7 @@ ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 ENT.DefaultAIType = AITYPE_NORMAL
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
+ENT.UseNotarget = false
 ENT.IsBlind = false -- Is the NPC blind? (Experimental)
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500 -- How far the NPC can see (In WU. Increasing may impact performance)
@@ -992,6 +993,7 @@ function ENT:UpdateRelations() // Obsolete
 			if v:IsNPC() && v.Faction != nil && v != self then
 				if v.Faction == "FACTION_NONE" then return end
 				if self.Faction != v.Faction && self:Disposition(v) != D_HT then
+						if v.UseNotarget then return end
 						self:SetRelationship(v,D_HT)
 				elseif self.Faction == v.Faction && self:Disposition(v) != D_LI then
 					self:SetRelationship(v,D_LI)
@@ -1171,42 +1173,27 @@ function ENT:OnHearSound(ent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AdvancedHearingCode(ent,vol,pos,dvol)
-	-- print(ent,vol,pos)
 	if !self.ReactsToSound then return end
 	if IsValid(self:GetEnemy()) then return end
 	if pos == nil then pos = ent:GetPos() end
 	local isENT = false
-	-- local threshold = ((self.HearingDistance *vol) *0.01)
 	local threshold = (self.HearingDistance *dvol)
-	-- self:PlayerChat("----------------------------------------------")
-	-- self:PlayerChat("ent " .. ent:GetClass())
-	-- self:PlayerChat("vol " .. dvol)
-	-- self:PlayerChat("thres " .. threshold)
-	-- if self:GetDistanceToVector(pos,1) <= threshold then
-		-- self:PlayerChat("Can hear sound")
-	-- else
-		-- self:PlayerChat("Can't hear sound")
-	-- end
 	if ent == self then return end
 	if ent:IsNPC() || ent:IsPlayer() then
 		isENT = true
 	end
 	local baseCheck = true
 	if isENT then
-		baseCheck = (self.Faction != ent.Faction && (ent.Faction != "FACTION_NONE" && ent.Faction != "FACTION_NOTARGET"))
+		baseCheck = (self.Faction != ent.Faction && (ent.Faction != "FACTION_NONE" && ent.Faction != "FACTION_NOTARGET") && !ent.UseNotarget)
 	end
 	if self:GetDistanceToVector(pos,1) <= threshold then
-		-- print("Found ENT " .. tostring(ent))
 		if isENT then
 			if self:Disposition(ent) != D_LI && baseCheck then
-				-- print("Checked disp")
-				if ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then /*print("CANT ACCESS PLAYER")*/ return end
+				if ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then return end
 				self:OnHearSound(ent)
-				-- print("SOUND")
 			end
 		else
 			self:OnHearSound(ent)
-			-- print("SOUND - NON ENEMY")
 		end
 	end
 end
@@ -1692,6 +1679,7 @@ function ENT:FindAllEnemies()
 	for _,v in ipairs(ents.GetAll()) do
 		if IsValid(v) && (v:IsNPC() && v != self || v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && self.FriendlyToPlayers == false && v.IsPossessing == false && self:GetFaction() != "FACTION_PLAYER") then
 			if v.Faction == "FACTION_NOTARGET" then return end
+			if v.UseNotarget then return end
 			if v:Health() > 0 && self.Faction != v.Faction && self:Disposition(v) != D_LI then
 				return v
 			end
@@ -1704,6 +1692,7 @@ function ENT:LocateEnemies()
 	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
 		if v:IsNPC() && v != self && v:Health() > 0 then
 			if v:GetClass() == "bullseye_strider_focus" then break end
+			if v.UseNotarget then return end
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
 				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
 					return v
@@ -1711,6 +1700,7 @@ function ENT:LocateEnemies()
 			end
 		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
+				if v.UseNotarget then return end
 				if v.Faction == "FACTION_NOTARGET" then return end
 				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tblBlackList,v) then
 					return v

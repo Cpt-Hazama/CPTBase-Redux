@@ -1,15 +1,16 @@
 if !CPTBase then return end
 -------------------------------------------------------------------------------------------------------------------
+AddCSLuaFile("ai_translations.lua")
 AddCSLuaFile("cl_init.lua")
-AddCSLuaFile("shared.lua")
 AddCSLuaFile("viewmodel.lua")
 include("ai_translations.lua")
+-- include("viewmodel.lua")
 include("sh_anim.lua")
 
-if SERVER then
-	util.AddNetworkString("cpt_CModelshootpos")
-	util.AddNetworkString("cpt_CModel")
-end
+-- if SERVER then
+	-- util.AddNetworkString("cpt_CModelshootpos")
+	-- util.AddNetworkString("cpt_CModel")
+-- end
 
 SWEP.Author = "Cpt. Hazama"
 SWEP.Contact = ""
@@ -736,6 +737,8 @@ function SWEP:BeforePrimaryAttack_NPC() end
 function SWEP:AfterPrimaryAttack_NPC() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Think()
+	-- print(self:GetNWEntity("cpt_CModel"))
+	-- print(self:GetNWEntity("cpt_CModel"):LookupAttachment("muzzle"))
 	self:WeaponConditionThink()
 	self:OnThink()
 	-- if self.Owner:IsNPC() then

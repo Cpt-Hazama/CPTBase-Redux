@@ -38,7 +38,9 @@ function SWEP:ViewModelDrawn()
 			-- net.WriteEntity(self._CModel)
 			-- net.WriteEntity(self)
 			-- net.SendToServer()
+			self:SetNWVector("cpt_CModelshootpos",ShootPos)
 			self:SetNWEntity("cpt_CModel",self._CModel)
+			-- print(self:GetNWEntity("cpt_CModel"))
 			-- print(self._CModel)
 		end
 	end
