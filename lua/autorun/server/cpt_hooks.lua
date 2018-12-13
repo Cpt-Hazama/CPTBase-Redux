@@ -11,25 +11,12 @@ hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 end)
 
 hook.Add("EntityEmitSound","CPTBase_DetectEntitySounds",function(data)
-	if GetConVarNumber("cpt_npchearing_advanced") == 0 then 
+	if GetConVarNumber("ai_disabled") == 1 then
 		return nil -- Don't alter sound data, proceed
 	end
-	/*
-		Example Table:
-			Ambient	=	false
-			Channel	=	4
-			DSP	=	0
-			Entity	=	Player [1][Cpt. Hazama]
-			Flags	=	0
-			OriginalSoundName	=	player/footsteps/concrete2.wav
-			Pitch	=	100
-			Pos	=	778.584045 -835.784668 -143.968750
-			SoundLevel	=	75
-			SoundName	=	player/footsteps/concrete2.wav
-			SoundTime	=	0
-			Volume	=	0.20000000298023
-	*/
-	-- PrintTable(data)
+	if GetConVarNumber("cpt_npchearing_advanced") == 0 then
+		return nil -- Don't alter sound data, proceed
+	end
 	if !IsValid(data.Entity) then return nil end
 	for _,v in pairs(ents.GetAll()) do
 		if IsValid(v) && v:IsNPC() && v != data.Entity && v.CPTBase_NPC && v.UseAdvancedHearing then

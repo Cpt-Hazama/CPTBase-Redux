@@ -47,6 +47,11 @@ function PLY_Meta:SetCPTBaseRagdoll(ent)
 	self.CPTBase_Ragdoll = ent
 end
 
+function NPC_Meta:SetNoTarget(nt)
+	self.UseNotarget = nt
+	self.VJ_NoTarget = nt
+end
+
 function PLY_Meta:SpawnCPTBaseRagdoll(ent,velocity,caller)
 	if SERVER then
 		local rag = ents.Create("prop_ragdoll")

@@ -1201,13 +1201,13 @@ end
 function ENT:HearingCode()
 	if self.ReactsToSound then
 		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-			if v:IsPlayer() && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
+			if v:IsPlayer() && !v.UseNotarget && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
 				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 						self:OnHearSound(v)
 					end
 				end
-			elseif v:IsNPC() && v != self && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
+			elseif v:IsNPC() && v != self && !v.UseNotarget && self.Faction != v:GetFaction() && v.Faction != "FACTION_NONE" && v:IsMoving() && v:Disposition(self) != D_LI then
 				if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 					self:OnHearSound(v)
 				end
@@ -1748,10 +1748,10 @@ end
 function ENT:UpdateMemory()
 	local enemymemory = self.tbl_EnemyMemory
 	for _,v in ipairs(enemymemory) do
-		if v:IsPlayer() && v.IsPossessing then
+		if v:IsPlayer() && (v.IsPossessing || v.UseNotarget) then
 			self:RemoveFromMemory(v)
 		end
-		if !v:IsValid() || v:Health() <= 0 || ((v:IsPlayer() && (!v:Alive() || v.IsPossessing || GetConVarNumber("ai_ignoreplayers") == 1 || v.Faction == "FACTION_NOTARGET")) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
+		if !v:IsValid() || v:Health() <= 0 || v.UseNotarget || ((v:IsPlayer() && (!v:Alive() || v.IsPossessing || GetConVarNumber("ai_ignoreplayers") == 1 || v.Faction == "FACTION_NOTARGET")) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
 			self:RemoveFromMemory(v)
 		end
 	end
@@ -1956,7 +1956,7 @@ function ENT:OnTakePain(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ChangeDamageOnHit(dmg,hitbox) return dmg:GetDamage() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:BeforeTakeDamage(dmg,hitbox) return true end
+function ENT:BeforeTakeDamage(dmg,hitbox,dmginfo) return true end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	gamemode.Call("OnNPCKilled",self,dmg:GetAttacker(),dmg:GetInflictor())
