@@ -166,6 +166,13 @@ function NPC_Meta:SetNPCEnemy(ent)
 	self.NPC_Enemy = ent
 end
 
+function IsAIDisabled()
+	if GetConVarNumber("ai_disabled") == 1 then
+		return true
+	end
+	return false
+end
+
 // util.AddAttackEffect(self,enemy,8,DMG_POI,1.5,10)
 function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 	if GetConVarNumber("cpt_allowspecialdmg") == 0 then return end
@@ -434,7 +441,7 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 end
 
 function AdaptCPTBaseDamage(dmg)
-	local dif = GetConVarNumber("cpt_aidifficulty")
+	local dif = math.Round(GetConVarNumber("cpt_aidifficulty"))
 	local finaldmg
 	if dif == 1 then
 		finaldmg = dmg *0.5
@@ -444,6 +451,8 @@ function AdaptCPTBaseDamage(dmg)
 		finaldmg = dmg *2
 	elseif dif == 4 then
 		finaldmg = dmg *4
+	else
+		finaldmg = dmg
 	end
 	return finaldmg
 end

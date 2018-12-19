@@ -181,7 +181,8 @@ function SWEP:SelectFromTable(tbl)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SoundCreate(snd,vol,pitch)
-	return sound.Play(snd,self:GetPos(),vol,pitch,1)
+	-- return sound.Play(snd,self:GetPos(),vol,pitch,1)
+	return self:EmitSound(snd,vol,pitch)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:AnimationLength(activity)
