@@ -495,7 +495,6 @@ function ENT:Possess_Commands(possessor)
 	elseif possessor:KeyDown(IN_WALK) then
 		return self:Possess_Walk(possessor)
 	end
-	return self:Possess_CustomCommands(possessor)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetPossessorKey(key)

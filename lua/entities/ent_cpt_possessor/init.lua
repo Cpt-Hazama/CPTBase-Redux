@@ -17,21 +17,36 @@ function ENT:PossessTheNPC()
 	self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",self.PossessedNPC:GetClass())
 	self.Possessor.CurrentlyPossessedNPC = self.PossessedNPC
 	self.Possessor.Faction = "FACTION_NONE"
+	local usecam = false
+	local camID = nil
 	self.PossessorView = ents.Create("prop_dynamic")
-	if self.PossessedNPC.Possessor_UseBoneCamera then
-		self.PossessorView:SetPos(self.PossessedNPC:GetBonePosition(self.PossessedNPC.Possessor_BoneCameraName) +self.PossessedNPC:GetUp() *self.PossessedNPC.Possessor_BoneCameraUp  +self.PossessedNPC:GetRight() *self.PossessedNPC.Possessor_BoneCameraRight  +self.PossessedNPC:GetForward() *self.PossessedNPC.Possessor_BoneCameraForward)
+	if self.PossessedNPC:GetAttachment(self.PossessedNPC:LookupAttachment("cptbase_possessor_camera")) != nil then
+		self.PossessorView:SetPos(self.PossessedNPC:GetAttachment(self.PossessedNPC:LookupAttachment("cptbase_possessor_camera")).Pos)
+		usecam = true
+		camID = "cptbase_possessor_camera"
+	elseif self.PossessedNPC:GetAttachment(self.PossessedNPC:LookupAttachment("possession_cam")) != nil then
+		self.PossessorView:SetPos(self.PossessedNPC:GetAttachment(self.PossessedNPC:LookupAttachment("possession_cam")).Pos)
+		usecam = true
+		camID = "possession_cam"
 	else
-		if self.PossessedNPC.Possessor_UsePossessorViewTable then
-			self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+		if self.PossessedNPC.Possessor_UseBoneCamera then
+			self.PossessorView:SetPos(self.PossessedNPC:GetBonePosition(self.PossessedNPC.Possessor_BoneCameraName) +self.PossessedNPC:GetUp() *self.PossessedNPC.Possessor_BoneCameraUp  +self.PossessedNPC:GetRight() *self.PossessedNPC.Possessor_BoneCameraRight  +self.PossessedNPC:GetForward() *self.PossessedNPC.Possessor_BoneCameraForward)
 		else
-			local min,max = self.PossessedNPC:GetCollisionBounds()
-			self.PossessorView:SetPos(self.PossessedNPC:GetPos() +(self:GetUp() *(max.z)))
+			if self.PossessedNPC.Possessor_UsePossessorViewTable then
+				self.PossessorView:SetPos(self.PossessedNPC:GetPos() +Vector(self.PossessedNPC:OBBCenter().x +self.PossessedNPC.PossessorView.Pos.Right,self.PossessedNPC:OBBCenter().y +self.PossessedNPC.PossessorView.Pos.Forward,self.PossessedNPC:OBBMaxs().z +self.PossessedNPC.PossessorView.Pos.Up))
+			else
+				local min,max = self.PossessedNPC:GetCollisionBounds()
+				self.PossessorView:SetPos(self.PossessedNPC:GetPos() +(self:GetUp() *(max.z)))
+			end
 		end
 	end
 	self.PossessorView:SetModel("models/props_junk/watermelon01_chunk02c.mdl")
 	self.PossessorView:SetParent(self.PossessedNPC)
 	self.PossessorView:SetRenderMode(RENDERMODE_TRANSALPHA)
 	self.PossessorView:Spawn()
+	if usecam then
+		self.PossessorView:Fire("SetParentAttachment",camID,0)
+	end
 	self.PossessorView:SetColor(Color(0,0,0,0))
 	self.PossessorView:SetNoDraw(false)
 	self.PossessorView:DrawShadow(false)
@@ -89,6 +104,7 @@ function ENT:Think()
 		self.PossessedNPC.CanChaseEnemy = false
 		self.PossessedNPC:Possess_Think(self.Possessor,self)
 		self.PossessedNPC:Possess_Commands(self.Possessor)
+		self.PossessedNPC:Possess_CustomCommands(self.Possessor)
 		self.PossessedNPC:Possess_Move(self.Possessor)
 		if self.Possessor_CanTurnWhileAttacking then
 			if self.PossessedNPC.IsLeapAttacking then self.PossessedNPC:Possess_FaceAimPosition() end

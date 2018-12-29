@@ -90,6 +90,28 @@ CPTBase = {
 		end
 		MsgN("Adding CPTBase NPC " .. cptName .. " [" .. cptClass .. "] to spawnmenu category [" .. cptCat .. "]")
 	end,
+	AddAdminNPC = function(cptName,cptClass,cptCat,cptOnCeiling,cptOnFloor)
+		local kill = false
+		if type(cptOnCeiling) == "string" then
+			kill = true
+		end
+		local NPC
+		if kill == false then
+			NPC = {Name = cptName, Class = cptClass, Category = cptCat, OnCeiling = cptOnCeiling,OnFloor = cptOnFloor, AdminOnly = true}
+		else
+			NPC = {Name = cptName, Class = cptClass, Category = cptCat, AdminOnly = true}
+		end
+		list.Set("NPC",NPC.Class,NPC)
+		if (CLIENT) then
+			language.Add(cptClass,cptName)
+			language.Add("#" .. cptClass,cptName)
+			if kill then
+				killicon.Add(cptClass,cptOnCeiling,Color(255,255,255,255))
+				killicon.Add("#" .. cptClass,cptOnCeiling,Color(255,255,255,255))
+			end
+		end
+		MsgN("Adding (Admin-Only) CPTBase NPC " .. cptName .. " [" .. cptClass .. "] to spawnmenu category [" .. cptCat .. "]")
+	end,
 	AddHumanNPC = function(cptName,cptClass,cptCat,cptWeapons)
 		local NPC = {Name = cptName, Class = cptClass, Category = cptCat, Weapons = cptWeapons}
 		list.Set("NPC",NPC.Class,NPC)

@@ -21,6 +21,13 @@ if (SERVER) then
 	util.AddNetworkString("cpt_ControllerView")
 end
 
+function PrintEntityPlacement(ent)
+	print("-----------------------")
+	print("Vector("..ent:GetPos().x..","..ent:GetPos().y..","..ent:GetPos().z..")")
+	print("Angle("..ent:GetAngles().p..","..ent:GetAngles().y..","..ent:GetAngles().r..")")
+	print("-----------------------")
+end
+
 function util.FindInSphere(pos,dist)
 	local tb = {}
 	for _,v in ipairs(ents.GetAll()) do

@@ -46,9 +46,11 @@ function SWEP:Initialize()
 	self.CPTBase_Weapon = true
 	self.UseLuaMovement = true
 	self:EmitSound(Sound("cptbase/fx_melee_claw_flesh0" .. math.random(1,2) .. ".wav"),60,100)
-	self.Owner:ChatPrint("Weapon Controls:")
-	self.Owner:ChatPrint("LMB - Possess NPC at crosshair")
-	self.Owner:ChatPrint("RMB - Find closest NPC to crosshair")
+	if IsValid(self.Owner) && self.Owner:IsPlayer() then
+		self.Owner:ChatPrint("Weapon Controls:")
+		self.Owner:ChatPrint("LMB - Possess NPC at crosshair")
+		self.Owner:ChatPrint("RMB - Find closest NPC to crosshair")
+	end
 end
 
 function SWEP:Deploy()
