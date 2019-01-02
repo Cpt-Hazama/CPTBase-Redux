@@ -19,6 +19,11 @@ if (SERVER) then
 	AITYPE_NORMAL = 2
 	AITYPE_AGGRESSIVE = 3
 	util.AddNetworkString("cpt_ControllerView")
+	TASK_NONE = 0
+	TASK_IDLE_GUARD = 800
+	TASK_PATROL_TO_POSIITON = 801
+	TASK_MOVE_TO_POSITION = 802
+	TASK_SPEAK_TO_ENTITY = 803
 end
 
 function PrintEntityPlacement(ent)

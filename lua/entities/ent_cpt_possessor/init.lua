@@ -14,7 +14,8 @@ end
 function ENT:PossessTheNPC()
 	self.Possessor.IsPossessing = true
 	self.Possessor:SetNWBool("CPTBase_IsPossessing",true)
-	self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",self.PossessedNPC:GetClass())
+	self.Possessor:SetNWString("CPTBase_PossessedNPCClass",self.PossessedNPC:GetClass())
+	self.Possessor:SetNWEntity("CPTBase_PossessedNPC",self.PossessedNPC)
 	self.Possessor.CurrentlyPossessedNPC = self.PossessedNPC
 	self.Possessor.Faction = "FACTION_NONE"
 	local usecam = false
@@ -155,7 +156,8 @@ function ENT:StopPossessing(remove)
 		self.Possessor:KillSilent()
 		self.Possessor:Spawn()
 		self.Possessor:SetNWBool("CPTBase_IsPossessing",false)
-		self.Possessor:SetNWEntity("CPTBase_PossessedNPCClass",nil)
+		self.Possessor:SetNWString("CPTBase_PossessedNPCClass",nil)
+		self.Possessor:SetNWEntity("CPTBase_PossessedNPC",NULL)
 		if IsValid(self.PossessorView) then
 			self.Possessor:SetPos(self.PossessorView:GetPos() +self.PossessorView:GetUp() *100)
 		else

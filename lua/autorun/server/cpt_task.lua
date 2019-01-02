@@ -1,5 +1,9 @@
 if !CPTBase then return end
 -------------------------------------------------------------------------------------------------------------------
+	//-- Custom Tasks --\\
+
+-------------------------------------------------------------------------------------------------------------------
+	//-- Default Tasks --\\
 local cpt_task = {}
 cpt_task["TASK_INVALID"] = 0
 cpt_task["TASK_RESET_ACTIVITY"] = 1
@@ -152,4 +156,6 @@ cpt_task["TASK_ADD_GESTURE"] = 147
 cpt_task["TASK_GET_PATH_TO_INTERACTION_PARTNER"] = 148
 cpt_task["TASK_PRE_SCRIPT"] = 149 
 
-function GetTaskID(str) return tonumber(cpt_task[str]) end
+function GetTaskID(str)
+	return tonumber(cpt_task[str])
+end

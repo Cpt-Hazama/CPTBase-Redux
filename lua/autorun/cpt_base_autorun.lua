@@ -81,7 +81,8 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 		ply:SetNWString("CPTBase_NPCFaction","FACTION_PLAYER")
 	end
 	ply:SetNWBool("CPTBase_IsPossessing",false)
-	ply:SetNWEntity("CPTBase_PossessedNPCClass",nil)
+	ply:SetNWString("CPTBase_PossessedNPCClass",nil)
+	ply:SetNWEntity("CPTBase_PossessedNPC",NULL)
 end)
 
 if SERVER then

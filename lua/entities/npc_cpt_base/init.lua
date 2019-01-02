@@ -2681,3 +2681,21 @@ function ENT:BotMoveRight()
 	self:SetPoseParameter("move_x",0)
 	self:SetPoseParameter("move_y",1)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+// self:SetCurrentAITask(0,{resetai=true,resetanim=true,stopsounds=true})
+// self:SetCurrentAITask(800,{pos=Vector(3402,-244,92),aggrodist=400,warndist=500,traveldist=950})
+// self:SetCurrentAITask(801,{pos=Vector(3402,-244,92)})
+// self:SetCurrentAITask(802,{pos=Vector(3402,-244,92),movetype="Walk"})
+// self:SetCurrentAITask(803,{ent=ThePlayer,sentence="SENTENCE_INTRODUCTION",caninterrupt=false})
+function ENT:SetCurrentAITask(task,parameters)
+	self.CurrentAITask = task
+	self.CurrentAITaskParameters = parameters
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetCurrentAITask()
+	return self.CurrentAITask
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetCurrentAITaskParameters()
+	return self.CurrentAITaskParameters
+end
