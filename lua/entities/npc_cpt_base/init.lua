@@ -29,7 +29,7 @@ ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 ENT.DefaultAIType = AITYPE_NORMAL
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
-ENT.UseNotarget = false
+-- ENT.UseNotarget = false -- Place this in the OnInit function
 ENT.IsBlind = false -- Is the NPC blind? (Experimental)
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500 -- How far the NPC can see (In WU. Increasing may impact performance)
@@ -161,6 +161,7 @@ ENT.NextAlertSoundT = 0
 function ENT:Initialize()
 	self:SetSpawnEffect(false)
 	self.CPTBase_NPC = true
+	self.UseNotarget = false
 	self:SetAIType(self.DefaultAIType)
 	if !IsValid(self:GetOwner()) then
 		self:SetOwner(self:GetCreator())
@@ -474,6 +475,10 @@ function ENT:Possess_AimTarget()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_EyeTrace(possessor)
+	if possessor == nil then
+		error("CONGRATULATIONS! YOU DIDN'T READ THE DESCRIPTION! :D THIS TRULY SHOWS YOU HAVE A LOW IQ..IF YOU WANT TO FIX THIS ERROR, THEN READ THE DESCRIPTION. IF I SEE YOU REPORT THIS ERROR ON THE WORKSHOP PAGE, YOU'LL BE INSTANTLY BLOCKED!")
+		return
+	end
 	local tracedata = {}
 	tracedata.start = possessor:GetEyeTrace().HitPos
 	tracedata.endpos = tracedata.start +possessor:GetAimVector() *32768
@@ -991,9 +996,9 @@ function ENT:UpdateRelations() // Obsolete
 		for _,v in ipairs(ents.GetAll()) do
 			if v:IsNPC() && v.Faction != nil && v != self then
 				if v.Faction == "FACTION_NONE" then return end
+				if v.UseNotarget then return end
 				if self.Faction != v.Faction && self:Disposition(v) != D_HT then
-						if v.UseNotarget then return end
-						self:SetRelationship(v,D_HT)
+					self:SetRelationship(v,D_HT)
 				elseif self.Faction == v.Faction && self:Disposition(v) != D_LI then
 					self:SetRelationship(v,D_LI)
 				end
@@ -1981,12 +1986,13 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 		if deathtime == nil then
 			deathtime = 0
 		end
-		timer.Simple(deathtime +self.ExtraDeathTime,function()
+		timer.Simple(deathtime +self.ExtraDeathTime -0.2,function()
 			if self:IsValid() then
 				if self.HasDeathRagdoll == true then
 					self:CreateNPCRagdoll(dmg,dmginfo)
-					self:OnDeathAnimationFinished(dmg,dmginfo,_Hitbox)
 				end
+				self:OnDeathAnimationFinished(dmg,dmginfo,_Hitbox)
+				self:WhenRemoved()
 				self:Remove()
 			end
 		end)
@@ -2475,13 +2481,11 @@ function ENT:GetClosestNodes(tbl,ent)
 	local endtbl = {}
 	local result = NULL
 	for _,v in pairs(tbl) do
-		if IsValid(v) then
-			if self:GetPos():Distance(v:GetPos()) <= 375 && self:Visible(self) then
-				close[v] = self:GetPos():Distance(v:GetPos())
-			else
-				if table.HasValue(close,v) then
-					table.remove(close,close[v])
-				end
+		if self:GetPos():Distance(v) <= 375 && self:VisibleVec(v) then
+			close[v] = self:GetPos():Distance(v)
+		else
+			if table.HasValue(close,v) then
+				table.remove(close,close[v])
 			end
 		end
 	end
@@ -2491,23 +2495,17 @@ function ENT:GetClosestNodes(tbl,ent)
 	local endtblV = {}
 	local resultV = NULL
 	for _,v in pairs(endtbl) do
-		if IsValid(v) then
-			-- if !ent:Visible(v) then
-				-- table.remove(endtbl,close[v])
-				-- self:PlayerChat("Removed node " .. tostring(v))
-			-- end
-			closeV[v] = ent:GetPos():Distance(v:GetPos())
-		end
+		closeV[v] = ent:GetPos():Distance(v)
 	end
 	endtblV = table.SortByKey(closeV,true)
 	resultV = endtblV[1]
-	return resultV:GetPos()
+	return resultV
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FindWanderNodes(tbl)
 	local close = {}
 	for _,v in ipairs(tbl) do
-		if IsValid(v) && v:GetPos():Distance(self:GetPos()) <= 375 then
+		if IsValid(v) && self:GetPos():Distance(v) <= 375 then
 			table.insert(close,v)
 		end
 	end

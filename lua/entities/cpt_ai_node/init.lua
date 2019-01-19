@@ -13,6 +13,19 @@ function ENT:Initialize()
 		self:SetNodeType(1)
 		self:SetNodeRadius(375)
 	end
+	self:SetCanBeRemoved(false)
+end
+
+function ENT:SetCanBeRemoved(removed)
+	self.CanBeRemoved = removed
+	if removed == false then
+		if self:GetOwner():IsValid() then
+			self:GetOwner():ChatPrint("This node will remove itself after 10 seconds so that it can be saved. If it isn't where you want it, remove it before 10 seconds is up.")
+		end
+		self.RemoveTime = CurTime() +10
+	else
+		self.RemoveTime = CurTime()
+	end
 end
 
 function ENT:SetNodeType(nodetype)

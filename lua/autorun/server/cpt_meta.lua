@@ -26,6 +26,14 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function NPC_Meta:GetNodeManager()
+	for _,v in ipairs(ents.GetAll()) do
+		if v:GetClass() == "cpt_ai_node_manager" then
+			return v
+		end
+	end
+end
+
 function PrintEntityPlacement(ent)
 	print("-----------------------")
 	print("Vector("..ent:GetPos().x..","..ent:GetPos().y..","..ent:GetPos().z..")")
@@ -1752,7 +1760,7 @@ function PlayGlobalSound(snd)
 	end
 end
 
-function PlaySentenceSoundTable(tb)
+function PlaySentenceSoundTable(tb,isglobal,ent,vol)
 	/*
 		Example:
 		tb = {
@@ -1763,7 +1771,13 @@ function PlaySentenceSoundTable(tb)
 		}
 	*/
 	local function PlaySentenceSound(i)
-		PlayGlobalSound(tb[i].snd)
+		if isglobal then
+			PlayGlobalSound(tb[i].snd)
+		else
+			if IsValid(ent) then
+				ent:EmitSound(tb[i].snd,vol,100)
+			end
+		end
 	end
 	for i = 1, #tb do
 		timer.Simple(tb[i].t,function() PlaySentenceSound(i) end)

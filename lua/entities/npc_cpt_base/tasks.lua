@@ -128,18 +128,19 @@ function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
 		return
 	end
 	if CurTime() > nextnodet then
-		for _,nodes in ipairs(ents.GetAll()) do
-			if IsValid(nodes) && nodes:GetClass() == "cpt_ai_node" && self:Visible(nodes) then
-				if !table.HasValue(self.tbl_RegisteredNodes,nodes) then
-					table.insert(self.tbl_RegisteredNodes,nodes)
+		for _,nodepos in ipairs(self:GetNodeManager():GetNodes()) do
+			if self:VisibleVec(nodepos) then
+				if !table.HasValue(self.tbl_RegisteredNodes,nodepos) then
+					table.insert(self.tbl_RegisteredNodes,nodepos)
 				end
 			end
 		end
 		nextnodet = CurTime() +0.3
 	end
 	if self.tbl_RegisteredNodes != nil && table.Count(self.tbl_RegisteredNodes) > 0 then
-		local nodes = self:GetClosestNodes(self.tbl_RegisteredNodes,ent)
-		self:SetLastPosition(nodes)
+		local node = self:GetClosestNodes(self.tbl_RegisteredNodes,ent)
+		if !node then MsgN("NPC has no nodes near by! Do NOT report this error to me on the workshop page! This error is being caused because the NPC can't find any nodes near by.") return end
+		self:SetLastPosition(node)
 		self:TASKFUNC_RUNTOPOS()
 		if self.UsePlayermodelMovement then
 			self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
@@ -187,6 +188,7 @@ function ENT:TASKFUNC_WANDER()
 		if self.tbl_RegisteredNodes != nil && table.Count(self.tbl_RegisteredNodes) > 0 then
 			local nodes = self:FindWanderNodes(self.tbl_RegisteredNodes)
 			local node = self:GetClosestNodes(nodes,self:SelectFromTable(nodes))
+			if node == nil then return end
 			self:SetLastPosition(node)
 			self:TASKFUNC_WALKTOPOS()
 			if self.UsePlayermodelMovement then

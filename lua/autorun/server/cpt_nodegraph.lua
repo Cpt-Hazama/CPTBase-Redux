@@ -4,7 +4,6 @@ if !CPTBase then return end
 	To do:
 		- Fix stack error
 		- Add more node support types
-		- Create a cpt_ai_node_manager entity that saves all node data to improve performance by 5x
 */
 
 CPTBASE_NODE_GROUND = 1
@@ -13,7 +12,7 @@ CPTBASE_NODE_CLIMB = 3
 CPTBASE_NODE_SWIM = 4
 CPTBASE_NODE_HINT = 5
 
-CPTBASE_SV_MAXNODES = 1500
+CPTBASE_SV_MAXNODES = 7500 // 4096 is default for Garry's Mod. Too bad we're too cool for gSchool
 CPTBASE_SV_DISTANCEBETWEENNODES = 170
 CPTBASE_SV_MAXGENERATIONTIME = 15
 CPTBASE_SV_MAXDISTANCECHECK = 32768
@@ -69,20 +68,34 @@ hook.Add("Initialize","cpt_DetectCanMakeNodegraph",function()
 	end)
 end)
 -------------------------------------------------------------------------------------------------------------------
+concommand.Add("sv_cptbase_ainodes",function(caller,cmd,arg)
+	if !caller:IsSuperAdmin() then return end
+	local ent
+	for _,v in ipairs(ents.GetAll()) do
+		if v:GetClass() == "cpt_ai_node_manager" then
+			ent = v
+		end
+	end
+	ent:DisplayNodes()
+end)
+-------------------------------------------------------------------------------------------------------------------
 concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 	if GetConVarNumber("cpt_debug_cancreategraph") == 0 then return end
 	if !caller:IsSuperAdmin() then return end
-	if !CPTBASE_SV_CANSETNODEGRAPH then return end
+	-- if !CPTBASE_SV_CANSETNODEGRAPH then return end
 	if CPTBASE_SV_NODEGRAPH then return end
 	if CPTBASE_SV_FINISHEDNODEGRAPH then return end
 	CPTBASE_SV_NODEGRAPH = true
 	local map = game.GetMap()
 	local dir = "cptbase/graphs/"
 	local cNodes = 0
-	caller:ChatPrint("CPTBase is about to generate a temporary nodegraph. This may lag/crash your game...")
+	caller:ChatPrint("CPTBase is about to generate a temporary nodegraph. This may lag/crash your game during the writing process...")
 	timer.Simple(5,function()
 		if CPTBASE_SV_STARTEDNODEGRAPH then return end
 		CPTBASE_SV_STARTEDNODEGRAPH = true
+		local nm = ents.Create("cpt_ai_node_manager")
+		nm:SetPos(Vector(0,0,0))
+		nm:Spawn()
 		local function CreateNode()
 			if CPTBASE_SV_FINISHEDNODEGRAPH then return end
 			local ve = VectorRand() *CPTBASE_SV_MAXDISTANCECHECK
@@ -108,7 +121,9 @@ concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 						n:SetPos(nP +Vector(0,0,3))
 						n:SetNodeType(1)
 						n:SetNodeRadius(375)
+						n:SetCanBeRemoved(true)
 						n:Spawn()
+						n:SetCanBeRemoved(true)
 						cNodes = cNodes +1
 					end
 				end
@@ -124,7 +139,28 @@ concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 		end
 		timer.Simple(CPTBASE_SV_MAXGENERATIONTIME,function()
 			CPTBASE_SV_FINISHEDNODEGRAPH = true
-			caller:ChatPrint("Generated " .. tostring(cNodes) .. "/1500 nodes.")
+			local writable
+			local toWrite = dir .. map .. ".txt"
+			for _,v in ipairs(ents.GetAll()) do
+				if v:GetClass() == "cpt_ai_node_manager" then
+					writable = v:GetNodes()
+				end
+			end
+			-- local nodeFile = file.Open(toWrite,"w","DATA")
+				-- for i = 1, #writable do
+					-- f:Write(i) end
+				-- end
+			-- nodeFile:Close()
+			file.CreateDir("cptbase/graphs")
+			if file.Exists(toWrite,"DATA") then
+				file.Delete(toWrite)
+			end
+			for i = 1, #writable do
+				file.Append(toWrite,i)
+			end
+			print(file.Read(toWrite,"DATA"))
+			-- file.Write(toWrite,self:GetNodes())
+			caller:ChatPrint("Generated " .. tostring(cNodes) .. "/" .. CPTBASE_SV_MAXNODES .. " nodes.")
 		end)
 	end)
 	if CPTBASE_SV_FINISHEDNODEGRAPH then
