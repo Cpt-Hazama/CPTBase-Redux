@@ -13,11 +13,11 @@ function ENT:RunAI(strExp)
 	local __cyc = self:GetCycle() == 1
 	self:MaintainActivity()
 	if (self.IsPlayingSequence) then return end
-	local anim = ai_sched_cpt.New(ACT_IDLE)
+	local anim = ai_sched_cpt.New(self:GetIdleAnimation())
 	if(!self.CurrentTask && __cyc && self:GetCycle() == 1) then
 		if IsValid(self) then
-			anim:EngTask("TASK_PLAY_SEQUENCE",ACT_IDLE)
-			self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),ACT_IDLE)
+			anim:EngTask("TASK_PLAY_SEQUENCE",self:GetIdleAnimation())
+			self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),self:GetIdleAnimation())
 			self:MaintainActivity()
 		end
 	end

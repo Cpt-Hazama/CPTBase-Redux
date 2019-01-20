@@ -244,6 +244,7 @@ function ENT:Initialize()
 	self.TimeSinceLastTimeFalling = 0
 	self.tbl_Speakers = {}
 	self.tbl_RegisteredNodes = {}
+	self.tbl_CreatedAttacks = {}
 	self.NPC_Enemy = nil
 	self.Enemy = NULL
 	self:SetNWString("CPTBase_NPCFaction",self.Faction)
@@ -2488,6 +2489,9 @@ function ENT:GetClosestNodes(tbl,ent)
 				table.remove(close,close[v])
 			end
 		end
+		if close[v] != nil && !ent:VisibleVec(v) then
+			table.remove(close,close[v])
+		end
 	end
 	endtbl = table.SortByKey(close,true)
 
@@ -2644,7 +2648,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PlaySpawnAnimation(anim,face)
 	self:SetNoDraw(true)
-	timer.Simple(0.001,function()
+	timer.Simple(0.02,function()
 		if IsValid(self) then
 			self:SetNoDraw(false)
 			self:PlayAnimation(anim,face)
@@ -2696,4 +2700,62 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetCurrentAITaskParameters()
 	return self.CurrentAITaskParameters
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CreateAttackAnimation(callName,anim,facetarget,timestbl,dmgtbl,dmgdisttbl,dmgtypetbl,tempanim)
+	self.tbl_CreatedAttacks[callName] = {
+		anim=nil,
+		facetarget=nil,
+		times={},
+		dmg={},
+		dmgdist={},
+		dmgtype={},
+		temp=nil
+	}
+	-- table.insert(self.tbl_CreatedAttacks[callName],{animation = anim,face = facetarget,times = timestbl,dmg = dmgtbl,dmgdist = dmgdisttbl,dmgtype = dmgtypetbl,temp = tempanim})
+	self.tbl_CreatedAttacks[callName].animation = anim
+	self.tbl_CreatedAttacks[callName].facetarget = facetarget
+	self.tbl_CreatedAttacks[callName].times = timestbl
+	self.tbl_CreatedAttacks[callName].dmg = dmgtbl
+	self.tbl_CreatedAttacks[callName].dmgdist = dmgdisttbl
+	self.tbl_CreatedAttacks[callName].dmgtype = dmgtypetbl
+	self.tbl_CreatedAttacks[callName].temp = tempanim
+	-- PrintTable(self.tbl_CreatedAttacks)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayCreatedAttack(callName)
+	local called = self.tbl_CreatedAttacks[callName]
+	local anim = called.animation
+	local face = called.facetarget
+	local dmgTable = {}
+	local dmgdistTable = {}
+	local dmgtypeTable = {}
+	local isTemporary = called.temp
+	if string.find(anim,"cptseq_") then
+		anim = string.Replace(anim,"cptseq_","")
+		if face == nil then face = 1 end
+		self:PlaySequence(anim,face)
+	else
+		self:PlayActivity(anim,face)
+	end
+	for k,v in pairs(called.dmg) do
+		table.insert(dmgTable,v)
+	end
+	for k,v in pairs(called.dmgtype) do
+		table.insert(dmgtypeTable,v)
+	end
+	for k,v in pairs(called.dmgdist) do
+		table.insert(dmgdistTable,v)
+	end
+	for k,v in pairs(called.times) do
+		timer.Simple(v,function()
+			if IsValid(self) && self:GetCurrentAnimation() == anim then
+				self:DoDamage(dmgdistTable[k],dmgTable[k],dmgtypeTable[k])
+				-- print(anim,v,dmgdistTable[k],dmgTable[k],dmgtypeTable[k])
+			end
+		end)
+	end
+	if isTemporary then
+		table.remove(self.tbl_CreatedAttacks,called)
+	end
 end

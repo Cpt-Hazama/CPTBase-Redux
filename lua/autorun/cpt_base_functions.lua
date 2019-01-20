@@ -158,8 +158,22 @@ local function CPTBaseMenu_Func(panel)
 	panel:ControlHelp("This may crash your game!")
 end
 
+local function CPTBaseMenu_Func_Nodegraph(panel)
+	if !game.SinglePlayer() then
+		if !LocalPlayer():IsAdmin() or !LocalPlayer():IsSuperAdmin() then
+			panel:AddControl("Label", {Text = "Only Admins Can Access These Settings!"})
+			return
+		end
+	end
+	panel:AddControl("CheckBox",{ Label = "Enable Nodegraph Debug",Command = "cpt_debug_nodegraph"})
+	panel:AddControl("CheckBox",{ Label = "Enable Nodegraph Creation",Command = "cpt_debug_cancreategraph"})
+	panel:AddControl("CheckBox",{ Label = "Enable AI Use Nodegraph",Command = "cpt_aiusecustomnodes"})
+	panel:AddControl("Button", {Label = "Generate CPTBase Nodegraph", Command = "CPTBase_GenerateNodegraph"})
+end
+
 function CPTBaseMenu_AddFunc() -- Add menus here
 	spawnmenu.AddToolMenuOption("CPTBase","Functions","Default Functions","Default Functions","","",CPTBaseMenu_Func) -- Tab, Dropdown, Select, Title
+	spawnmenu.AddToolMenuOption("CPTBase","Functions","Nodegraph","Nodegraph","","",CPTBaseMenu_Func_Nodegraph) -- Tab, Dropdown, Select, Title
 end
 
 hook.Add("PopulateToolMenu", "CPTBaseMenu_AddFunc", CPTBaseMenu_AddFunc)

@@ -119,6 +119,8 @@ function ENT:TASKFUNC_FACEPOSITION(pos)
 	self:StartSchedule(_facepositiontask)
 end
 
+local fnode = NULL
+local flastnode = NULL
 local nextnodet = CurTime()
 function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
 	if self.UseCPTBaseAINavigation == false then return end
@@ -142,6 +144,15 @@ function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
 		if !node then MsgN("NPC has no nodes near by! Do NOT report this error to me on the workshop page! This error is being caused because the NPC can't find any nodes near by.") return end
 		self:SetLastPosition(node)
 		self:TASKFUNC_RUNTOPOS()
+		-- if !IsValid(fnode) then
+			-- local b = ents.Create("prop_dynamic")
+			-- b:SetModel("models/editor/ground_node.mdl")
+			-- b:SetPos(node)
+			-- b:Spawn()
+			-- self:DeleteOnRemove(b)
+			-- fnode = b
+			-- timer.Simple(self:GetPathTimeToGoal(),function() if IsValid(b) then b:Remove() end end)
+		-- end
 		if self.UsePlayermodelMovement then
 			self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 		end
