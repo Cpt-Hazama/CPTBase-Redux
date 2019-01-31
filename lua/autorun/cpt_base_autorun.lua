@@ -72,6 +72,8 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.CPTBase_Ragdoll = NULL
 	ply.CPTBase_HasBeenRagdolled = false
 	ply.LastRagdollMoveT = CurTime()
+	ply.CPTBase_TotalDrinks = 0
+	ply.CPTBase_TimeSinceLastPotionDrink = CurTime()
 	ply.CPTBase_CurrentSoundtrack = nil
 	ply.CPTBase_CurrentSoundtrackDir = nil
 	ply.CPTBase_CurrentSoundtrackNPC = NULL
@@ -83,12 +85,23 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply:SetNWBool("CPTBase_IsPossessing",false)
 	ply:SetNWString("CPTBase_PossessedNPCClass",nil)
 	ply:SetNWEntity("CPTBase_PossessedNPC",NULL)
+	ply:SetNWInt("CPTBase_Magicka",100)
+	ply:SetNWInt("CPTBase_MaxMagicka",100)
+	ply:SetNWInt("CPTBase_NextMagickaT",5)
+	ply:SetNWString("CPTBase_SpellConjuration","npc_cpt_parasite")
 end)
 
 if SERVER then
 	hook.Add("Think","CPTBase_PlayerRagdolling",function()
 		for _,v in ipairs(player.GetAll()) do
 			v:UpdateNPCFaction()
+			if v:GetNWInt("CPTBase_Magicka") < v:GetNWInt("CPTBase_MaxMagicka") && CurTime() > v:GetNWInt("CPTBase_NextMagickaT") then
+				v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_Magicka") +1)
+				if v:GetNWInt("CPTBase_Magicka") > v:GetNWInt("CPTBase_MaxMagicka") then
+					v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_MaxMagicka"))
+				end
+				v:SetNWInt("CPTBase_NextMagickaT",CurTime() +1)
+			end
 			if IsValid(v) && v.CPTBase_HasBeenRagdolled then
 				if IsValid(v:GetCPTBaseRagdoll()) then
 					-- v:GodEnable()

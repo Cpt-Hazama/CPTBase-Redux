@@ -92,8 +92,7 @@ end)
 
 function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	local opos = pos *1
-	local duck1 = 0
-	local duck2 = 0
+	local frameMultiply = self.IdleFPS
 	local jump = 0
 	local move1 = 0
 	local move2 =  0
@@ -144,6 +143,9 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	end
 
 	if self.UseLuaMovement == true then
+		if !self:GetNWBool("cptbase_UseIronsights") then
+			ang = ang +Angle(math.cos(CurTime() *frameMultiply),math.cos(CurTime() *frameMultiply) /2,math.cos(CurTime() *frameMultiply))
+		end
 		if self.Owner:IsOnGround() then
 			if jump > 0 then
 				jump = jump -0.5

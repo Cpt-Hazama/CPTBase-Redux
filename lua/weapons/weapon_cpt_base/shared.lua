@@ -16,8 +16,8 @@ SWEP.Author = "Cpt. Hazama"
 SWEP.Contact = ""
 SWEP.Purpose = ""
 SWEP.Instructions = ""
-SWEP.HUDSlot = 1
-SWEP.HUDImportance = 3
+SWEP.HUDSlot = 1 -- The slot that it appears in the weapon select
+SWEP.HUDImportance = 3 -- How far down it will be, leaving it at 3 is recommended
 SWEP.Category		= "CPTBase"
 SWEP.ViewModelFOV	= 70
 SWEP.ViewModelFlip	= false
@@ -26,25 +26,26 @@ SWEP.WorldModel		= "models/error.mdl"
 SWEP.AnimPrefix		= "python"
 SWEP.Spawnable = false
 SWEP.AdminSpawnable = false
--- SWEP.AdminOnly = false
-SWEP.UseLuaMovement = true
+-- SWEP.AdminOnly = true -- Enable to make it admin only
+SWEP.UseLuaMovement = true -- Enables the Lua made idle/move animations
+SWEP.IdleFPS = 0.7 -- The frame rate of the Lua idle animation
 SWEP.LuaMovementScale_Forward = 0.0400
 SWEP.LuaMovementScale_Right = 0.0084
 SWEP.LuaMovementScale_Up = 0.022
 
-SWEP.DrawTime = 0.4
-SWEP.ReloadTime = 1
-SWEP.UseSingleReload = false
-SWEP.WeaponWeight = 0
-SWEP.WeaponCanBreak = true
+SWEP.DrawTime = false -- Leaving to false will auto-select the time
+SWEP.ReloadTime = false -- Leaving to false will auto-select the time
+SWEP.UseSingleReload = false -- If true, the weapon will be reloaded like a shotgun
+SWEP.WeaponWeight = 0 -- The weight of the weapon. The heavier it is, the slower the player is
+SWEP.WeaponCanBreak = true -- If set to true, the weapon quality will degrade over the course of action
 SWEP.HasMuzzleFlash = true
 SWEP.MuzzleEffect = "cpt_muzzle"
-SWEP.Muzzle = "muzzle"
+SWEP.Muzzle = "muzzle" -- The attachment name
 SWEP.MuzzleFlash_Color = Color(255,93,0)
 SWEP.MuzzleFlash_Brightness = 2
 SWEP.MuzzleFlash_Distance = 150
 
-SWEP.UsePhysicalBullets = false
+SWEP.UsePhysicalBullets = false -- Use bullet entities instead of default bullets? (Note that this feature was discontinued a long time ago)
 SWEP.PhysicalBulletSpawnRight = 2
 SWEP.PhysicalBulletSpawnUp = -5
 SWEP.PhyscialBulletDamageType = DMG_BULLET
@@ -60,29 +61,29 @@ SWEP.ShellTable = {
 	Velocity = {Right = math.Rand(140,180),Up = math.Rand(40,60),Forward = 0}
 }
 
-SWEP.Primary.TotalShots = 1
-SWEP.Primary.Spread = 7
-SWEP.Primary.Tracer = 1
-SWEP.Primary.Force = 1
-SWEP.Primary.Damage = 5
-SWEP.Primary.Delay = 0.5
+SWEP.Primary.Volume = 85 -- Volume of the primary sound
+SWEP.Primary.TotalShots = 1 -- Number of bullets that are fired
+SWEP.Primary.Spread = 7 -- Spead of the bullets
+SWEP.Primary.Tracer = 1 -- Basically, this is a math.random; the bullets have a X chance to be visible
+SWEP.Primary.Force = 1 -- Physics force of the bullet (is ampliefied by the damage of the bullet)
+SWEP.Primary.Damage = 5 -- Bullet damage amount
+SWEP.Primary.Delay = 0.5 -- Delay between shots
 SWEP.Primary.TracerEffect = "cpt_tracer"
-SWEP.RemoveAmmoAmount = 1
-SWEP.IgnoreRecoil = false
-SWEP.OverrideBulletPos = false
-
-SWEP.Primary.ClipSize		= 8
-SWEP.Primary.DefaultClip	= 8
-SWEP.Primary.Automatic		= false
+SWEP.Primary.ClipSize		= 8 -- Starting clip
+SWEP.Primary.DefaultClip	= 8 -- Amount you get when reloading
+SWEP.Primary.Automatic		= false -- If true, holding down LMB will allow the user to fire non-stop
 SWEP.Primary.Ammo			= "9×19mm" // Default CPTBase Ammo
-SWEP.NPCFireRate = 0.1
-SWEP.tbl_NPCFireTimes = {0}
-SWEP.NPC_EnemyFarDistance = 1350 -- Too Far, chase
-SWEP.NPC_FireDistance = 2500
-SWEP.NPC_FireDistanceStop = 500
-SWEP.NPC_FireDistanceMoveAway = 200
-SWEP.NPC_Spread = 7
-SWEP.NPC_CurrentReloadTime = 2
+SWEP.RemoveAmmoAmount = 1 -- Amount of ammo that is removed from the weapon's ammo type per shot
+SWEP.IgnoreRecoil = false
+SWEP.OverrideBulletPos = false -- Used to manually set the bullet spawn position
+SWEP.NPCFireRate = 0.1 -- Rate at which NPCs can fire the weapon
+SWEP.tbl_NPCFireTimes = {0} -- Timers for firing the weapon for NPCs
+SWEP.NPC_EnemyFarDistance = 1350 -- NPC's enemy is too far, chase them down
+SWEP.NPC_FireDistance = 2500 -- Distance that NPCs can fire
+SWEP.NPC_FireDistanceStop = 500 -- Distance that the NPC can't move forward anymore
+SWEP.NPC_FireDistanceMoveAway = 200 -- Distance until the NPC needs to move away from their enemy
+SWEP.NPC_Spread = 7 -- NPC spread is different from the player
+SWEP.NPC_CurrentReloadTime = 2 -- Reload time for NPCs
 SWEP.NPC_AttackGestureSpeedOverride = false -- Set to a number to enable (Default is 1)
 // These 2 variables are obsolete
 -- SWEP.NPC_FireTime = 0 -- Shoot timer
@@ -111,9 +112,9 @@ SWEP.Ironsights = {
 SWEP.tbl_Animations = {}
 SWEP.tbl_Sounds = {}
 
-SWEP.Weight				= 5			// Decides whether we should switch from/to this
-SWEP.AutoSwitchTo		= false		// Auto switch to if we pick it up
-SWEP.AutoSwitchFrom		= false		// Auto switch from if you pick up a better weapon
+SWEP.Weight				= 5	-- Decides whether we should switch from/to this
+SWEP.AutoSwitchTo		= false -- Auto switch to if we pick it up
+SWEP.AutoSwitchFrom		= false -- Auto switch from if you pick up a better weapon
 SWEP.CSMuzzleFlashes 	= false
 SWEP.NextFireTime_NPC = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -383,6 +384,7 @@ function SWEP:Initialize()
 	-- self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
 	-- self:SetNWEntity("cpt_CModel",self)
 	self:SetNWBool("cptbase_UseIronsights",false)
+	self:SetNWInt("CPTBase_WeaponCondition",100)
 	self.Weapon:SetClip1(self.Primary.ClipSize)
 	self.Primary.DefaultClip = self.Primary.ClipSize
 	self.FixClip = self.Primary.DefaultClip
@@ -454,6 +456,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DamageWeaponCondition(dmg)
 	self:SetWeaponCondition(self.WeaponCondition -dmg)
+	self:SetNWInt("CPTBase_WeaponCondition",self.WeaponCondition)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 -- function SWEP:OnInit() end
@@ -494,7 +497,7 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 			self:DamageWeaponCondition(cnddmg)
 		end
 	end
-	self:PlayWeaponSound("Fire",100)
+	self:PlayWeaponSound("Fire",self.Primary.Volume)
 	self.Weapon:SetNextPrimaryFire(CurTime() +self.Primary.Delay)
 	if SERVER then
 		self.NPC_NextFireT = CurTime() +self:GetNPCFireRate()
@@ -921,19 +924,24 @@ function SWEP:Deploy()
 	self:PlayerSpeeds("setup")
 	-- self.Weapon:SendWeaponAnim(self.DrawAnimation)
 	local anim = self.DrawAnimation
-	if type(anim) == "number" then
-		self.Weapon:SendWeaponAnim(anim)
-	elseif type(anim) == "string" then
-		self:PlayWeaponSequence(anim,1,0)
+	if anim != nil then
+		if type(anim) == "number" then
+			self.Weapon:SendWeaponAnim(anim)
+		elseif type(anim) == "string" then
+			self:PlayWeaponSequence(anim,1,0)
+		end
+		self:OnDeploy()
+		local drawtime = self.DrawTime
+		if drawtime == false then
+			drawtime = self.Weapon:AnimationLength(anim)
+		end
+		timer.Simple(drawtime,function() if self:IsValid() then self.CanUseIdle = true self.IsDrawing = false end end)
+		timer.Simple(drawtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
+		self.Weapon:SetNextPrimaryFire(drawtime)
+	else
+		self:DoIdleAnimation()
+		self.Weapon:SetNextPrimaryFire(CurTime())
 	end
-	self:OnDeploy()
-	local drawtime = self.DrawTime
-	if drawtime == false then
-		drawtime = self.Weapon:AnimationLength(anim)
-	end
-	timer.Simple(drawtime,function() if self:IsValid() then self.CanUseIdle = true self.IsDrawing = false end end)
-	timer.Simple(drawtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
-	self.Weapon:SetNextPrimaryFire(drawtime)
 	return true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

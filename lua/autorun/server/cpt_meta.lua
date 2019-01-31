@@ -26,6 +26,33 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function util.SaveCPTBaseNodegraph()
+	local writable
+	local dir = "cptbase/graphs/"
+	local map = game.GetMap()
+	local toWrite = dir .. map .. ".txt"
+	for _,v in ipairs(ents.GetAll()) do
+		if v:GetClass() == "cpt_ai_node_manager" then
+			writable = v:GetNodes()
+		end
+	end
+	file.CreateDir("cptbase/graphs")
+	-- if file.Exists(toWrite,"DATA") then
+		-- file.Delete(toWrite)
+	-- end
+	local inputTbl = {}
+	for i = 1, #writable do
+		inputTbl[i] = writable
+	end
+	file.Write(toWrite,util.TableToJSON(inputTbl))
+end
+
+function util.GetCPTBaseNodegraph()
+	local map = game.GetMap()
+	local mapData = file.Read("cptbase/graphs/" .. map .. ".txt","DATA")
+	return util.JSONToTable(mapData)
+end
+
 function NPC_Meta:GetNodeManager()
 	for _,v in ipairs(ents.GetAll()) do
 		if v:GetClass() == "cpt_ai_node_manager" then
@@ -184,6 +211,16 @@ end
 
 function NPC_Meta:SetNPCEnemy(ent)
 	self.NPC_Enemy = ent
+end
+
+function NPC_Meta:SetSummonedByPlayer(ent)
+	self.Faction = ent.Faction
+	self.FriendlyToPlayers = true
+	self.CanFollowPlayer = false
+	self.CanWander = false
+	self.IsFollowingPlayer = true
+	self.FollowingPlayer = ent
+	self.MinFollowDistance = math.random(120,150)
 end
 
 function IsAIDisabled()

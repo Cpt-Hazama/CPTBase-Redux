@@ -86,8 +86,6 @@ concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 	if CPTBASE_SV_NODEGRAPH then return end
 	if CPTBASE_SV_FINISHEDNODEGRAPH then return end
 	CPTBASE_SV_NODEGRAPH = true
-	local map = game.GetMap()
-	local dir = "cptbase/graphs/"
 	local cNodes = 0
 	caller:ChatPrint("CPTBase is about to generate a temporary nodegraph. This may lag/crash your game during the writing process...")
 	timer.Simple(5,function()
@@ -134,32 +132,20 @@ concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 				CreateNode()
 			end
 		end
-		for i = 1,CPTBASE_SV_MAXNODES do
-			CreateNode()
+		local loadedNodegraph = util.GetCPTBaseNodegraph()
+		if loadedNodegraph != nil && table.Count(loadedNodegraph) > 0 then
+			nodegraphCount = table.Count(loadedNodegraph)
+			for _,node in pairs(loadedNodegraph) do
+				nm:InsertNode(node)
+			end
+		else
+			for i = 1,CPTBASE_SV_MAXNODES do
+				CreateNode()
+			end
 		end
 		timer.Simple(CPTBASE_SV_MAXGENERATIONTIME,function()
 			CPTBASE_SV_FINISHEDNODEGRAPH = true
-			local writable
-			local toWrite = dir .. map .. ".txt"
-			for _,v in ipairs(ents.GetAll()) do
-				if v:GetClass() == "cpt_ai_node_manager" then
-					writable = v:GetNodes()
-				end
-			end
-			-- local nodeFile = file.Open(toWrite,"w","DATA")
-				-- for i = 1, #writable do
-					-- f:Write(i) end
-				-- end
-			-- nodeFile:Close()
-			file.CreateDir("cptbase/graphs")
-			if file.Exists(toWrite,"DATA") then
-				file.Delete(toWrite)
-			end
-			for i = 1, #writable do
-				file.Append(toWrite,i)
-			end
-			print(file.Read(toWrite,"DATA"))
-			-- file.Write(toWrite,self:GetNodes())
+			util.SaveCPTBaseNodegraph()
 			caller:ChatPrint("Generated " .. tostring(cNodes) .. "/" .. CPTBASE_SV_MAXNODES .. " nodes.")
 		end)
 	end)

@@ -10,6 +10,11 @@ function ENT:Initialize()
 	self.tbl_FakeNodegraph = {}
 end
 
+function ENT:InsertNode(vec)
+	table.insert(self.tbl_Nodegraph,vec)
+	print(vec)
+end
+
 function ENT:GetNodes()
 	return self.tbl_Nodegraph
 end

@@ -337,13 +337,13 @@ function ENT:HandleFlying(enemy,dist,nearest)
 	})
 	if (tr.Hit) then
 		local fly = (util.RandomVectorAroundPos(tr.HitPos,self.FlyRandomDistance) -self:GetPos() +self:GetVelocity() *30):GetNormal() *self:GetFlySpeed()
-		self:SetAngles(Angle(0,(self:FindCenter(self:GetEnemy()) -self:FindCenter(self)):Angle().y,0))
+		self:SetAngles(Angle(0,(self:FindCenter(enemy) -self:FindCenter(self)):Angle().y,0))
 		self:SetLocalVelocity(fly)
 	end
 	if self.BackAwayDistance == nil then return end
 	if nearest < self.BackAwayDistance then
 		local fly = (util.RandomVectorAroundPos(tr.HitPos,self.FlyRandomDistance) +self:GetPos() +self:GetVelocity() *15):GetNormal() *self:GetFlySpeed()
-		self:SetAngles(Angle(0,(self:FindCenter(self:GetEnemy()) -self:FindCenter(self)):Angle().y,0))
+		self:SetAngles(Angle(0,(self:FindCenter(enemy) -self:FindCenter(self)):Angle().y,0))
 		self:SetLocalVelocity(-fly)
 	end
 end
@@ -477,7 +477,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_EyeTrace(possessor)
 	if possessor == nil then
-		error("CONGRATULATIONS! YOU DIDN'T READ THE DESCRIPTION! :D THIS TRULY SHOWS YOU HAVE A LOW IQ..IF YOU WANT TO FIX THIS ERROR, THEN READ THE DESCRIPTION. IF I SEE YOU REPORT THIS ERROR ON THE WORKSHOP PAGE, YOU'LL BE INSTANTLY BLOCKED!")
+		error("CONGRATULATIONS! YOU DIDN'T READ THE DESCRIPTION! :D THIS TRULY SHOWS YOU HAVE A LOW IQ..IF YOU WANT TO FIX THIS ERROR, THEN READ THE DESCRIPTION. IF I SEE YOU REPORT THIS ERROR ON THE WORKSHOP PAGE, YOU'LL BE INSTANTLY BLOCKED! IF YOU STILL WANT TO USE SILVERLAN'S MODS, THEN GO HERE: https://steamcommunity.com/workshop/filedetails/?id=1516704388")
 		return
 	end
 	local tracedata = {}
@@ -1082,6 +1082,41 @@ function ENT:IsRunning()
 	return false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Summon_FaceOwner(owner)
+	self:SetTarget(owner)
+	local facetarget = ai_sched_cpt.New("cptbase_bot_faceowner")
+	facetarget:EngTask("TASK_FACE_TARGET",0)
+	self:StartSchedule(facetarget)
+	self:LookAtPosition(self:FindCenter(owner),self.DefaultPoseParameters,self.DefaultPoseParamaterSpeed)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Summon_FollowAI()
+	if self.IsFollowingPlayer && self.FollowingPlayer != NULL then
+		local dist = self:GetClosestPoint(self.FollowingPlayer)
+		if self:Disposition(self.FollowingPlayer) != D_LI then
+			self.IsFollowingPlayer = false
+			self.FollowingPlayer = NULL
+		end
+		if !IsValid(self:GetEnemy()) && dist > self.MinFollowDistance && self:CanPerformProcess() then
+			if self:MovementType() == MOVETYPE_FLY then
+				self:HandleFlying(self.FollowingPlayer,dist,dist)
+			else
+				self:ChaseTarget(self.FollowingPlayer)
+			end
+		end
+		if !IsValid(self:GetEnemy()) then
+			if dist <= self.MinFollowDistance && self.FollowingPlayer:Visible(self) then
+				self:StopCompletely()
+				self:Summon_FaceOwner(self.FollowingPlayer)
+			end
+		else
+			if self:GetEnemy():Visible(self) then
+				self:SetAngles(Angle(0,(self:GetEnemy():GetPos() -self:GetPos()):Angle().y,0))
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.IsDead == true then return end
 	-- print(self:GetEnemy())
@@ -1156,11 +1191,17 @@ function ENT:Think()
 		end
 	end
 	self:OnThink()
+	if !self.IsPossessed then
+		self:Summon_FollowAI()
+		self:OnThink_NotPossessed()
+	end
 	if !IsValid(self:GetEnemy()) && self.Faction != "FACTION_NONE" then
 		self:HearingCode()
 	end
 	self:NextThink(CurTime() +0.1)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnThink_NotPossessed() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnStartedAnimation(activity) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1911,12 +1952,22 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			end
 		end
 	end
-	if IsValid(_Inflictor) && (self.FriendlyToPlayers && _Inflictor:IsPlayer() && self:Disposition(_Inflictor) == D_LI) then
-		self.FriendlyToPlayers = false
-		if self.Faction == "FACTION_PLAYER" then
-			self.Faction = "FACTION_PLAYER_ENEMY"
+	if IsValid(_Inflictor) then 
+		if (self.FriendlyToPlayers && _Inflictor:IsPlayer() && self:Disposition(_Inflictor) == D_LI) then
+			self.FriendlyToPlayers = false
+			if self.Faction == "FACTION_PLAYER" then
+				self.Faction = "FACTION_PLAYER_ENEMY"
+			end
+			self:SetRelationship(_Inflictor,D_HT)
 		end
-		self:SetRelationship(_Inflictor,D_HT)
+		if self.IsFollowingPlayer && self.FollowingPlayer == _Inflictor && math.random(1,15) == 1 then
+			self.IsFollowingPlayer = false
+			self.FollowingPlayer = NULL
+			if self.Faction == _Inflictor.Faction then
+				self.Faction = _Inflictor.Faction .. "_ENEMY"
+			end
+			self:SetRelationship(_Inflictor,D_HT)
+		end
 	end
 	if self:Health() <= 0 && self.IsDead == false then
 		self:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)

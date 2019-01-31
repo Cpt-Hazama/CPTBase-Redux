@@ -6,6 +6,13 @@
 AddCSLuaFile('server/cpt_utilities.lua')
 include('server/cpt_utilities.lua')
 
+CPTBase.AddParticleSystem("particles/cpt_magic.pcf",{
+	"cpt_conjuration_idle",
+	"cpt_poisonspell_idle",
+	"cpt_souldrain_idle",
+	"cpt_warp_idle",
+	"skyr_vlord_spell_resu",
+})
 CPTBase.AddParticleSystem("particles/cpt_blood.pcf",{
 	-- "blood_impact_red",
 	-- "blood_impact_yellow",

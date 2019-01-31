@@ -2,7 +2,7 @@ include('shared.lua')
 
 function ENT:Draw()
 	-- self:DrawModel()
-	print("Hello")
+	-- print("Hello")
 end
 
 ENT.NextEffectBlendT = 0

@@ -1,0 +1,15 @@
+"SpriteCard"
+{
+	$basetexture 		"particle/vlord_swirl"
+
+//	$splinetype 		0
+
+	$depthblend 		1
+	$depthblendscale 		1
+
+	$overbrightfactor 		4
+//	$addself 			2
+	$additive 			1
+//	$addoverblend		1
+	$translucent 		1
+}

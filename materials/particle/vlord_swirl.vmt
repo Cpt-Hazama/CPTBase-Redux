@@ -1,0 +1,10 @@
+"SpriteCard"
+{
+	$basetexture 		"particle/vlord_swirl"
+
+	$depthblend 		1
+	$depthblendscale 		1
+
+	$additive 			1
+	$translucent 		1
+}
