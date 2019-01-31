@@ -1587,7 +1587,7 @@ function ENT:ChaseTarget(ent,uselastpos,pos)
 					pos = ent:GetPos()
 				end
 				self:SetLastPosition(pos)
-				self:TASKFUNC_LASTPOSITION()
+				self:TASKFUNC_WALKLASTPOSITION()
 			end
 		end
 	end
