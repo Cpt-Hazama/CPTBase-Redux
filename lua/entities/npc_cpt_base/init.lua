@@ -2501,21 +2501,23 @@ function ENT:AutoSetupSoundTable(tbl,needles)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:GetClosestEntity(tbl)
+function ENT:GetClosestEntity(tbl,argent)
 	-- local target = self:GetEntitiesByDistance(tbl)[1]
 	-- if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
 	-- print(self:GetEntitiesByDistance(tbl)[1])
 	-- return self:GetEntitiesByDistance(tbl)[1]
-	return self:GetEntitiesByDistance(tbl)
+	return self:GetEntitiesByDistance(tbl,argent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:GetEntitiesByDistance(tbl)
+function ENT:GetEntitiesByDistance(tbl,argent)
 	local close = {}
 	local endtbl = {}
 	local result = NULL
+	local findent = argent or self
+	if !IsValid(findent) then findent = self end
 	for _,v in pairs(tbl) do
 		if IsValid(v) then
-			close[v] = self:GetPos():Distance(v:GetPos())
+			close[v] = findent:GetPos():Distance(v:GetPos())
 		end
 		-- print(v,close[v])
 	end

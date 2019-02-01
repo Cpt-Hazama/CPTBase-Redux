@@ -26,6 +26,15 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function NPC_Meta:Freeze(t)
+	local function DoFreeze()
+		if IsValid(self) then
+			self:StopMoving()
+		end
+	end
+	timer.Create("CPTBase_FreezeNPCMovement_RandomInterval_"..math.Rand(1,99999) .. self:EntIndex(),0.1,t,function() DoFreeze() end)
+end
+
 function util.SaveCPTBaseNodegraph()
 	local writable
 	local dir = "cptbase/graphs/"
