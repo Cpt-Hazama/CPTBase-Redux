@@ -59,6 +59,9 @@ end
 function util.GetCPTBaseNodegraph()
 	local map = game.GetMap()
 	local mapData = file.Read("cptbase/graphs/" .. map .. ".txt","DATA")
+	if mapData == nil then
+		return "noData"
+	end
 	return util.JSONToTable(mapData)
 end
 
@@ -225,11 +228,11 @@ end
 function NPC_Meta:SetSummonedByPlayer(ent)
 	self.Faction = ent.Faction
 	self.FriendlyToPlayers = true
-	self.CanFollowPlayer = false
+	self.AllowedToFollowPlayer = false
 	self.CanWander = false
-	self.IsFollowingPlayer = true
-	self.FollowingPlayer = ent
-	self.MinFollowDistance = math.random(120,150)
+	self.IsFollowingAPlayer = true
+	self.TheFollowedPlayer = ent
+	self.MinimumFollowDistance = math.random(120,150)
 end
 
 function IsAIDisabled()
@@ -1308,6 +1311,10 @@ end
 function NPC_Meta:PlaySound(_Sound,_SoundLevel,_SoundVolume,_SoundPitch,_UseDotPlay)
 	if self.IsSLVBaseNPC == true then return self:slvPlaySound(_Sound) end
 	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_PlaySound(_Sound,_SoundLevel) end -- Community contribution by Ivan
+	if self.tbl_Sentences[_Sound] then
+		self:PlaySoundName(_Sound,_SoundLevel,_SoundPitch)
+		return
+	end
 	if !self.tbl_Sounds[_Sound] then return end
 	local _SelectSound,__Sound = self:CreatePlaySound(_Sound,_SoundLevel,_SoundPitch,_UseDotPlay)
 	if _UseDotPlay then self:OnPlaySound(__Sound,_Sound) return end

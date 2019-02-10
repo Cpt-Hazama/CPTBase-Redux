@@ -1,90 +1,96 @@
-	-- World Settings --
-TRACER_FLAG_USEATTACHMENT	= 0x0002
-SOUND_FROM_WORLD			= 0
-CHAN_STATIC					= 6
+if !CPTBase then return end
+---------------------------------------------------------------------------------------------------------------------------------------------
+EFFECT.Texture = Material("cptbase/muzzles/spark")
+EFFECT.TextureColor = {r=255,g=131,b=0,a=255}
+EFFECT.TextureSize = {x=5,y=5}
+EFFECT.HasSecondTexture = false
+EFFECT.Texture2 = Material("cptbase/muzzles/spark")
+EFFECT.Texture2Color = {r=255,g=131,b=0,a=255}
+EFFECT.Texture2Size = {x=2,y=2}
 
-	-- Main Settings --
-EFFECT.Speed				= 7000
-EFFECT.Length				= 50
-EFFECT.WhizSound			= Sound("cptbase/bullet_whoosh.wav")
-EFFECT.WhizVolume			= 60
-EFFECT.WhizDistance			= 200
+EFFECT.Speed = 7000
+EFFECT.Length = 0.04
+
+EFFECT.UseImpactSound = false
+EFFECT.ImpactSound = Sound("common/null.wav")
+EFFECT.ImpactVolume = 60
+EFFECT.UseWhizSound = true
+EFFECT.WhizSound = Sound("cptbase/bullet_whoosh.wav")
+EFFECT.WhizVolume = 60
+EFFECT.WhizDistance = 200
 EFFECT.NextWhizT = 0
-
-	-- Texture Settings --
-local cpt_MainTexture		= Material("cptbase/muzzles/spark") // mat_texture_list 1
-local cpt_FrontTexture		= Material("cptbase/muzzles/muzzleflash" .. math.random(1,4))
-local cpt_MainTextureSize 	= 1
-local cpt_FrontTextureSize 	= 1
-local cpt_MainTextureColor 	= Color(255,131,0)
-local cpt_FrontTextureColor = Color(255,131,0)
-
-function EFFECT:GetTracerOrigin(data)
+---------------------------------------------------------------------------------------------------------------------------------------------
+function EFFECT:GetStartingPosition(data)
 	local start = data:GetStart()
-	if(bit.band(data:GetFlags(),TRACER_FLAG_USEATTACHMENT) == TRACER_FLAG_USEATTACHMENT) then
-		local entity = data:GetEntity()
-		if(not IsValid(entity)) then return start end
-		if(not game.SinglePlayer() && entity:IsEFlagSet(EFL_DORMANT)) then return start end
-		if(entity:IsWeapon()) then
-			local ply = entity:GetOwner()
-			if(IsValid(ply) && ply:IsPlayer()) then
-				local vm = ply:GetViewModel()
-				if(IsValid(vm) && not LocalPlayer():ShouldDrawLocalPlayer()) then
-					entity = vm
-				else
-					if(entity.WorldModel) then
-						entity:SetModel(entity.WorldModel)
-					end
-				end
+	local entity = data:GetEntity()
+	local owner = entity:GetOwner()
+	if !IsValid(entity) then
+		return start
+	end
+	if(entity:IsWeapon()) then
+		if IsValid(owner) && owner:IsPlayer() then
+			local viewModel = owner:GetViewModel()
+			if IsValid(viewModel) && !LocalPlayer():ShouldDrawLocalPlayer() then
+				entity = viewModel
 			end
 		end
-		local attachment = entity:GetAttachment(data:GetAttachment())
-		if(attachment) then
-			start = attachment.Pos
-		end
+	end
+	local att = entity:GetAttachment(data:GetAttachment())
+	if att then
+		start = att.Pos
 	end
 	return start
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Init(data)
-	self.StartPos = self:GetTracerOrigin(data)
+	self.StartPos = self:GetStartingPosition(data)
 	self.EndPos = data:GetOrigin()
-	self.Entity:SetRenderBoundsWS(self.StartPos,self.EndPos)
-	local diff = (self.EndPos -self.StartPos)
-	self.Normal = diff:GetNormal()
-	self.StartTime = 0
-	self.LifeTime = (diff:Length() +self.Length) /self.Speed
-	local weapon = data:GetEntity()
-	if(IsValid(weapon) && (not weapon:IsWeapon())) then
-		local dist, pos, time = util.DistanceToLine(self.StartPos,self.EndPos,EyePos())
-	end
+	self.Direction = self.EndPos -self.StartPos
+	self.Normal = (self.Direction):GetNormal()
+	self:SetRenderBoundsWS(self.StartPos,self.EndPos)
+	self.LifeTime = math.min(1,self.StartPos:Distance(self.EndPos) /10000)
+	self.DieTime = CurTime() + self.LifeTime
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
+function EFFECT:OnHitEndPoint(pos) end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Think()
-	self.LifeTime = self.LifeTime -FrameTime()
-	self.StartTime = self.StartTime +FrameTime()
-	local doplaysound = false
-	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.WhizDistance)) do
-		if v:IsValid() && v:IsPlayer() then
-			doplaysound = true
+	if CurTime() > self.DieTime then
+		if self.UseImpactSound then
+			sound.Play(self.ImpactSound,self:GetPos(),self.ImpactVolume,100 *GetConVarNumber("host_timescale"))
+		end
+		self:OnHitEndPoint(self.EndPos)
+		return false
+	end
+	if self.UseWhizSound then
+		local doplaysound = false
+		for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.WhizDistance)) do
+			if v:IsValid() && v:IsPlayer() then
+				doplaysound = true
+			end
+		end
+		if doplaysound == true && CurTime() > self.NextWhizT then
+			sound.Play(self.WhizSound,self:GetPos(),self.WhizVolume,100 *GetConVarNumber("host_timescale"))
+			self.NextWhizT = CurTime() +SoundDuration(self.WhizSound)
 		end
 	end
-	if doplaysound == true && CurTime() > self.NextWhizT then
-		sound.Play(self.WhizSound,self:GetPos(),self.WhizVolume,100 *GetConVarNumber("host_timescale"))
-		self.NextWhizT = CurTime() +SoundDuration(self.WhizSound)
-	end
-	return self.LifeTime > 0
+	return true
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Render()
-	local endDistance = self.Speed *self.StartTime
-	local startDistance = endDistance -self.Length
-	startDistance = math.max(0,startDistance)
-	endDistance = math.max(0,endDistance)
-	local startPos = self.StartPos +self.Normal *startDistance
-	local endPos = self.StartPos +self.Normal *endDistance
-	render.SetMaterial(cpt_FrontTexture)
-	render.DrawBeam(startPos,endPos,cpt_FrontTextureSize,0,1,cpt_FrontTextureColor)
-	render.SetMaterial(cpt_MainTexture)
-	render.DrawBeam(startPos,endPos,cpt_MainTextureSize,0,1,cpt_MainTextureColor)
+	local timeDif = (self.DieTime -CurTime()) /self.LifeTime
+	timeDif = math.Clamp(timeDif,0,1) ^0.5
+	local sine = math.sin(timeDif *math.pi)
+	local startPos = self.EndPos -self.Direction *(timeDif -sine *self.Length)
+	local endPos = self.EndPos -self.Direction *(timeDif +sine *self.Length)
+	local size = self.TextureSize.x +sine *self.TextureSize.y
+	local color = Color(self.TextureColor.r,self.TextureColor.g,self.TextureColor.b,self.TextureColor.a)
+	render.SetMaterial(self.Texture)
+	render.DrawBeam(startPos,endPos,size,0,1,color)
+	if self.HasSecondTexture then
+		size = self.Texture2Size.x +sine *self.Texture2Size.y
+		color = Color(self.Texture2Color.r,self.Texture2Color.g,self.Texture2Color.b,self.Texture2Color.a)
+		render.SetMaterial(self.Texture2)
+		render.DrawBeam(startPos,endPos,size,0,1,color)
+	end
 end

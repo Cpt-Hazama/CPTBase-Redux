@@ -34,6 +34,7 @@ ENT.IsBlind = false -- Is the NPC blind? (Experimental)
 ENT.FindEntitiesDistance = 7500 -- Same as ViewDistance
 ENT.ViewDistance = 7500 -- How far the NPC can see (In WU. Increasing may impact performance)
 ENT.ViewAngle = 75 -- How far the NPC can see (Based on a cone system)
+ENT.CanMove = true -- Can the NPC move AT ALL?
 ENT.CanWander = true
 ENT.WanderChance = 60 -- The change that the NPC will wander while idle
 ENT.CanSetEnemy = true -- Can the NPC set its' enemy? (Can be changed at anytime in the code)
@@ -70,6 +71,8 @@ ENT.HasFallingAnimation = false -- Set to true for them to play an idle while fa
 ENT.CanRagdollEnemies = false -- Can the NPC ragdoll players/NPCs?
 ENT.RagdollEnemyChance = 5 -- Chance the enemy will be ragdolled upon being hit
 ENT.RagdollEnemyVelocity = Vector(0,0,0) -- Forward/Backward, Left/Right, Up/Down | 100 = forward/ -100 = backward, 100 = right/ -100 = left, 100 = up/ -100 = down
+ENT.CanFollowFriendlyPlayers = true -- Can the NPC follow players if "Used"
+ENT.HateFollowedPlayerThreshold = 15 -- Chance that the following NPC will hate you upon being hit
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
@@ -241,6 +244,7 @@ function ENT:Initialize()
 	self.IsSwimType = false
 	self.NextSwimDirection_YawT = 0
 	self.NextSwimDirection_PitchT = 0
+	self.NextAcceptT = 0
 	self.TimeSinceLastTimeFalling = 0
 	self.tbl_Speakers = {}
 	self.tbl_RegisteredNodes = {}
@@ -944,7 +948,40 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnInputAccepted(event,activator) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnFollowPlayer(ply)
+	ply:ChatPrint("This NPC will now follow you")
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnUnFollowPlayer(ply)
+	ply:ChatPrint("This NPC will no longer follow you")
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnDenyFollowPlayer(ply)
+	ply:ChatPrint("This NPC is already following someone")
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AcceptInput(input,activator,caller,data)
+	if activator:IsPlayer() && CurTime() > self.NextAcceptT then
+		if self.CanFollowFriendlyPlayers && self:Disposition(activator) == D_LI then
+			if !self.IsFollowingAPlayer then
+				self.IsFollowingAPlayer = true
+				self.TheFollowedPlayer = activator
+				self.CanWander = false
+				self.MinimumFollowDistance = math.random(120,150)
+				self:OnFollowPlayer(activator)
+			else
+				if activator == self.TheFollowedPlayer then
+					self.IsFollowingAPlayer = false
+					self.TheFollowedPlayer = NULL
+					self.CanWander = true
+					self:OnUnFollowPlayer(activator)
+				else
+					self:OnDenyFollowPlayer(activator)
+				end
+			end
+		end
+		self.NextAcceptT = CurTime() +0.75
+	end
 	self:OnInputAccepted(input,activator)
 	if(activator == self && string.Left(input,6) == "event_") then
 		self:RunEvents(string.sub(input,7))
@@ -1042,12 +1079,7 @@ function ENT:IdleSounds()
 	if self.IsPossessed == false then
 		if !IsValid(self:GetEnemy()) then
 			if CurTime() > self.NextIdleSoundT && math.random(1,3) == 1 then
-				if self.tbl_Sentences["Idle"] == nil then
-					self:PlaySound("Idle",self.IdleSoundVolume,90,self.IdleSoundPitch)
-					self:DoPlaySound("Idle")
-				else
-					self:PlayNPCSentence("Idle")
-				end
+				self:PlayIdleSound()
 				if self.CurrentSound != nil then
 					self.NextIdleSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
 				end
@@ -1055,12 +1087,7 @@ function ENT:IdleSounds()
 		end
 	else
 		if !IsValid(self:GetEnemy()) && CurTime() > self.NextIdleSoundT && math.random(1,3) == 1 then
-			if self.tbl_Sentences["Idle"] == nil then
-				self:PlaySound("Idle",self.IdleSoundVolume,90,self.IdleSoundPitch)
-				self:DoPlaySound("Idle")
-			else
-				self:PlayNPCSentence("Idle")
-			end
+			self:PlayIdleSound()
 			if self.CurrentSound != nil then
 				self.NextIdleSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.IdleSoundChanceA,self.IdleSoundChanceB)
 			end
@@ -1091,36 +1118,40 @@ function ENT:Summon_FaceOwner(owner)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Summon_FollowAI()
-	if self.IsFollowingPlayer && self.FollowingPlayer != NULL then
-		local dist = self:GetClosestPoint(self.FollowingPlayer)
-		if self:Disposition(self.FollowingPlayer) != D_LI then
-			self.IsFollowingPlayer = false
-			self.FollowingPlayer = NULL
+	if self.IsFollowingAPlayer && self.TheFollowedPlayer != NULL then
+		local dist = self:GetClosestPoint(self.TheFollowedPlayer)
+		if self:Disposition(self.TheFollowedPlayer) != D_LI then
+			self.IsFollowingAPlayer = false
+			self.TheFollowedPlayer = NULL
 		end
-		if !IsValid(self:GetEnemy()) && dist > self.MinFollowDistance && self:CanPerformProcess() then
+		if !IsValid(self:GetEnemy()) && dist > self.MinimumFollowDistance && self:CanPerformProcess() then
 			if self:MovementType() == MOVETYPE_FLY then
-				self:HandleFlying(self.FollowingPlayer,dist,dist)
+				self:HandleFlying(self.TheFollowedPlayer,dist,dist)
 			else
-				self:ChaseTarget(self.FollowingPlayer)
+				self:ChaseTarget(self.TheFollowedPlayer)
 			end
 		end
 		if !IsValid(self:GetEnemy()) then
-			if dist <= self.MinFollowDistance && self.FollowingPlayer:Visible(self) then
-				self:StopCompletely()
-				self:Summon_FaceOwner(self.FollowingPlayer)
+			if dist <= self.MinimumFollowDistance && self.TheFollowedPlayer:Visible(self) then
+				if self:IsMoving() then
+					self:StopCompletely()
+					self:Summon_FaceOwner(self.TheFollowedPlayer)
+				end
 			end
-		else
-			if self:GetEnemy():Visible(self) then
-				self:SetAngles(Angle(0,(self:GetEnemy():GetPos() -self:GetPos()):Angle().y,0))
-			end
+		-- else
+			-- if self:GetEnemy():Visible(self) then
+				-- self:SetAngles(Angle(0,(self:GetEnemy():GetPos() -self:GetPos()):Angle().y,0))
+			-- end
 		end
+		self:OnFollowAI(self.TheFollowedPlayer,dist)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnFollowAI(owner,dist) end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.IsDead == true then return end
-	-- print(self:GetEnemy())
-	-- print(self,self:GetSequenceName(self:GetSequence()),self:GetSequenceName(self.tbl_Animations["Run"][1]))
+	if self.Func_Think then self:Func_Think() end -- Don't use this function, it's called from other functions on very special occasions
 	self:OnThink_Disabled()
 	if self:IsMoving() then
 		self:SetArrivalActivity(self:GetIdleAnimation())
@@ -1507,18 +1538,7 @@ end
 function ENT:FootStepCode()
 	if self.IsRagdolled == true then return end
 	if self:IsOnGround() && self:IsMoving() && self.UseTimedSteps == true then
-		if (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
-			self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
-			self:DoPlaySound("FootStep")
-			self:OnStep("Walk")
-			self.NextFootSoundT_Walk = CurTime() + self.NextFootSound_Walk
-		end
-		if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
-			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
-			self:DoPlaySound("FootStep")
-			self:OnStep("Run")
-			self.NextFootSoundT_Run = CurTime() + self.NextFootSound_Run
-		end
+		self:PlayFootStepSound()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1587,7 +1607,7 @@ function ENT:ChaseTarget(ent,uselastpos,pos)
 					pos = ent:GetPos()
 				end
 				self:SetLastPosition(pos)
-				self:TASKFUNC_WALKLASTPOSITION()
+				self:TASKFUNC_RUNLASTPOSITION()
 			end
 		end
 	end
@@ -1596,22 +1616,19 @@ end
 function ENT:StartIdleAnimation()
 	local idleanim = self:GetIdleAnimation()
 	if self:IsMoving() then self:SetArrivalActivity(idleanim) end
-	-- if CurTime() > self.NextIdleAnimationT then
-		if self:CanPerformProcess() == false then return end
+	if self:CanPerformProcess() == false then return end
+	if self.IsPlayingSequence == true then return end
+	if self.IsPlayingActivity == true then return end
+	if self:IsMoving() then return end
+	if self.CurrentSchedule == nil && self.CurrentTask == nil then
+		if self.bInSchedule == true then return end
 		if self.IsPlayingSequence == true then return end
 		if self.IsPlayingActivity == true then return end
-		if self:IsMoving() then return end
-		if self.CurrentSchedule == nil && self.CurrentTask == nil then
-			if self.bInSchedule == true then return end
-			if self.IsPlayingSequence == true then return end
-			if self.IsPlayingActivity == true then return end
-			if self:GetActivity() != idleanim then
-				self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),idleanim)
-				self:MaintainActivity()
-			end
-			-- self.NextIdleAnimationT = CurTime() +self:AnimationLength(idleanim)
+		if self:GetActivity() != idleanim then
+			self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),idleanim)
+			self:MaintainActivity()
 		end
-	-- end
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetIdleAnimation(act)
@@ -1657,13 +1674,7 @@ function ENT:OnCondition(iCondition)
 		if state != NPC_STATE_LOST && IsValid(self:GetEnemy()) then
 			if self.HasAlertAnimation == false then
 				if CurTime() > self.NextAlertSoundT then
-					if self.tbl_Sentences["Alert"] == nil then
-						self:PlaySound("Alert",self.AlertSoundVolume,90,self.AlertSoundPitch)
-						-- print('ok')
-						self:DoPlaySound("Alert")
-					else
-						self:PlayNPCSentence("Alert")
-					end
+					self:PlayAlertSound()
 					if self.CurrentSound != nil then
 						self.NextAlertSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.AlertSoundChanceA,self.AlertSoundChanceB)
 						-- print(self.NextAlertSoundT)
@@ -1671,8 +1682,7 @@ function ENT:OnCondition(iCondition)
 				end
 			else
 				if math.random(1,self.AlertAnimationChance) == 1 then
-					self:PlaySound("Alert",self.AlertSoundVolume,90,self.AlertSoundPitch)
-					self:DoPlaySound("Alert")
+					self:PlayAlertSound()
 					self:PlayAnimation("Alert",2)
 				end
 			end
@@ -1960,9 +1970,11 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			end
 			self:SetRelationship(_Inflictor,D_HT)
 		end
-		if self.IsFollowingPlayer && self.FollowingPlayer == _Inflictor && math.random(1,15) == 1 then
-			self.IsFollowingPlayer = false
-			self.FollowingPlayer = NULL
+		if self.IsFollowingAPlayer && self.TheFollowedPlayer == _Inflictor && math.random(1,self.HateFollowedPlayerThreshold) == 1 then
+			self.IsFollowingAPlayer = false
+			self.TheFollowedPlayer:ChatPrint("This NPC now hates you")
+			self:OnUnFollowPlayer(_Inflictor)
+			self.TheFollowedPlayer = NULL
 			if self.Faction == _Inflictor.Faction then
 				self.Faction = _Inflictor.Faction .. "_ENEMY"
 			end
@@ -1979,12 +1991,7 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 		self:DoFlinch(dmg,dmginfo,hitbox)
 	else
 		if math.random(1,2) == 1 && CurTime() > self.NextPainSoundT then
-			if self.tbl_Sentences["Pain"] == nil then
-				self:PlaySound("Pain",self.PainSoundVolume,90,self.PainSoundPitch)
-				self:DoPlaySound("Pain")
-			else
-				self:PlayNPCSentence("Pain")
-			end
+			self:PlayPainSound()
 			if self.CurrentSound != nil then
 				self.NextPainSoundT = CurTime() +SoundDuration(self.CurrentPlayingSound) +math.random(self.PainSoundChanceA,self.PainSoundChanceB)
 			end
@@ -1995,12 +2002,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoFlinch(dmg,dmginfo,hitbox)
 	if math.random(1,self.FlinchChance) == 1 then
-		if self.tbl_Sentences["Pain"] == nil then
-			self:PlaySound("Pain",self.PainSoundVolume,90,self.PainSoundPitch)
-			self:DoPlaySound("Pain")
-		else
-			self:PlayNPCSentence("Pain")
-		end
+		self:PlayPainSound()
 		self:PlayAnimation("Pain")
 		self:OnFlinch(dmg,dmginfo,hitbox)
 	end
@@ -2017,12 +2019,7 @@ function ENT:BeforeTakeDamage(dmg,hitbox,dmginfo) return true end
 function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	gamemode.Call("OnNPCKilled",self,dmg:GetAttacker(),dmg:GetInflictor())
 	self.IsDead = true
-	if self.tbl_Sentences["Death"] == nil then
-		self:PlaySound("Death",self.DeathSoundVolume,90,self.DeathSoundPitch)
-		self:DoPlaySound("Death")
-	else
-		self:PlayNPCSentence("Death")
-	end
+	self:PlayDeathSound()
 	self:SetNPCState(NPC_STATE_DEAD)
 	self:OnDeath(dmg,dmginfo,_Hitbox)
 	if self.HasDeathAnimation == true then
@@ -2222,6 +2219,7 @@ function ENT:RagdollEnemy(dist,vel,tblents)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnRemove()
+	if self.Func_Remove then self:Func_Remove() end -- Don't use this function, it's called from other functions on very special occasions
 	if self.Ragdoll_CPT != nil && self.Ragdoll_CPT:IsValid() then
 		self.Ragdoll_CPT:Remove()
 	end
@@ -2442,7 +2440,7 @@ function ENT:OnTraceRun(traceHit) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnTraceHit(ent,traceHit) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:DoRangeAttack_Spawn(ent,pos,force)
+function ENT:DoRangeAttack_Spawn(ent,pos,force,type)
 	local projectile = ents.Create(ent)
 	projectile:SetPos(pos)
 	projectile:SetOwner(self)
@@ -2450,13 +2448,46 @@ function ENT:DoRangeAttack_Spawn(ent,pos,force)
 	projectile:Activate()
 	local phys = projectile:GetPhysicsObject()
 	if IsValid(phys) then
-		local vel = self:ProjectileForce(pos,force)
+		local vel = self:ProjectileForce(pos,force,type)
 	end
 	phys:ApplyForceCenter(vel)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:ProjectileForce(pos,force)
-	return ((self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()) -pos +self:GetEnemy():GetVelocity() *0.35):GetNormal() *force +VectorRand() *math.Rand(0,160)
+function ENT:ProjectileForce(pos,force,type)
+	return self:CalculateProjectileForce(type,self:FindCenter(self:GetEnemy()),pos,force +VectorRand() *math.Rand(0,160),self:GetEnemy())
+	-- return ((self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()) -pos +self:GetEnemy():GetVelocity() *0.35):GetNormal() *force +VectorRand() *math.Rand(0,160)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CalculateProjectileForce(type,posA,posB,force,ent) -- Credits/Collaboration to/with DrVrej, Rawch, Arctic, and Dragoteryx
+    if type == "normal" then
+        if ent then
+			return ((posB -posA +ent:GetVelocity() *0.35):GetNormal()) *force
+		else
+			return ((posB -posA):GetNormal()) *force
+		end
+    elseif type == "angle" then
+        local result = Vector(posB.x -posA.x,posB.y -posA.y,0)
+        local pos_x = result:Length()
+        local pos_y = posB.z -posA.z
+        local grav = physenv.GetGravity():Length()
+        local calc1 = (force *force *force *force)
+        local calc2 = - grav *(grav *(pos_x *pos_x) +2 *pos_y *(force *force))
+        local calcsum = calc1 +calc2
+        if calcsum < 0 then
+            calcsum = math.abs(calcsum)
+        end
+        local angsqrt =  math.sqrt(calcsum)
+        local angpos = math.atan(((force *force) +angsqrt) /(grav *pos_x))
+        local angneg = math.atan(((force *force) -angsqrt) /(grav *pos_x))
+        local pitch = 1
+        if angpos > angneg then
+            pitch = angneg
+        else
+            pitch = angpos
+        end
+        result.z = math.tan(pitch) *pos_x
+        return result:GetNormal() *force
+    end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CheckRelationship(ent)
@@ -2810,5 +2841,104 @@ function ENT:PlayCreatedAttack(callName)
 	end
 	if isTemporary then
 		table.remove(self.tbl_CreatedAttacks,called)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CreateLoopSound(loopEntity,loopName,loopSound,loopVolume,loopDurationName,loopDuration)
+	loopName = CreateSound(self,loopSound)
+	loopName:SetSoundLevel(loopVolume)
+	if string.find(loopSound,".wav") then
+		loopDuration = SoundDuration(loopSound)
+	end
+	function loopEntity:Func_Think()
+		if CurTime() > loopDurationName then
+			loopName:Stop()
+			loopName:Play()
+			loopDurationName = CurTime() +loopDuration
+		end
+	end
+	function loopEntity:Func_Remove()
+		loopName:Stop()
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CreateSoundName(callName,snd)
+	-- if self.tbl_Sentences[callName] != nil then
+		-- MsgN("Could not create sentence [" .. callName .. "] = {" .. snd .. "}, already exists!")
+		-- return
+	-- end
+	self.tbl_Sentences[callName] = {snd}
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlaySoundName(callName,sndVolume,sndPitch)
+	if self.tbl_Sentences[callName] != nil then
+		if self.CurrentSound then self.CurrentSound:Stop() end
+		local snd = self.tbl_Sentences[callName][1]
+		self.CurrentSound = CreateSound(self,snd)
+		self.CurrentSound:SetSoundLevel(sndVolume)
+		self.CurrentSound:Play()
+		self.CurrentSound:ChangePitch(sndPitch *GetConVarNumber("host_timescale"),0)
+		self.CurrentPlayingSound = snd
+		timer.Simple(SoundDuration(snd),function()
+			if IsValid(self) && self.CurrentPlayingSound == snd then
+				self.CurrentSound = nil
+				self.CurrentPlayingSound = nil
+			end
+		end)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetSoundVolume(CSound)
+	return CSound:GetVolume()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayIdleSound()
+	if self.tbl_Sentences["Idle"] == nil then
+		self:PlaySound("Idle",self.IdleSoundVolume,90,self.IdleSoundPitch)
+		self:DoPlaySound("Idle")
+	else
+		self:PlayNPCSentence("Idle")
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayAlertSound()
+	if self.tbl_Sentences["Alert"] == nil then
+		self:PlaySound("Alert",self.AlertSoundVolume,90,self.AlertSoundPitch)
+		self:DoPlaySound("Alert")
+	else
+		self:PlayNPCSentence("Alert")
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayPainSound()
+	if self.tbl_Sentences["Pain"] == nil then
+		self:PlaySound("Pain",self.PainSoundVolume,90,self.PainSoundPitch)
+		self:DoPlaySound("Pain")
+	else
+		self:PlayNPCSentence("Pain")
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayDeathSound()
+	if self.tbl_Sentences["Death"] == nil then
+		self:PlaySound("Death",self.DeathSoundVolume,90,self.DeathSoundPitch)
+		self:DoPlaySound("Death")
+	else
+		self:PlayNPCSentence("Death")
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:PlayFootStepSound()
+	if (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
+		self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
+		self:DoPlaySound("FootStep")
+		self:OnStep("Walk")
+		self.NextFootSoundT_Walk = CurTime() + self.NextFootSound_Walk
+	end
+	if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
+		self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
+		self:DoPlaySound("FootStep")
+		self:OnStep("Run")
+		self.NextFootSoundT_Run = CurTime() + self.NextFootSound_Run
 	end
 end

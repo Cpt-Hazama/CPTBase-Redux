@@ -50,6 +50,15 @@ function CPTBase_Chat(ply,spoke)
 end
 hook.Add("PlayerSay","CPTBase_Chat",CPTBase_Chat)
 
+-- hook.Add("PlayerDeath","CPTBase_DeathData",function(ply)
+	-- for _,v in ipairs(ents.GetAll()) do
+		-- if v:IsNPC() && v.IsFollowingAPlayer && v.TheFollowedPlayer == ply then
+			-- v.IsFollowingAPlayer = false
+			-- v.TheFollowedPlayer = NULL
+		-- end
+	-- end
+-- end)
+
 hook.Add("PlayerSpawn","CPTBase_StopIgnition",function(ply)
 	timer.Simple(0.02,function()
 		if IsValid(ply) then

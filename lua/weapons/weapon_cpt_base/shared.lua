@@ -595,10 +595,10 @@ function SWEP:GetBulletPos()
 	if self.ExtraViewModel == nil then
 		return self.Owner:GetShootPos()
 	else
-		if self:GetNWVector("cpt_CModel_MuzzlePos") == nil then
+		if self:GetNWVector("cpt_CModelshootpos") == nil then
 			return self.Owner:GetShootPos()
 		else
-			return self:GetNWVector("cpt_CModel_MuzzlePos")
+			return self:GetNWVector("cpt_CModelshootpos")
 		end
 	end
 end
@@ -635,12 +635,9 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 			bullet.Spread = Vector(self.Primary.Spread,self.Primary.Spread,0)
 		end
 		bullet.Tracer = self.Primary.Tracer
-		-- if game.SinglePlayer() then
-		-- if self.Owner:IsPlayer() then
-			if self.Primary.TracerEffect != false then
-				bullet.TracerName = self.Primary.TracerEffect
-			end
-		-- end
+		if self.Primary.TracerEffect != false then
+			bullet.TracerName = self.Primary.TracerEffect
+		end
 		bullet.Force = self.Primary.Force
 		local dif = GetConVarNumber("cpt_aidifficulty")
 		local dmg = math.Round(self.Primary.Damage *(self.WeaponCondition /100))

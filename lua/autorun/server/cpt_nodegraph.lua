@@ -133,10 +133,16 @@ concommand.Add("CPTBase_GenerateNodegraph",function(caller,cmd,arg)
 			end
 		end
 		local loadedNodegraph = util.GetCPTBaseNodegraph()
-		if loadedNodegraph != nil && table.Count(loadedNodegraph) > 0 then
-			nodegraphCount = table.Count(loadedNodegraph)
-			for _,node in pairs(loadedNodegraph) do
-				nm:InsertNode(node)
+		if loadedNodegraph != "noData" then
+			if loadedNodegraph != nil && table.Count(loadedNodegraph) > 0 then
+				nodegraphCount = table.Count(loadedNodegraph)
+				for _,node in pairs(loadedNodegraph) do
+					nm:InsertNode(node)
+				end
+			else
+				for i = 1,CPTBASE_SV_MAXNODES do
+					CreateNode()
+				end
 			end
 		else
 			for i = 1,CPTBASE_SV_MAXNODES do

@@ -7,6 +7,7 @@ function ENT:TASKFUNC_WAIT()
 end
 
 function ENT:TASKFUNC_RUNTOPOS()
+	if self.CanMove == false then return end
 	local _runtoposition = ai_sched_cpt.New("_runtoposition")
 	_runtoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_runtoposition:EngTask("TASK_RUN_PATH",0)
@@ -18,6 +19,7 @@ function ENT:TASKFUNC_RUNTOPOS()
 end
 
 function ENT:TASKFUNC_WALKTOPOS()
+	if self.CanMove == false then return end
 	local _walktoposition = ai_sched_cpt.New("_walktoposition") 
 	_walktoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_walktoposition:EngTask("TASK_WALK_PATH",0)
@@ -29,6 +31,7 @@ function ENT:TASKFUNC_WALKTOPOS()
 end
 
 function ENT:TASKFUNC_FOLLOWPLAYER()
+	if self.CanMove == false then return end
 	local _followplayer = ai_sched_cpt.New("_followplayer")
 	_followplayer:EngTask("TASK_GET_PATH_TO_TARGET",0)
 	-- _followplayer:EngTask("TASK_RUN_PATH",0)
@@ -39,6 +42,7 @@ function ENT:TASKFUNC_FOLLOWPLAYER()
 end
 
 function ENT:TASKFUNC_LASTPOSITION()
+	if self.CanMove == false then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
@@ -50,6 +54,7 @@ function ENT:TASKFUNC_LASTPOSITION()
 end
 
 function ENT:TASKFUNC_WALKLASTPOSITION()
+	if self.CanMove == false then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_walk")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	-- _lastpositiontask:EngTask("TASK_WALK_PATH",0)
@@ -62,6 +67,7 @@ function ENT:TASKFUNC_WALKLASTPOSITION()
 end
 
 function ENT:TASKFUNC_RUNLASTPOSITION()
+	if self.CanMove == false then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_run")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	-- _lastpositiontask:EngTask("TASK_RUN_PATH",0)
@@ -74,6 +80,7 @@ function ENT:TASKFUNC_RUNLASTPOSITION()
 end
 
 function ENT:Hide(move)
+	if self.CanMove == false then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_hidetask" then return end
 	local moveanim = move
 	if move == nil then
@@ -91,6 +98,7 @@ function ENT:Hide(move)
 end
 
 function ENT:UseTraceChase(enemy)
+	if self.CanMove == false then return end
 	local gopos
 	if nearest < 270 then
 		local pos = self:GetPos() +Vector(0,0,10)
@@ -113,6 +121,7 @@ function ENT:UseTraceChase(enemy)
 end
 
 function ENT:TASKFUNC_FACEPOSITION(pos)
+	if self.CanMove == false then return end
 	local _facepositiontask = ai_sched_cpt.New("_facepositiontask")
 	_facepositiontask:EngTask("TASK_FACE_LASTPOSITION",0)
 	self:SetLastPosition(pos)
@@ -123,6 +132,7 @@ local fnode = NULL
 local flastnode = NULL
 local nextnodet = CurTime()
 function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
+	if self.CanMove == false then return end
 	if self.UseCPTBaseAINavigation == false then return end
 	if self:GetPos():Distance(ent:GetPos()) < 375 then
 		self:SetTarget(ent)
@@ -160,6 +170,7 @@ function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
 end
 
 function ENT:TASKFUNC_GETPATHANDGO()
+	if self.CanMove == false then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "getpathandchasetask" then return end
 	local getpathandchasetask = ai_sched_cpt.New("getpathandchasetask")
 	getpathandchasetask:EngTask("TASK_GET_PATH_TO_ENEMY",0)
@@ -172,6 +183,7 @@ function ENT:TASKFUNC_GETPATHANDGO()
 end
 
 function ENT:TASKFUNC_CHASE()
+	if self.CanMove == false then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_chasetaskfunc" then return end
 	local _chasetaskfunc = ai_sched_cpt.New("_chasetaskfunc")
 	_chasetaskfunc:EngTask("TASK_GET_PATH_TO_ENEMY",0)
@@ -185,6 +197,7 @@ function ENT:TASKFUNC_CHASE()
 end
 
 function ENT:TASKFUNC_WANDER()
+	if self.CanMove == false then return end
 	if self.UseCPTBaseAINavigation then
 		if CurTime() > nextnodet then
 			for _,nodes in ipairs(ents.GetAll()) do
@@ -212,6 +225,7 @@ function ENT:TASKFUNC_WANDER()
 		-- _wandertaskfunc:EngTask("TASK_WALK_PATH",0)
 		_wandertaskfunc:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 		self:StartSchedule(_wandertaskfunc)
+		self:SetMovementAnimation("Walk")
 		if self.UsePlayermodelMovement then
 			self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 		end
