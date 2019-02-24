@@ -69,6 +69,10 @@ hook.Add("PlayerSpawn","CPTBase_StopIgnition",function(ply)
 	end)
 end)
 
+hook.Add("InitialPlayerSpawn","CPTBase_AddDefaultInitialPlayerValues",function(ply)
+	ply:SetNWBool("CPTBase_IsPossessing",false)
+end)
+
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.IsPossessing = false
 	ply.CPTBase_EF_RAD = 0

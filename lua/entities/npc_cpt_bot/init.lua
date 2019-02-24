@@ -12,7 +12,7 @@ ENT.ModelTable = {
 	-- "models/player/charple.mdl",
 	-- "models/player/combine_soldier.mdl",
 	-- "models/player/combine_soldier_prisonguard.mdl",
-	"models/player/combine_super_soldier.mdl",
+	-- "models/player/combine_super_soldier.mdl",
 	-- "models/player/corpse1.mdl",
 	-- "models/player/dod_german.mdl",
 	-- "models/player/eli.mdl",
@@ -194,12 +194,21 @@ function ENT:OnBotCreated()
 	elseif GetConVar("cpt_bot_seeenemies"):GetInt() == 0 then
 		self.CanSeeAllEnemies = false
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetNPCModel(mdl)
 	local count = table.Count(player_manager.AllValidModels())
 	for i = 1,count do
 		local model = table.Random(player_manager.AllValidModels())
 		table.insert(self.ModelTable,model)
 	end
-	-- self:SetColor(Vector(150/255,0/255,0/255))
+	if mdl == nil then
+		if table.Count(self.ModelTable) > 0 then
+			self:SetModel(self:SelectFromTable(self.ModelTable))
+		end
+	else
+		self:SetModel(mdl)
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Duck(possessor)

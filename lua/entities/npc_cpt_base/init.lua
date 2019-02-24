@@ -27,6 +27,7 @@ ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 
 	-- AI Variables --
 ENT.DefaultAIType = AITYPE_NORMAL
+ENT.ProcessingTime = 0.2
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
 -- ENT.UseNotarget = false -- Place this in the OnInit function
@@ -73,6 +74,7 @@ ENT.RagdollEnemyChance = 5 -- Chance the enemy will be ragdolled upon being hit
 ENT.RagdollEnemyVelocity = Vector(0,0,0) -- Forward/Backward, Left/Right, Up/Down | 100 = forward/ -100 = backward, 100 = right/ -100 = left, 100 = up/ -100 = down
 ENT.CanFollowFriendlyPlayers = true -- Can the NPC follow players if "Used"
 ENT.HateFollowedPlayerThreshold = 15 -- Chance that the following NPC will hate you upon being hit
+ENT.CheckDispositionOnAttackEntity = true -- Set to false to allow team damage
 
 	-- Air AI Variables --
 ENT.FlyUpOnSpawn = true -- Will the NPC hover upward to gain some ground when first spawned without any enemies?
@@ -131,6 +133,7 @@ ENT.tbl_ImmuneTypes = {} -- DMG_ types the NPC won't take damage from
 ENT.tbl_Capabilities = {} -- CAP_ types for the NPC
 
 	-- Sound Variables --
+ENT.CanPlaySounds = true
 ENT.SoundDirectory = nil -- The sound directory of the NPC. Not necessary unless you use SetupSoundTables
 ENT.SetupSoundTables = false -- Won't be as accurate as you setting them up yourself | there's also a weird issue where SNPCs can sometimes "share" sounds
 ENT.CheckForLoopsInSoundDirectory = true -- Makes sure looping sounds don't get added
@@ -161,6 +164,10 @@ ENT.NextFootSoundT_Run = 0
 ENT.NextIdleSoundT = 0
 ENT.NextAlertSoundT = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UpdateCollision()
+	self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Initialize()
 	self:SetSpawnEffect(false)
 	self.CPTBase_NPC = true
@@ -177,7 +184,7 @@ function ENT:Initialize()
 	self:SetHullSizeNormal()
 	self:SetCollisionGroup(COLLISION_GROUP_NPC)
 	if self.CollisionBounds != Vector(0,0,0) then
-		self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
+		self:UpdateCollision()
 	end
 	self:SetSolid(SOLID_BBOX)
 	self:SetMaxYawSpeed(self.MaxTurnSpeed)
@@ -239,6 +246,7 @@ function ENT:Initialize()
 	end
 	self.MutationEmbers = "cpt_mutationembers_" .. color
 	self.MutationGlow = "cpt_mutationglow_" .. color
+	self.LastRagdollMoveT = CurTime() +1
 	self.LostWeapon = false
 	self.LastUsedWeapon = nil
 	self.IsSwimType = false
@@ -1149,6 +1157,31 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFollowAI(owner,dist) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UnRagdoll()
+	if self.CPTBase_Ragdoll:IsValid() then
+		self:SetClearPos(self.CPTBase_Ragdoll:GetPos())
+		self:SetColor(self.CPTBase_Ragdoll:GetColor())
+		self.CPTBase_Ragdoll:Remove()
+		self:SetNoDraw(false)
+		self:DrawShadow(true)
+		self.IsRagdolled = false
+		self.bInSchedule = false
+		self:OnRagdollRecover()
+	else
+		self:SetClearPos(self:GetPos())
+		self:SetColor(255,255,255,255)
+		self:SetNoDraw(false)
+		self:DrawShadow(true)
+		self.IsRagdolled = false
+		self.bInSchedule = false
+		self:OnRagdollRecover()
+	end
+	self:SetCollisionGroup(9)
+	self:SetPersistent(false)
+	self:UpdateFriends()
+	self:UpdateEnemies()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.IsDead == true then return end
 	if self.Func_Think then self:Func_Think() end -- Don't use this function, it's called from other functions on very special occasions
@@ -1157,11 +1190,17 @@ function ENT:Think()
 		self:SetArrivalActivity(self:GetIdleAnimation())
 	end
 	if self.IsRagdolled == true then
-		self:SetPos(self:FindCenter(self.Ragdoll_CPT) -Vector(0,0,self.RagdolledPosSubtraction))
-		self:SetAngles(self.Ragdoll_CPT:GetAngles())
+		self:SetPos(self:FindCenter(self.CPTBase_Ragdoll) -Vector(0,0,self.RagdolledPosSubtraction))
+		self:SetAngles(self.CPTBase_Ragdoll:GetAngles())
 		self:SetNoDraw(true)
 		self:DrawShadow(false)
 		self.bInSchedule = true
+		if self:GetCPTBaseRagdoll():GetVelocity():Length() > 10 then
+			self.LastRagdollMoveT = CurTime() +self.RagdollRecoveryTime
+		end
+		if CurTime() > self.LastRagdollMoveT then
+			self:UnRagdoll()
+		end
 		self:CheckRagdollSettings()
 	end
 	if GetConVarNumber("ai_disabled") == 1 then return end
@@ -1229,7 +1268,7 @@ function ENT:Think()
 	if !IsValid(self:GetEnemy()) && self.Faction != "FACTION_NONE" then
 		self:HearingCode()
 	end
-	self:NextThink(CurTime() +0.1)
+	self:NextThink(CurTime() +self.ProcessingTime)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink_NotPossessed() end
@@ -1664,6 +1703,9 @@ end
 function ENT:OnCondition(iCondition)
 	local cond = self:ConditionName(iCondition)
 	-- print(cond)
+	// COND_TARGET_OCCLUDED -- Enemy can't be found
+	// COND_ENEMY_UNREACHABLE -- Enemy can't be reached
+	// COND_TASK_FAILED -- Enemy can't be reached
 	if self.bInSchedule == true then return end
 	if self.bDead == true then return end
 	local state = self:GetState()
@@ -1859,6 +1901,7 @@ function ENT:ClearMemory()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateBloodEffects(dmg,hitgroup,dmginfo,doignore)
+	if table.Count(self.BloodEffect) <= 0 then return end
 	if dmg:GetDamagePosition() != Vector(0,0,0) or (self:IsOnFire() && (IsValid(dmg:GetAttacker()) && dmg:GetAttacker():GetClass() != "entityflame") && (DoIgnore == false)) then
 		ParticleEffect(self:SelectFromTable(self.BloodEffect),dmg:GetDamagePosition(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),false)
 	else
@@ -2024,7 +2067,7 @@ function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	self:OnDeath(dmg,dmginfo,_Hitbox)
 	if self.HasDeathAnimation == true then
 		self:SetLocalVelocity(Vector(0,0,0))
-		self:SetNPCState(NPC_STATE_SCRIPT)
+		-- self:SetNPCState(NPC_STATE_SCRIPT)
 		self:PlayAnimation("Death")
 		local deathtime
 		if self.IsPlayingSequence then
@@ -2079,13 +2122,13 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 	local rbg = self:GetColor()
 	local mat = self:GetMaterial()
 	if self.IsRagdolled == true then
-		if self.Ragdoll_CPT != nil && self.Ragdoll_CPT:IsValid() then
-			mdl = self.Ragdoll_CPT:GetModel()
-			pos = self.Ragdoll_CPT:GetPos()
-			ang = self.Ragdoll_CPT:GetAngles()
-			skin = self.Ragdoll_CPT:GetSkin()
-			rbg = self.Ragdoll_CPT:GetColor()
-			mat = self.Ragdoll_CPT:GetMaterial()
+		if self.CPTBase_Ragdoll != nil && self.CPTBase_Ragdoll:IsValid() then
+			mdl = self.CPTBase_Ragdoll:GetModel()
+			pos = self.CPTBase_Ragdoll:GetPos()
+			ang = self.CPTBase_Ragdoll:GetAngles()
+			skin = self.CPTBase_Ragdoll:GetSkin()
+			rbg = self.CPTBase_Ragdoll:GetColor()
+			mat = self.CPTBase_Ragdoll:GetMaterial()
 		end
 	end
 	local phy = string.Replace(mdl,".mdl",".phy")
@@ -2098,9 +2141,9 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 	ragdoll:Activate()
 	ragdoll:SetSkin(skin)
 	if self.IsRagdolled == true then
-		if self.Ragdoll_CPT != nil && self.Ragdoll_CPT:IsValid() then
+		if self.CPTBase_Ragdoll != nil && self.CPTBase_Ragdoll:IsValid() then
 			for i = 0,18 do
-				ragdoll:SetBodygroup(i,self.Ragdoll_CPT:GetBodygroup(i))
+				ragdoll:SetBodygroup(i,self.CPTBase_Ragdoll:GetBodygroup(i))
 			end
 		else
 			for i = 0,18 do
@@ -2139,17 +2182,17 @@ function ENT:CreateNPCRagdoll(dmg,dmginfo)
 		end)
 	end
 	local dmgforce = dmg:GetDamageForce()
-	for i = 1,128 do -- Credits to Dan
-		local bonephys = ragdoll:GetPhysicsObjectNum(i)
-		if IsValid(bonephys) then
-			local bonepos,boneang = self:GetBonePosition(ragdoll:TranslatePhysBoneToBone(i))
-			if(bonepos) then
-				bonephys:SetPos(bonepos)
-				bonephys:SetAngles(boneang)
+	for i = 1,ragdoll:GetBoneCount() do
+		local phys = ragdoll:GetPhysicsObjectNum(i)
+		if IsValid(phys) then
+			local pos,ang = self:GetBonePosition(ragdoll:TranslatePhysBoneToBone(i))
+			if pos then
+				phys:SetPos(pos)
+				phys:SetAngles(ang)
 				if dmg:IsBulletDamage() then
-					bonephys:SetVelocity(dmgforce /20)
+					phys:SetVelocity(dmgforce /20)
 				else
-					bonephys:SetVelocity(dmgforce /37)
+					phys:SetVelocity(dmgforce /37)
 				end
 			end
 		end
@@ -2220,8 +2263,8 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnRemove()
 	if self.Func_Remove then self:Func_Remove() end -- Don't use this function, it's called from other functions on very special occasions
-	if self.Ragdoll_CPT != nil && self.Ragdoll_CPT:IsValid() then
-		self.Ragdoll_CPT:Remove()
+	if self.CPTBase_Ragdoll != nil && self.CPTBase_Ragdoll:IsValid() then
+		self.CPTBase_Ragdoll:Remove()
 	end
 	self:StopParticles()
 	for _,v in pairs(self.LoopedSounds) do
@@ -2316,7 +2359,8 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 				end
 				self:AttackProps(tblprops,dmg,dmgtype,force,OnHit)
 			end
-			if ((ent:IsNPC() && ent != self && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) || (ent:IsPlayer() && ent:Alive())) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
+			if ((ent:IsNPC() && ent != self && ent:GetModel() != self:GetModel()) || (ent:IsPlayer() && ent:Alive())) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
+				if self.CheckDispositionOnAttackEntity && self:Disposition(ent) == D_LI then return end
 				if self:CustomChecksBeforeDamage(ent) then
 					if force then
 						local forward,right,up = self:GetForward(),self:GetRight(),self:GetUp()
@@ -2329,17 +2373,7 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 						dmg = math.Round(dmg *1.65)
 					end
 					if dmgtype != DMG_FROST then
-						local dif = GetConVarNumber("cpt_aidifficulty")
-						local finaldmg
-						if dif == 1 then
-							finaldmg = dmg *0.5
-						elseif dif == 2 then
-							finaldmg = dmg
-						elseif dif == 3 then
-							finaldmg = dmg *2
-						elseif dif == 4 then
-							finaldmg = dmg *4
-						end
+						local finaldmg = AdaptCPTBaseDamage(dmg)
 						dmginfo:SetDamage(finaldmg)
 						dmginfo:SetAttacker(self)
 						dmginfo:SetInflictor(self)
@@ -2626,30 +2660,6 @@ function ENT:SetMovementAnimation(_Animation)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompatibility)
-	-- if self.IsSLVBaseNPC then
-		-- local TAct
-		-- local bFaceEnemy
-		-- local onScriptEnd
-		-- local bDontResetAct
-		-- local bDontStopMoving
-		-- if activity then
-			-- TAct = activity
-		-- end
-		-- if facetarget then
-			-- bFaceEnemy = facetarget
-		-- end
-		-- if usetime then
-			-- onScriptEnd = usetime
-		-- end
-		-- if addtime then
-			-- bDontResetAct = addtime
-		-- end
-		-- if slvbackwardscompatibility then
-			-- bDontStopMoving = slvbackwardscompatibility
-		-- end
-		-- self:SLVPlayActivity(TAct,bFaceEnemy,onScriptEnd,bDontResetAct,bDontStopMoving)
-		-- return
-	-- end
 	local fly = false
 	local usegesture = false
 	local usesequence = false
@@ -2844,7 +2854,7 @@ function ENT:PlayCreatedAttack(callName)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:CreateLoopSound(loopEntity,loopName,loopSound,loopVolume,loopDurationName,loopDuration)
+function ENT:CreateLoopedSound(loopEntity,loopName,loopSound,loopVolume,loopDurationName,loopDuration)
 	loopName = CreateSound(self,loopSound)
 	loopName:SetSoundLevel(loopVolume)
 	if string.find(loopSound,".wav") then

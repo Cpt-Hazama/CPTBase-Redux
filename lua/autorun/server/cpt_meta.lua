@@ -98,6 +98,10 @@ function FindGameFile(filedir)
 	return file.Exists(filedir,"GAME")
 end
 
+function NPC_Meta:GetCPTBaseRagdoll()
+	return self.CPTBase_Ragdoll
+end
+
 function PLY_Meta:GetCPTBaseRagdoll()
 	return self.CPTBase_Ragdoll
 end
@@ -173,6 +177,10 @@ end
 function PLY_Meta:CreateRagdolledPlayer(vel,caller)
 	local velocity = vel or Vector(-300,0,300)
 	self:SpawnCPTBaseRagdoll(self,velocity,caller)
+end
+
+function ENT_Meta:GetCurrentFrame(fps)
+	return self:GetCycle() *fps
 end
 
 function NPC_Meta:SetInvisible(inv)
@@ -265,10 +273,10 @@ function util.AddAttackEffect(attacker,ent,dmg,ef,delay,lp)
 						efm:SetEffectedEntity(ent:GetCPTBaseRagdoll())
 						efm:SetEffectType(mat)
 						efm:Spawn()
-					elseif ent:IsNPC() && IsValid(ent.Ragdoll_CPT) then
+					elseif ent:IsNPC() && IsValid(ent.CPTBase_Ragdoll) then
 						local efm = ents.Create("cpt_effect_manager")
 						efm:SetEffectTime(EFDeath)
-						efm:SetEffectedEntity(ent.Ragdoll_CPT)
+						efm:SetEffectedEntity(ent.CPTBase_Ragdoll)
 						efm:SetEffectType(mat)
 						efm:Spawn()
 					end
@@ -578,67 +586,67 @@ function NPC_Meta:CreateRagdolledNPC(vel,caller,ovtype)
 	local phy = string.Replace(mdl,".mdl",".phy")
 	local mtype = ovtype or "prop_ragdoll"
 	if !file.Exists(phy,"GAME") then return end // Checks if the model has physics
-	self.Ragdoll_CPT = ents.Create("prop_ragdoll")
-	self.Ragdoll_CPT:SetModel(self:GetModel())
-	self.Ragdoll_CPT:SetPos(self:GetPos())
-	self.Ragdoll_CPT:SetAngles(self:GetAngles())
-	self.Ragdoll_CPT:Spawn()
-	self.Ragdoll_CPT:Activate()
-	self.Ragdoll_CPT:SetModelScale(self:GetModelScale())
+	self.CPTBase_Ragdoll = ents.Create("prop_ragdoll")
+	self.CPTBase_Ragdoll:SetModel(self:GetModel())
+	self.CPTBase_Ragdoll:SetPos(self:GetPos())
+	self.CPTBase_Ragdoll:SetAngles(self:GetAngles())
+	self.CPTBase_Ragdoll:Spawn()
+	self.CPTBase_Ragdoll:Activate()
+	self.CPTBase_Ragdoll:SetModelScale(self:GetModelScale())
 	self.IsRagdolled = true
 	self:SetPersistent(true)
 	self:SetCollisionGroup(1)
-	self.Ragdoll_CPT:SetSkin(self:GetSkin())
+	self.CPTBase_Ragdoll:SetSkin(self:GetSkin())
 	for i = 0,18 do
-		self.Ragdoll_CPT:SetBodygroup(i,self:GetBodygroup(i))
+		self.CPTBase_Ragdoll:SetBodygroup(i,self:GetBodygroup(i))
 	end
-	self.Ragdoll_CPT:SetColor(self:GetColor())
-	self.Ragdoll_CPT:SetMaterial(self:GetMaterial())
-	self.Ragdoll_CPT:SetCollisionGroup(1)
+	self.CPTBase_Ragdoll:SetColor(self:GetColor())
+	self.CPTBase_Ragdoll:SetMaterial(self:GetMaterial())
+	self.CPTBase_Ragdoll:SetCollisionGroup(1)
 	self:SetColor(255,255,255,0)
 	if self:IsOnFire() then
-		self.Ragdoll_CPT:Ignite(math.random(8,10),1)
+		self.CPTBase_Ragdoll:Ignite(math.random(8,10),1)
 	end
-	self.Ragdoll_CPT:SetVelocity(self:GetVelocity())
+	self.CPTBase_Ragdoll:SetVelocity(self:GetVelocity())
 	for i = 1,128 do
-		local bonephys = self.Ragdoll_CPT:GetPhysicsObjectNum(i)
+		local bonephys = self.CPTBase_Ragdoll:GetPhysicsObjectNum(i)
 		if IsValid(bonephys) then
-			local bonepos,boneang = self:GetBonePosition(self.Ragdoll_CPT:TranslatePhysBoneToBone(i))
+			local bonepos,boneang = self:GetBonePosition(self.CPTBase_Ragdoll:TranslatePhysBoneToBone(i))
 			if(bonepos) then
 				bonephys:SetPos(bonepos)
 				bonephys:SetAngles(boneang)
-				bonephys:SetVelocity(self.Ragdoll_CPT:GetVelocity() +caller:GetForward() *velocity.x +caller:GetRight() *velocity.y +caller:GetUp() *velocity.z)
-				-- bonephys:ApplyForceCenter(caller:GetPos() -self.Ragdoll_CPT:GetForward() *velocity.x +self.Ragdoll_CPT:GetRight() *velocity.y +self.Ragdoll_CPT:GetUp() *velocity.z)
+				bonephys:SetVelocity(self.CPTBase_Ragdoll:GetVelocity() +caller:GetForward() *velocity.x +caller:GetRight() *velocity.y +caller:GetUp() *velocity.z)
+				-- bonephys:ApplyForceCenter(caller:GetPos() -self.CPTBase_Ragdoll:GetForward() *velocity.x +self.CPTBase_Ragdoll:GetRight() *velocity.y +self.CPTBase_Ragdoll:GetUp() *velocity.z)
 			end
 		end
 	end
-	self:SetRagdollEntity(self.Ragdoll_CPT)
-	timer.Simple(self.RagdollRecoveryTime,function()
-		if self:IsValid() then
-			if self.Ragdoll_CPT:IsValid() then
-				self:SetClearPos(self.Ragdoll_CPT:GetPos())
-				self:SetColor(self.Ragdoll_CPT:GetColor())
-				self.Ragdoll_CPT:Remove()
-				self:SetNoDraw(false)
-				self:DrawShadow(true)
-				self.IsRagdolled = false
-				self.bInSchedule = false
-				self:OnRagdollRecover()
-			else
-				self:SetClearPos(self:GetPos())
-				self:SetColor(255,255,255,255)
-				self:SetNoDraw(false)
-				self:DrawShadow(true)
-				self.IsRagdolled = false
-				self.bInSchedule = false
-				self:OnRagdollRecover()
-			end
-			self:SetCollisionGroup(9)
-			self:SetPersistent(false)
-			self:UpdateFriends()
-			self:UpdateEnemies()
-		end
-	end)
+	self:SetRagdollEntity(self.CPTBase_Ragdoll)
+	-- timer.Simple(self.RagdollRecoveryTime,function()
+		-- if self:IsValid() then
+			-- if self.CPTBase_Ragdoll:IsValid() then
+				-- self:SetClearPos(self.CPTBase_Ragdoll:GetPos())
+				-- self:SetColor(self.CPTBase_Ragdoll:GetColor())
+				-- self.CPTBase_Ragdoll:Remove()
+				-- self:SetNoDraw(false)
+				-- self:DrawShadow(true)
+				-- self.IsRagdolled = false
+				-- self.bInSchedule = false
+				-- self:OnRagdollRecover()
+			-- else
+				-- self:SetClearPos(self:GetPos())
+				-- self:SetColor(255,255,255,255)
+				-- self:SetNoDraw(false)
+				-- self:DrawShadow(true)
+				-- self.IsRagdolled = false
+				-- self.bInSchedule = false
+				-- self:OnRagdollRecover()
+			-- end
+			-- self:SetCollisionGroup(9)
+			-- self:SetPersistent(false)
+			-- self:UpdateFriends()
+			-- self:UpdateEnemies()
+		-- end
+	-- end)
 end
 
 function NPC_Meta:SetClearPos(origin) // Credits to Silverlan
@@ -1311,6 +1319,7 @@ end
 function NPC_Meta:PlaySound(_Sound,_SoundLevel,_SoundVolume,_SoundPitch,_UseDotPlay)
 	if self.IsSLVBaseNPC == true then return self:slvPlaySound(_Sound) end
 	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_PlaySound(_Sound,_SoundLevel) end -- Community contribution by Ivan
+	if !self.CanPlaySounds then return end
 	if self.tbl_Sentences[_Sound] then
 		self:PlaySoundName(_Sound,_SoundLevel,_SoundPitch)
 		return
@@ -1546,6 +1555,11 @@ function NPC_Meta:Alive()
 	else
 		return true
 	end
+end
+
+function ENT_Meta:CreateSpriteTrail(call,ent,mat,color,att,sWid,eWid,trans)
+	call = util.SpriteTrail(ent,att,color,false,sWid,eWid,trans,1 /(sWid +eWid) *0.5,mat)
+	return call
 end
 
 function ENT_Meta:TranslateStringToNumber(seq)
