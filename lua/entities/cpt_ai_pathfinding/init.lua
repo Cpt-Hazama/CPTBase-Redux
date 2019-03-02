@@ -40,8 +40,7 @@ function ENT:ChasePos(options)
 					path:Compute(self,self.ChasePosition)
 				end
 				path:Update(self)
-				if (options.draw) then path:Draw() end
-				-- path:Draw()
+				if GetConVarNumber("cpt_aidrawnav") == 1 then path:Draw() end
 				if self.loco:IsStuck() then
 					self:HandleStuck()
 					return

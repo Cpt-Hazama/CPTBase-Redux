@@ -49,7 +49,7 @@ end
 
 function ENT:TASKFUNC_RUNTOPOS()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
@@ -67,7 +67,7 @@ end
 
 function ENT:TASKFUNC_WALKTOPOS()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh()
 		return
 	end
@@ -85,7 +85,7 @@ end
 
 function ENT:TASKFUNC_FOLLOWPLAYER()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
@@ -102,7 +102,7 @@ end
 
 function ENT:TASKFUNC_LASTPOSITION()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
@@ -119,7 +119,7 @@ end
 
 function ENT:TASKFUNC_WALKLASTPOSITION()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh()
 		return
 	end
@@ -137,7 +137,7 @@ end
 
 function ENT:TASKFUNC_RUNLASTPOSITION()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
@@ -246,7 +246,7 @@ end
 
 function ENT:TASKFUNC_GETPATHANDGO()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
@@ -264,7 +264,7 @@ end
 
 function ENT:TASKFUNC_CHASE()
 	if self.CanMove == false then return end
-	if self.UseNavMesh then
+	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
 		return
 	end
