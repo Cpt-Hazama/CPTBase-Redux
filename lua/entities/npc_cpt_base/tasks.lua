@@ -6,13 +6,60 @@ function ENT:TASKFUNC_WAIT()
 	self:StartSchedule(_waittask)
 end
 
-function ENT:TASKFUNC_RUNTOPOS()
+function ENT:TASKFUNC_NAVRUN()
 	if self.CanMove == false then return end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _runtoposition = ai_sched_cpt.New("_runtoposition")
 	_runtoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_runtoposition:EngTask("TASK_RUN_PATH",0)
 	_runtoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_runtoposition)
+	self:SetMovementAnimation("Run")
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+	end
+end
+
+function ENT:TASKFUNC_NAVWALK()
+	if self.CanMove == false then return end
+	if self:IsJumping() || self:IsClimbing() then return end
+	local _walktoposition = ai_sched_cpt.New("_walktoposition") 
+	_walktoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
+	_walktoposition:EngTask("TASK_WALK_PATH",0)
+	_walktoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	self:StartSchedule(_walktoposition)
+	self:SetMovementAnimation("Walk")
+	if self.UsePlayermodelMovement then
+		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
+	end
+end
+
+function ENT:MoveNavMesh(movetype)
+	if IsValid(self.NavMeshEntity) then
+		if self:GetPos():Distance(self.NavMeshEntity:GetPos()) > 15 then
+			self:SetLastPosition(self.NavMeshEntity:GetPos())
+			if movetype == "run" then
+				self:TASKFUNC_NAVRUN()
+			else
+				self:TASKFUNC_NAVWALK()
+			end
+		end
+	end
+end
+
+function ENT:TASKFUNC_RUNTOPOS()
+	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
+	local _runtoposition = ai_sched_cpt.New("_runtoposition")
+	_runtoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
+	_runtoposition:EngTask("TASK_RUN_PATH",0)
+	_runtoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	self:StartSchedule(_runtoposition)
+	self:SetMovementAnimation("Run")
 	if self.UsePlayermodelMovement then
 		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
@@ -20,11 +67,17 @@ end
 
 function ENT:TASKFUNC_WALKTOPOS()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh()
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _walktoposition = ai_sched_cpt.New("_walktoposition") 
 	_walktoposition:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_walktoposition:EngTask("TASK_WALK_PATH",0)
 	_walktoposition:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
 	self:StartSchedule(_walktoposition)
+	self:SetMovementAnimation("Walk")
 	if self.UsePlayermodelMovement then
 		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
@@ -32,10 +85,16 @@ end
 
 function ENT:TASKFUNC_FOLLOWPLAYER()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _followplayer = ai_sched_cpt.New("_followplayer")
 	_followplayer:EngTask("TASK_GET_PATH_TO_TARGET",0)
 	-- _followplayer:EngTask("TASK_RUN_PATH",0)
 	self:StartSchedule(_followplayer)
+	-- self:SetMovementAnimation("Run")
 	if self.UsePlayermodelMovement then
 		self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 	end
@@ -43,6 +102,11 @@ end
 
 function ENT:TASKFUNC_LASTPOSITION()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
@@ -55,6 +119,11 @@ end
 
 function ENT:TASKFUNC_WALKLASTPOSITION()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh()
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_walk")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	-- _lastpositiontask:EngTask("TASK_WALK_PATH",0)
@@ -68,6 +137,11 @@ end
 
 function ENT:TASKFUNC_RUNLASTPOSITION()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	local _lastpositiontask = ai_sched_cpt.New("_lastpositiontask_run")
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	-- _lastpositiontask:EngTask("TASK_RUN_PATH",0)
@@ -81,6 +155,7 @@ end
 
 function ENT:Hide(move)
 	if self.CanMove == false then return end
+	if self:IsJumping() || self:IsClimbing() then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_hidetask" then return end
 	local moveanim = move
 	if move == nil then
@@ -171,6 +246,11 @@ end
 
 function ENT:TASKFUNC_GETPATHANDGO()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "getpathandchasetask" then return end
 	local getpathandchasetask = ai_sched_cpt.New("getpathandchasetask")
 	getpathandchasetask:EngTask("TASK_GET_PATH_TO_ENEMY",0)
@@ -184,6 +264,11 @@ end
 
 function ENT:TASKFUNC_CHASE()
 	if self.CanMove == false then return end
+	if self.UseNavMesh then
+		self:MoveNavMesh("run")
+		return
+	end
+	if self:IsJumping() || self:IsClimbing() then return end
 	if self.CurrentSchedule != nil && self.CurrentSchedule.Name == "_chasetaskfunc" then return end
 	local _chasetaskfunc = ai_sched_cpt.New("_chasetaskfunc")
 	_chasetaskfunc:EngTask("TASK_GET_PATH_TO_ENEMY",0)

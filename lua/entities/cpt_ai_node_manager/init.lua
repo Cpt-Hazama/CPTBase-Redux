@@ -8,11 +8,15 @@ function ENT:Initialize()
 	self:SetSolid(SOLID_NONE)
 	self.tbl_Nodegraph = {}
 	self.tbl_FakeNodegraph = {}
+	if table.Count(CPTBASE_NODE_TABLE) > 0 then
+		for i = 1,table.Count(CPTBASE_NODE_TABLE) do
+			table.insert(self.tbl_Nodegraph,i)
+		end
+	end
 end
 
 function ENT:InsertNode(vec)
 	table.insert(self.tbl_Nodegraph,vec)
-	print(vec)
 end
 
 function ENT:GetNodes()

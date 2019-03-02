@@ -1481,6 +1481,12 @@ function NPC_Meta:PlayerChat(text)
 	end
 end
 
+function NPC_Meta:StripWeapons()
+	if IsValid(self:GetActiveWeapon()) then
+		self:GetActiveWeapon():Remove()
+	end
+end
+
 function NPC_Meta:IsFalling(max)
 	local dist
 	if max == nil then

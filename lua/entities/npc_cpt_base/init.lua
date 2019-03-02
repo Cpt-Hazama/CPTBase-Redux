@@ -29,6 +29,7 @@ ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 ENT.DefaultAIType = AITYPE_NORMAL
 ENT.ProcessingTime = 0.2
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
+ENT.UseNavMesh = false -- Can this NPC use nav mesh instead of nodes?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
 -- ENT.UseNotarget = false -- Place this in the OnInit function
 ENT.IsBlind = false -- Is the NPC blind? (Experimental)
@@ -48,7 +49,7 @@ ENT.Faction = "FACTION_NONE" -- Required for every NPC. Use the same one amongst
 ENT.FriendlyToPlayers = false -- Is the NPC friendly to players?
 ENT.Confidence = 2 -- Obsolete
 ENT.UseDefaultPoseParameters = true -- Can the NPC use pose parameters? (turn head, body, etc.)
-ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw"}
+ENT.DefaultPoseParameters = {"aim_pitch","aim_yaw","head_pitch","head_yaw","body_pitch","body_yaw"}
 ENT.DefaultPoseParamaterSpeed = 20 -- The rate at which the pose parameter will adjust (similar to turning speed)
 ENT.ReversePoseParameters = false -- Reverse pose parameters if they were not properly made
 ENT.ForceReloadAnimation = false -- Obsolete
@@ -263,6 +264,13 @@ function ENT:Initialize()
 	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
 		self.UseCPTBaseAINavigation = true
 	end
+	if GetConVarNumber("cpt_aiusenavmesh") == 1 then
+		self.UseNavMesh = true
+	end
+	if self.UseNavMesh == true then
+		self.UseCPTBeaseAINavigation = false
+		self:SpawnNavMeshEntity()
+	end
 	self.tbl_Inventory = {
 		["Primary"] = nil,
 		["Melee"] = nil,
@@ -322,6 +330,15 @@ function ENT:Initialize()
 	if GetConVarNumber("cpt_npchearing_advanced") == 1 then
 		self.UseAdvancedHearing = true
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SpawnNavMeshEntity()
+	self.NavMeshEntity = ents.Create("cpt_ai_pathfinding")
+	self.NavMeshEntity:SetPos(self:GetPos() +self:GetForward() *50)
+	self.NavMeshEntity:SetOwner(self)
+	self.NavMeshEntity:Spawn()
+	self:DeleteOnRemove(self.NavMeshEntity)
+	self:SetCustomCollisionCheck(true)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:AfterInit() end
@@ -753,7 +770,7 @@ function ENT:Possess_Move(possessor)
 				self:SetPoseParameter("move_x",0)
 				self:SetPoseParameter("move_y",self.PlayermodelMovementSpeed_Right) -- 1
 			end
-		elseif (!possessor:KeyDown(IN_SPEED) && !possessor:KeyDown(IN_MOVERIGHT) && !possessor:KeyDown(IN_MOVELEFT) && !possessor:KeyDown(IN_BACK) && !possessor:KeyDown(IN_FORWARD)) then
+		elseif (!possessor:KeyDown(IN_SPEED) && !possessor:KeyDown(IN_MOVERIGHT) && !possessor:KeyDown(IN_MOVELEFT) && !possessor:KeyDown(IN_BACK) && !possessor:KeyDown(IN_FORWARD)) && self:IsMoving() then
 			self:StopCompletely()
 		end
 	elseif self:GetMoveType() == MOVETYPE_FLY then
@@ -1101,6 +1118,20 @@ function ENT:IdleSounds()
 			end
 		end
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:IsClimbing()
+	if self:GetActivity() == ACT_CLIMB_UP || self:GetActivity() == ACT_CLIMB_DOWN || self:GetActivity() == ACT_CLIMB_DISMOUNT then
+		return true
+	end
+	return false
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:IsJumping()
+	if self:GetActivity() == ACT_JUMP || self:GetActivity() == ACT_GLIDE || self:GetActivity() == ACT_LAND then
+		return true
+	end
+	return false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:IsWalking()
@@ -1659,6 +1690,7 @@ function ENT:StartIdleAnimation()
 	if self.IsPlayingSequence == true then return end
 	if self.IsPlayingActivity == true then return end
 	if self:IsMoving() then return end
+	if self:IsJumping() || self:IsClimbing() then return end
 	if self.CurrentSchedule == nil && self.CurrentTask == nil then
 		if self.bInSchedule == true then return end
 		if self.IsPlayingSequence == true then return end
@@ -2061,6 +2093,9 @@ function ENT:BeforeTakeDamage(dmg,hitbox,dmginfo) return true end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
 	gamemode.Call("OnNPCKilled",self,dmg:GetAttacker(),dmg:GetInflictor())
+	if dmg:GetAttacker():IsPlayer() then
+		dmg:GetAttacker():AddFrags(1)
+	end
 	self.IsDead = true
 	self:PlayDeathSound()
 	self:SetNPCState(NPC_STATE_DEAD)
@@ -2267,9 +2302,11 @@ function ENT:OnRemove()
 		self.CPTBase_Ragdoll:Remove()
 	end
 	self:StopParticles()
-	for _,v in pairs(self.LoopedSounds) do
-		if v then
-			v:Stop()
+	if self.LoopedSounds then
+		for _,v in pairs(self.LoopedSounds) do
+			if v then
+				v:Stop()
+			end
 		end
 	end
 	if self.CurrentSound != nil then

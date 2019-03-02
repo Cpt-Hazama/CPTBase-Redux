@@ -196,6 +196,68 @@ function ENT:OnBotCreated()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BotThink()
+	if IsValid(self:GetActiveWeapon()) && !self:GetActiveWeapon().CPTBase_Weapon then
+		local wep = self:GetActiveWeapon()
+		local wWM = wep:GetModel()
+		-- if wep.WorldModel then
+			-- wWM = wep.WorldModel
+		-- elseif wep.WM then
+			-- wWM = wep.WM
+		-- end
+		local wHT
+		if wep.HoldType then
+			wHT = wep.HoldType
+		elseif wep.NormalHoldType then
+			wHT = wep.NormalHoldType
+		end
+		local wPS = wep.Primary.NumberOfShots
+		local wD = wep.Primary.Damage
+		local wCS = wep.Primary.ClipSize
+		local wDe
+		if wep.Primary.Delay then
+			wDe = wep.Primary.Sound
+		elseif wep.FireDelay then
+			wDe = wep.FireDelay
+		end
+		local wS
+		if wep.Primary.Sound then
+			wS = wep.Primary.Sound
+		elseif wep.Sounds then
+			wS = wep.Sounds.sound
+		end
+		local wWMP
+		if wep.WMPos then
+			wWMP = wep.WMPos
+		end
+		local wWMA
+		if wep.WMAng then
+			wWMP = wep.WMAng
+		end
+		wep:Remove()
+		self:Give("weapon_cpt_bot_weapon")
+		local newep = self:GetActiveWeapon()
+		newep.Custom_WorldModel = wWM
+		newep.Custom_DefaultHoldType = wHT
+		newep.Custom_HoldType = wHT
+		newep.Custom_Primary_TotalShots = wPS
+		newep.Custom_Primary_Damage = wD
+		newep.Custom_Primary_ClipSize = wCS
+		newep.Custom_Primary_Delay = wDe
+		newep.Custom_Primary_NPCFireRate = wDe
+		if wWMP then newep.Custom_WM_Pos = wWMP end
+		if wWMA then newep.Custom_WM_Ang = wWMA end
+		if type(wS) == "table" then
+			newep.tbl_Sounds["Fire"] = wS
+		else
+			newep.tbl_Sounds["Fire"] = {wS}
+		end
+		newep:SetModel(wWM)
+		newep.CanInitializedValues = true
+		self:SetupHoldtypes(newep,wHT)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetNPCModel(mdl)
 	local count = table.Count(player_manager.AllValidModels())
 	for i = 1,count do

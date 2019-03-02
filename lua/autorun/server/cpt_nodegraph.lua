@@ -12,6 +12,8 @@ CPTBASE_NODE_CLIMB = 3
 CPTBASE_NODE_SWIM = 4
 CPTBASE_NODE_HINT = 5
 
+CPTBASE_NODE_TABLE = {}
+
 CPTBASE_SV_MAXNODES = 7500 // 4096 is default for Garry's Mod. Too bad we're too cool for gSchool
 CPTBASE_SV_DISTANCEBETWEENNODES = 170
 CPTBASE_SV_MAXGENERATIONTIME = 15
@@ -21,6 +23,14 @@ CPTBASE_SV_CANSETNODEGRAPH = false
 CPTBASE_SV_STARTEDNODEGRAPH = false
 CPTBASE_SV_NODEGRAPH = false
 CPTBASE_SV_FINISHEDNODEGRAPH = false
+-------------------------------------------------------------------------------------------------------------------
+hook.Add("EntityRemoved","cpt_DetectRealNodes",function(ent)
+	local nodetype = ent:GetClass()
+	if string.find("node",ent:GetClass()) then print(ent) end
+	if nodetype == "info_node" || nodetype == "info_node_hint" then
+		table.insert(CPTBASE_NODE_TABLE,ent:GetPos())
+	end
+end)
 -------------------------------------------------------------------------------------------------------------------
 hook.Add("PlayerInitialSpawn","cpt_FindNodegraph",function(ply)
 	if GetConVarNumber("cpt_debug_nodegraph") == 1 then

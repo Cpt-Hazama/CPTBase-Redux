@@ -10,6 +10,13 @@ hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 	end
 end)
 
+hook.Add("ShouldCollide","CPTBase_NextbotNavShouldCollide_" .. math.Rand(1,99999999),function(ent1,ent2)
+	if ent1:GetClass() == "cpt_ai_pathfinding" && ent2 == ent1:GetOwner() then
+		return false
+	end
+	return true
+end)
+
 hook.Add("EntityEmitSound","CPTBase_DetectEntitySounds",function(data)
 	if GetConVarNumber("ai_disabled") == 1 then
 		return nil -- Don't alter sound data, proceed
