@@ -2604,10 +2604,6 @@ function ENT:AutoSetupSoundTable(tbl,needles)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetClosestEntity(tbl,argent)
-	-- local target = self:GetEntitiesByDistance(tbl)[1]
-	-- if target:IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || v.IsPossessing) then return NULL end
-	-- print(self:GetEntitiesByDistance(tbl)[1])
-	-- return self:GetEntitiesByDistance(tbl)[1]
 	return self:GetEntitiesByDistance(tbl,argent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -2621,14 +2617,9 @@ function ENT:GetEntitiesByDistance(tbl,argent)
 		if IsValid(v) then
 			close[v] = findent:GetPos():Distance(v:GetPos())
 		end
-		-- print(v,close[v])
 	end
 	endtbl = table.SortByKey(close,true)
 	result = endtbl[1]
-	-- if self:GetClass() == "npc_cpt_scpunity_106" then
-		-- PrintTable(close)
-		-- print("Selected: " .. tostring(result))
-	-- end
 	return result
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
