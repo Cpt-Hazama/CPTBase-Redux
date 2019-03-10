@@ -1153,7 +1153,7 @@ hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
 	end
 end)
 
-function ENT_Meta:SetRelationship(ent,value,isplayer)
+function ENT_Meta:SetRelationship(ent,value)
 	self:AddEntityRelationship(ent,value,99)
 	if !ent:IsPlayer() then
 		ent:AddEntityRelationship(self,value,99)

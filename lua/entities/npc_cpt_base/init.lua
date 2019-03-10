@@ -57,7 +57,6 @@ ENT.GlobalAnimationSpeed = 1 -- Determines *most* animation speeds (doesn't effe
 ENT.HasAlertAnimation = false -- Does the NPC play an alerted animation when spotting an enemy?
 ENT.AlertAnimationChance = 5 -- Chance the animation will play
 ENT.AllowPropDamage = true -- If set to true, the NPC will damage/effect props when it melee attacks
-ENT.AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
 ENT.UnfreezeProps = false -- Unfreeze props when they're hit?
 ENT.PropAttackForce = Vector(0,0,0) -- Forward, Right, Up
 ENT.UseDefaultWeaponThink = true -- True = use the default think code in the weapon, False = use your own
@@ -132,6 +131,10 @@ ENT.tbl_Sounds = {}
 ENT.tbl_Sentences = {} -- Basically the Half-Life 1 sentence system
 ENT.tbl_ImmuneTypes = {} -- DMG_ types the NPC won't take damage from
 ENT.tbl_Capabilities = {} -- CAP_ types for the NPC
+ENT.tbl_AttackablePropNames = {"prop_physics","func_breakable","prop_physics_multiplayer","func_physbox"}
+ENT.tbl_IgnoreEntities = {
+	bullseye_strider_focus = true,
+} -- Entities to be ignored
 
 	-- Sound Variables --
 ENT.CanPlaySounds = true
@@ -222,7 +225,7 @@ function ENT:Initialize()
 	self.IsRagdolled = false
 	self.AlreadyResetPoseParamaters = false
 	self.LoopedSounds = {}
-	self.tblBlackList = {}
+	self.tbl_BlackList = {}
 	self.tbl_AddToEnemies = {}
 	self.bInSchedule = false
 	self.IsStartingUp = false
@@ -1209,8 +1212,8 @@ function ENT:UnRagdoll()
 	end
 	self:SetCollisionGroup(9)
 	self:SetPersistent(false)
-	self:UpdateFriends()
-	self:UpdateEnemies()
+	-- self:UpdateFriends()
+	-- self:UpdateEnemies()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
@@ -1645,17 +1648,12 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ChaseEnemy(uselastpos,pos) // Only run this if you don't care what it's target is
 	if self.IsPossessed then return end
-	if IsValid(self:GetEnemy()) && self:Disposition(self:GetEnemy()) != D_LI && self:CheckConfidence(self:GetEnemy()) == "attack!" && self.CanChaseEnemy == true then
-		if self:GetEnemy():IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 1 then
-			self.tbl_EnemyMemory[self:GetEnemy()] = NULL
-			self:SetEnemy(NULL)
-			return
-		end
-		if uselastpos == nil then
-			uselastpos = false
-		end
-		self:ChaseTarget(self:GetEnemy(),uselastpos,pos)
+	if self.CanChaseEnemy == false then return end
+	if !IsValid(self:GetEnemy()) then return end
+	if uselastpos == nil then
+		uselastpos = false
 	end
+	self:ChaseTarget(self:GetEnemy(),uselastpos,pos)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnChaseEnemy(ent) self:SetMovementAnimation("Run") end
@@ -1744,7 +1742,7 @@ function ENT:OnCondition(iCondition)
 	self:CustomOnCondition(cond,state)
 	if state == NPC_STATE_DEAD then return end
 	if state != NPC_STATE_COMBAT then
-		self:UpdateEnemies()
+		-- self:UpdateEnemies()
 		if state != NPC_STATE_LOST && IsValid(self:GetEnemy()) then
 			if self.HasAlertAnimation == false then
 				if CurTime() > self.NextAlertSoundT then
@@ -1804,16 +1802,66 @@ function ENT:UpdateFriends()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UpdateFriends_WIP()
+	if self.Faction == "FACTION_NONE" then return end
+	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
+		if v:IsNPC() && v != self then
+			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) then
+				if (v:GetFaction() != nil && v.Faction == self:GetFaction()) then
+					self:SetRelationship(v,D_LI)
+					self:OnSpottedFriendly(v)
+				end
+			end
+		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
+			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
+				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+					self:SetRelationship(v,D_LI,true)
+					self:OnSpottedFriendly(v)
+				end
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FindAllEnemies()
-	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	for _,v in ipairs(ents.GetAll()) do
-		if IsValid(v) && (v:IsNPC() && v != self || v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && self.FriendlyToPlayers == false && v.IsPossessing == false && self:GetFaction() != "FACTION_PLAYER") then
-			if v.Faction == "FACTION_NOTARGET" then return end
-			if v.UseNotarget then return end
+		if ((v:IsNPC() && v != self) || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && self.FriendlyToPlayers == false && self:GetFaction() != "FACTION_PLAYER")) then
+			if v.Faction == "FACTION_NOTARGET" || v.UseNotarget then return end
 			if v:Health() > 0 && self.Faction != v.Faction && self:Disposition(v) != D_LI then
 				return v
 			end
 		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FindEnemiesByType(v,searchType)
+	if searchType == 1 then -- NPC
+		if v:IsNPC() && v != self then
+			if self.tbl_IgnoreEntities[v:GetClass()] then return end
+			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
+				if v.UseNotarget then return end
+				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tbl_BlackList,v) then
+					return v
+				end
+			end
+		end
+	elseif searchType == 2 then -- Players
+		if self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
+			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" then
+				if v.UseNotarget then return end
+				if v.Faction == "FACTION_NOTARGET" then return end
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tbl_BlackList,v) then
+					return v
+				end
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:LocateEnemies_WIP()
+	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.FindEntitiesDistance)) do
+		self:FindEnemiesByType(v,1)
+		self:FindEnemiesByType(v,2)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1824,7 +1872,7 @@ function ENT:LocateEnemies()
 			if v:GetClass() == "bullseye_strider_focus" then break end
 			if v.UseNotarget then return end
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
-				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tblBlackList,v) then
+				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
@@ -1832,10 +1880,35 @@ function ENT:LocateEnemies()
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
 				if v.UseNotarget then return end
 				if v.Faction == "FACTION_NOTARGET" then return end
-				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tblBlackList,v) then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UpdateEnemies_WIP()
+	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
+	local lastEnemy = self:GetEnemy()
+	local newEnemy
+	local findEnemy = self:GetEntitiesByDistance(self.tbl_EnemyMemory)
+	local findAll = self.CanSeeAllEnemies
+	self:UpdateMemory()
+	if findAll then
+		newEnemy = self:FindAllEnemies()
+	else
+		newEnemy = self:LocateEnemies()
+	end
+	if newEnemy then
+		self:SetRelationship(newEnemy,D_HT)
+		if !table.HasValue(self.tbl_EnemyMemory,newEnemy) then
+			table.insert(self.tbl_EnemyMemory,newEnemy)
+		end
+		self.Enemy = findEnemy
+		self:SetEnemy(self.Enemy)
+		if lastEnemy != self.Enemy then
+			self:OnEnemyChanged(self.Enemy)
 		end
 	end
 end
@@ -1875,6 +1948,19 @@ function ENT:UpdateEnemies()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UpdateMemory_WIP()
+	for _,v in ipairs(self.tbl_EnemyMemory) do
+		if v:IsPlayer() then
+			if v.IsPossessing or GetConVarNumber("ai_ignoreplayers") == 1 then
+				self:RemoveFromMemory(v)
+			end
+		end
+		if !v:IsValid() || v:Health() <= 0 || v.UseNotarget || ((v:IsPlayer() && (!v:Alive() || GetConVarNumber("ai_ignoreplayers") == 1 || v.Faction == "FACTION_NOTARGET")) or ((v:IsValid() && self:Disposition(v)) != 1 && (v:IsValid() && self:Disposition(v)) != 2)) then
+			self:RemoveFromMemory(v)
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:UpdateMemory()
 	local enemymemory = self.tbl_EnemyMemory
 	for _,v in ipairs(enemymemory) do
@@ -1885,6 +1971,15 @@ function ENT:UpdateMemory()
 			self:RemoveFromMemory(v)
 		end
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:RemoveFromMemory_WIP(foundent)
+	table.remove(self.tbl_EnemyMemory,self.tbl_EnemyMemory[foundent])
+	self.EnemyMemoryCount = self.EnemyMemoryCount -1
+	if self.EnemyMemoryCount < 0 then
+		self.EnemyMemoryCount = 0
+	end
+	return true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:RemoveFromMemory(foundent)
@@ -1899,7 +1994,6 @@ function ENT:RemoveFromMemory(foundent)
 	if self.EnemyMemoryCount < 0 then
 		self.EnemyMemoryCount = 0
 	end
-	-- self:PlayerChat("Removed")
 	return true
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -2391,7 +2485,7 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 	for _,ent in ipairs(ents.FindInSphere(pos,dist)) do
 		if ent:IsValid() && self:Visible(ent) then
 			if self.AllowPropDamage then
-				if table.HasValue(self.AttackablePropNames,ent:GetClass()) then
+				if table.HasValue(self.tbl_AttackablePropNames,ent:GetClass()) then
 					table.insert(tblprops,ent)
 				end
 				self:AttackProps(tblprops,dmg,dmgtype,force,OnHit)
