@@ -13,8 +13,9 @@ SWEP.Spawnable = true
 SWEP.AdminSpawnable = false
 SWEP.UseHands = true
 
-SWEP.DrawTime = 0.4
-SWEP.ReloadTime = 0.5
+SWEP.AmmoNameTypes = "shells"
+SWEP.DrawTime = false
+SWEP.ReloadTime = false
 SWEP.WeaponWeight = 7
 SWEP.UseSingleReload = true
 

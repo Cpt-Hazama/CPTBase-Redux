@@ -9,7 +9,7 @@ function ENT:Initialize()
 	self:SetPos(Vector(0,0,0))
 	self:SetNoDraw(true)
 	self:DrawShadow(false)
-	print('hi yes I spawned')
+	-- print('hi yes I spawned')
 end
 
 /*

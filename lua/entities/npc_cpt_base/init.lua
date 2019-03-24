@@ -168,8 +168,8 @@ ENT.NextFootSoundT_Run = 0
 ENT.NextIdleSoundT = 0
 ENT.NextAlertSoundT = 0
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:UpdateCollision()
-	self:SetCollisionBounds(Vector(self.CollisionBounds.x,self.CollisionBounds.y,self.CollisionBounds.z),Vector(-self.CollisionBounds.x,-self.CollisionBounds.y,0))
+function ENT:UpdateCollision(collData)
+	self:SetCollisionBounds(Vector(collData.x,collData.y,collData.z),Vector(-collData.x,-collData.y,0))
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Initialize()
@@ -188,7 +188,7 @@ function ENT:Initialize()
 	self:SetHullSizeNormal()
 	self:SetCollisionGroup(COLLISION_GROUP_NPC)
 	if self.CollisionBounds != Vector(0,0,0) then
-		self:UpdateCollision()
+		self:UpdateCollision(self.CollisionBounds)
 	end
 	self:SetSolid(SOLID_BBOX)
 	self:SetMaxYawSpeed(self.MaxTurnSpeed)
@@ -548,7 +548,7 @@ function ENT:Possess_CustomCommands(possessor)
 	local d = possessor:KeyDown(IN_MOVERIGHT)
 	local lmb = possessor:KeyDown(IN_ATTACK)
 	local rmb = possessor:KeyDown(IN_ATTACK2)
-	local alt = possessor:KeyDown(IN_WALK)
+	local alt = possessor:KeyDown(IN_ALT1)
 	local shift = possessor:KeyDown(IN_RUN)
 	local zoom = possessor:KeyDown(IN_ZOOM)
 	/* Example:
@@ -1218,6 +1218,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Think()
 	if self.IsDead == true then return end
+	-- if self.CurrentSchedule then PrintTable(self.CurrentSchedule) end
 	if self.Func_Think then self:Func_Think() end -- Don't use this function, it's called from other functions on very special occasions
 	self:OnThink_Disabled()
 	if self:IsMoving() then
@@ -2433,17 +2434,7 @@ function ENT:AttackProps(props,dmg,dmgtype,force,OnHit)
 			if self.HasMutated == true && (self.MutationType == "damage" or self.MutationType == "both") then
 				dmg = math.Round(dmg *1.65)
 			end
-			local dif = GetConVarNumber("cpt_aidifficulty")
-			local finaldmg
-			if dif == 1 then
-				finaldmg = dmg *0.5
-			elseif dif == 2 then
-				finaldmg = dmg
-			elseif dif == 3 then
-				finaldmg = dmg *2
-			elseif dif == 4 then
-				finaldmg = dmg *4
-			end
+			local finaldmg = AdaptCPTBaseDamage(dmg)
 			dmginfo:SetDamage(finaldmg)
 			dmginfo:SetAttacker(self)
 			dmginfo:SetInflictor(self)
@@ -2614,12 +2605,12 @@ function ENT:DoRangeAttack_Spawn(ent,pos,force,type)
 	local phys = projectile:GetPhysicsObject()
 	if IsValid(phys) then
 		local vel = self:ProjectileForce(pos,force,type)
+		phys:ApplyForceCenter(vel)
 	end
-	phys:ApplyForceCenter(vel)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ProjectileForce(pos,force,type)
-	return self:CalculateProjectileForce(type,self:FindCenter(self:GetEnemy()),pos,force +VectorRand() *math.Rand(0,160),self:GetEnemy())
+	return self:CalculateProjectileForce(type,self:GetPos(),pos,force +VectorRand() *math.Rand(0,160),self:GetEnemy())
 	-- return ((self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()) -pos +self:GetEnemy():GetVelocity() *0.35):GetNormal() *force +VectorRand() *math.Rand(0,160)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

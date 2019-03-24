@@ -1,6 +1,10 @@
 ∞ = math.huge
 π = math.pi
 
+math.IsInteger = function(num)
+	return math.floor(num) == num
+end
+
 math.Mean = function(tb)
 	local totalsum = 0
 	local num = #tb

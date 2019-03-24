@@ -33,6 +33,8 @@ SWEP.LuaMovementScale_Forward = 0.0400
 SWEP.LuaMovementScale_Right = 0.0084
 SWEP.LuaMovementScale_Up = 0.022
 
+SWEP.StartingClips = 2
+SWEP.AmmoNameTypes = "clips" -- clips, rounds, etc.
 SWEP.DrawTime = false -- Leaving to false will auto-select the time
 SWEP.ReloadTime = false -- Leaving to false will auto-select the time
 SWEP.UseSingleReload = false -- If true, the weapon will be reloaded like a shotgun
@@ -420,10 +422,15 @@ function SWEP:Initialize()
 	timer.Simple(0.01,function()
 		if self:IsValid() && self.Owner:IsValid() && self.Owner:IsPlayer() then
 			if SERVER then
-				self.Owner:AddToAmmoCount(self.Primary.DefaultClip,self.Primary.Ammo)
+				self.Owner:AddToAmmoCount(self.Primary.DefaultClip *self.StartingClips,self.Primary.Ammo)
 			end
 		end
 	end)
+	if self.Owner:IsPlayer() then
+		local rClip = self.Owner:GetAmmoCount(self:GetPrimaryAmmoType())
+		local clips = math.Round(rClip /self.Primary.DefaultClip)
+		self.Owner:ChatPrint("You have " .. tostring(clips) .. " holstered " .. self.AmmoNameTypes .. " for this weapon")
+	end
 	-- if SERVER then
 		if self.OnInit then self:OnInit() end
 	-- end
@@ -851,9 +858,30 @@ function SWEP:Reload()
 				self.Owner:ChatPrint("Hint: This weapon uses a pump action reload. Hold down your reload key to cycle reloading. Let go at any point to stop.")
 				self.NextReloadHintT = CurTime() +math.random(50,100)
 			end
-			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(1,self.Primary.Ammo) self:SetClip1(self:Clip1() +1) self.CanUseIdle = true self.IsReloading = false self:FinishedReload() end end)
+			timer.Simple(reloadtime,function()
+				if self:IsValid() then
+					self.Owner:RemoveAmmo(1,self.Primary.Ammo)
+					self:SetClip1(self:Clip1() +1)
+					self.CanUseIdle = true
+					self.IsReloading = false
+					self:FinishedReload()
+				end
+			end)
 		else
-			timer.Simple(reloadtime,function() if self:IsValid() then self.Owner:RemoveAmmo(self.Primary.ClipSize -self:Clip1(),self.Primary.Ammo) self:SetClip1(self.Primary.DefaultClip) self.CanUseIdle = true self.IsReloading = false self:FinishedReload() end end)
+			timer.Simple(reloadtime,function()
+				if self:IsValid() then
+					local rClip = self.Owner:GetAmmoCount(self:GetPrimaryAmmoType())
+					if rClip < self.Primary.DefaultClip then
+						self:SetClip1(rClip)
+					else
+						self:SetClip1(self.Primary.DefaultClip)
+					end
+					self.Owner:RemoveAmmo(self.Primary.DefaultClip,self.Primary.Ammo)
+					self.CanUseIdle = true
+					self.IsReloading = false
+					self:FinishedReload()
+				end
+			end)
 		end
 		timer.Simple(reloadtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
 		self.Weapon:SetNextPrimaryFire(reloadtime)

@@ -13,6 +13,7 @@ SWEP.Spawnable = true
 SWEP.AdminSpawnable = false
 SWEP.UseHands = true
 
+SWEP.AmmoNameTypes = "combine dark energy containers"
 SWEP.DrawTime = 2
 SWEP.ReloadTime = false
 SWEP.WeaponWeight = 85

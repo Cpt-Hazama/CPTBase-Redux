@@ -83,7 +83,7 @@ function ENT:OnThink()
 	if !self.IsPossessed && CurTime() > self.NextPropAttackT then
 		for _,ent in ipairs(ents.FindInSphere(self:GetPos() +self:OBBCenter() +self:GetForward() *20,self.MeleeAttackDamageDistance)) do
 			if ent:IsValid() && self:Visible(ent) then
-				if table.HasValue(self.AttackablePropNames,ent:GetClass()) then
+				if table.HasValue(self.tbl_AttackablePropNames,ent:GetClass()) then
 					self:DoAttack()
 				end
 			end

@@ -5,6 +5,7 @@ local NPC_Meta = FindMetaTable("NPC")
 local PLY_Meta = FindMetaTable("Player")
 local WPN_Meta = FindMetaTable("Weapon")
 local NBT_Meta = FindMetaTable("NextBot")
+local PHYS_Meta = FindMetaTable("PhysObj")
 
 if (SERVER) then
 	NPC_STATE_LOST = 8
@@ -24,6 +25,16 @@ if (SERVER) then
 	TASK_PATROL_TO_POSIITON = 801
 	TASK_MOVE_TO_POSITION = 802
 	TASK_SPEAK_TO_ENTITY = 803
+end
+
+function NPC_Meta:GetSpaceTexture(range)
+	local tr = util.TraceLine({
+		start = self:GetPos(),
+		endpos = self:GetPos() +self:GetUp() *-range,
+		filter = self,
+	})
+	local mat = util.GetSurfacePropName(tr.SurfaceProps)
+	return mat
 end
 
 function NPC_Meta:Freeze(t)
@@ -2033,4 +2044,8 @@ function NPC_Meta:PlaySoundScript(scriptName,scriptListener,onScriptEnd,scriptSp
 	HLScript:Fire("BeginSentence","",0)
 	HLScript:Fire("kill","",0.1)
 	self:PlayerChat("Created sentence " .. scriptName)
+end
+
+function PHYS_Meta:SetAngleVelocity(ang)
+	self:AddAngleVelocity(self:GetAngleVelocity() *-1 +ang)
 end
