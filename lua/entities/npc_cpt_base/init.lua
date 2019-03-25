@@ -1247,12 +1247,12 @@ function ENT:Think()
 		self:SetPoseParameter("move_x",0)
 		self:SetPoseParameter("move_y",0)
 	end
-	-- if self:IsWalking() then
-		-- self:SetMovementAnimation("Walk")
-	-- end
-	-- if self:IsRunning() then
-		-- self:SetMovementAnimation("Run")
-	-- end
+	if self:IsWalking() then
+		self:SetMovementAnimation("Walk")
+	end
+	if self:IsRunning() then
+		self:SetMovementAnimation("Run")
+	end
 	self:IdleSounds()
 	self:UpdateFriends()
 	self:UpdateEnemies()
