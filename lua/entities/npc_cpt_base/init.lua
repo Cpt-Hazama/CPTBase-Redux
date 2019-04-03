@@ -233,6 +233,10 @@ function ENT:Initialize()
 	self.NextHearSoundT = 0
 	self.IsPlayingSequence = false
 	self.IsPlayingActivity = false
+	self.IsPlayingLuaAnimation = false
+	self.LuaAnimationData = {}
+	self.CurrentLuaAnimationFrame = nil
+	self.LuaAnimationLength = 0
 	self.NextMutT = 0
 	self.HasMutated = false
 	self.MutationHealth = math.Round(self.StartHealth /3.8)
@@ -859,7 +863,7 @@ function ENT:CustomChecksForProcesses()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CanPerformProcess()
-	if self.IsAttacking == true or self.IsPlayingActivity == true or self.IsRangeAttacking == true or self.IsRagdolled == true or self.bInSchedule == true or self.IsPlayingSequence == true or self:CustomChecksForProcesses() then
+	if self.IsAttacking == true or self.IsPlayingActivity == true or self.IsPlayingLuaAnimation == true or self.IsRangeAttacking == true or self.IsRagdolled == true or self.bInSchedule == true or self.IsPlayingSequence == true or self:CustomChecksForProcesses() then
 		return false
 	else
 		return true

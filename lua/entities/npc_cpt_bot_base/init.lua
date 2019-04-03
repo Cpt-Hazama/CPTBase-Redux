@@ -41,6 +41,23 @@ function ENT:SetInit()
 	self:SetHullType(HULL_HUMAN)
 	self:SetCollisionBounds(Vector(14,14,77), Vector(-14,-14,0))
 	if self.BeforeBotCreated then self:BeforeBotCreated() end
+	self:SpawnBotWeapon()
+	self.ReloadingWeapon = false
+	self.IsFollowingPlayer = false
+	self.FollowingPlayer = NULL
+	self.MinFollowDistance = 0
+	self.NextUseT = 0
+	self.CanUseJump = true
+	self.NextTauntT = CurTime() +math.Rand(3,10)
+	self.NextChatT = CurTime() +math.Rand(3,10)
+	self.IsUsingChat = false
+	self.FakeName = self:SelectFromTable(self.tbl_Names)
+	self.IsMovingAround = false
+	self.NextMoveAroundT = 0
+	if self.OnBotCreated then self:OnBotCreated() end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SpawnBotWeapon()
 	local swep = self:SelectFromTable(self.tbl_Weapons)
 	self:GiveNPCWeapon(swep)
 	if IsValid(self:GetActiveWeapon()) then
@@ -62,19 +79,6 @@ function ENT:SetInit()
 			self.EliteB:DeleteOnRemove(self)
 		end
 	end
-	self.ReloadingWeapon = false
-	self.IsFollowingPlayer = false
-	self.FollowingPlayer = NULL
-	self.MinFollowDistance = 0
-	self.NextUseT = 0
-	self.CanUseJump = true
-	self.NextTauntT = CurTime() +math.Rand(3,10)
-	self.NextChatT = CurTime() +math.Rand(3,10)
-	self.IsUsingChat = false
-	self.FakeName = self:SelectFromTable(self.tbl_Names)
-	self.IsMovingAround = false
-	self.NextMoveAroundT = 0
-	if self.OnBotCreated then self:OnBotCreated() end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FaceOwner(owner)
@@ -402,11 +406,6 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	self:MoveAway(false)
-	if self.CanUseJump == true && math.random(1,4) == 1 then
-		if self.IsPossessed then return end
-		if !self.CanJump then return end
-		self:JumpRandomly()
-	end
 	if hitbox == 1 then
 		self:PlayNPCGesture("flinch_head_0" .. math.random(1,2),2,1)
 	elseif (hitbox == 2 || hitbox == 3) then
@@ -415,6 +414,11 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 		self:PlayNPCGesture("flinch_shoulder_l",2,1)
 	elseif hitbox == 5 then
 		self:PlayNPCGesture("flinch_shoulder_r",2,1)
+	end
+	if self.CanUseJump == true && math.random(1,4) == 1 then
+		if self.IsPossessed then return end
+		if !self.CanJump then return end
+		self:JumpRandomly()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
