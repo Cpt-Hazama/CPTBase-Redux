@@ -1,5 +1,5 @@
 /*--------------------------------------------------
-	Copyright (c) 2017 by Cpt. Hazama, All rights reserved.
+	Copyright (c) 2019 by Cpt. Hazama, All rights reserved.
 	Nothing in these files or/and code may be reproduced, adapted, merged or
 	modified without prior written consent of the original author, Cpt. Hazama
 --------------------------------------------------*/
@@ -167,7 +167,6 @@ local function CPTBaseMenu_Func_Nodegraph(panel)
 	end
 	panel:AddControl("CheckBox",{ Label = "Enable Nodegraph Debug",Command = "cpt_debug_nodegraph"})
 	panel:AddControl("CheckBox",{ Label = "Enable Nodegraph Creation",Command = "cpt_debug_cancreategraph"})
-	panel:AddControl("CheckBox",{ Label = "Enable AI Use Nodegraph",Command = "cpt_aiusecustomnodes"})
 	panel:AddControl("Button", {Label = "Generate CPTBase Nodegraph", Command = "CPTBase_GenerateNodegraph"})
 end
 

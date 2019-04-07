@@ -422,12 +422,14 @@ function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnJump() end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:JumpRandomly()
 	if !self.CanUseJump then return end
 	if !self.CanJump then return end
 	if self.CanJumpAround == false then return end
 	self:SetGroundEntity(NULL)
-	-- self:PlayActivity(ACT_HL2MP_JUMP_AR2)
+	self:OnJump()
 	self:PlaySequence(self.JumpSequence,3)
 	self:SetLocalVelocity(Vector(math.Rand(-150,150),math.Rand(-150,150),270))
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)

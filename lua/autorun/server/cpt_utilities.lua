@@ -125,7 +125,7 @@ CPTBase = {
 		MsgN("Registering CPTBase NPC weapon " .. cptName)
 	end,
 	AddConVar = function(cvName,cvVal)
-		CreateConVar(cvName,cvVal,{FCVAR_ARCHIVE})
+		CreateConVar(cvName,cvVal,{FCVAR_NONE})
 		MsgN("Registering CPTBase ConVar " .. cvName .. " with default value " .. cvVal)
 	end,
 	AddClientVar = function(cvName,cvVal,cvSendData)

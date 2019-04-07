@@ -1,5 +1,5 @@
 /*--------------------------------------------------
-	Copyright (c) 2018 by Cpt. Hazama, All rights reserved.
+	Copyright (c) 2019 by Cpt. Hazama, All rights reserved.
 	Nothing in these files or/and code may be reproduced, adapted, merged or
 	modified without prior written consent of the original author, Cpt. Hazama
 --------------------------------------------------*/

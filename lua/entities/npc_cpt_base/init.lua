@@ -90,8 +90,8 @@ ENT.Swim_WaterLevelCheck = 0 -- The enemy's water level must be higher than this
 ENT.IsEssential = false -- Can the NPC die?
 ENT.Bleeds = true -- Does the NPC create blood particles?
 ENT.BloodEffect = {}
-ENT.LeavesBlood = false -- Don't need to set this to false if the table below is empty, it'll just not make decals
-ENT.AutomaticallySetsUpDecals = false -- Not finished yet
+ENT.LeavesBlood = true -- Don't need to set this to false if the table below is empty, it'll just not make decals
+ENT.AutomaticallySetsUpDecals = true -- Not finished yet
 ENT.BloodDecal = {}
 ENT.HasFlinchAnimation = false -- Does the NPC flinch when attacked?
 ENT.FlinchChance = 10 -- Chance the NPC will flinch
@@ -284,10 +284,13 @@ function ENT:Initialize()
 	}
 	self:UpdateSight(self.SightDistance,self.FindEntitiesDistance)
 	
+	if GetConVarNumber("cpt_decals") == 0 then
+		self.LeavesBlood = false
+	end
 	if self.LeavesBlood == true then
-		-- if self.AutomaticallySetsUpDecals then
-			-- self:SetupBloodDecals()
-		-- end
+		if self.AutomaticallySetsUpDecals && table.Count(self.BloodDecal) <= 0 then
+			self:SetupBloodDecals()
+		end
 	end
 
 	if table.Count(self.tbl_Capabilities) > 0 then
@@ -947,10 +950,16 @@ function ENT:SetupBloodDecals()
 		if table.HasValue(self.BloodEffect,"blood_impact_yellow") then
 			table.insert(self.BloodDecal,"CPTBase_YellowBlood")
 		end
+		if table.HasValue(self.BloodEffect,"blood_impact_red_01") then
+			table.insert(self.BloodDecal,"Blood")
+		end
+		if table.HasValue(self.BloodEffect,"blood_impact_yellow_01") then
+			table.insert(self.BloodDecal,"YellowBlood")
+		end
 		if table.HasValue(self.BloodEffect,"blood_impact_blue") then
 			table.insert(self.BloodDecal,"CPTBase_BlueBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_green") then
+		if table.HasValue(self.BloodEffect,"blood_impact_green") || table.HasValue(self.BloodEffect,"blood_impact_green_01") then
 			table.insert(self.BloodDecal,"CPTBase_GreenBlood")
 		end
 		if table.HasValue(self.BloodEffect,"blood_impact_purple") then
