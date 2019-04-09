@@ -27,6 +27,19 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function UpdateTableList(tb,v)
+	if !table.HasValue(tb,v) then
+		table.insert(tb,v)
+	end
+end
+
+function NPC_Meta:IsAlly(ent)
+	if self:Disposition(ent) == D_LI || self:Disposition(ent) == D_NU then
+		return true
+	end
+	return false
+end
+
 function NPC_Meta:GetSpaceTexture(range)
 	local tr = util.TraceLine({
 		start = self:GetPos(),
@@ -1232,11 +1245,11 @@ function ENT_Meta:LookAtPosition(pos,parameters,speed,reverse)
 end
 
 function ENT_Meta:FindHeadPosition(ent,bonenames)
+	if ent == nil then return self:GetPos() end
 	local bone
 	local foundbone = false
 	local bonenames = bonenames or {"ValveBiped.Bip01_Head1","Bip01 Head","ValveBiped.Bip01_Spine4"}
-	if !self:IsValid() then return end
-	if !ent:IsValid() then return end
+	if !IsValid(ent) then return self:GetPos() end
 	for _,v in pairs(bonenames) do
 		local bone = ent:LookupBone(v)
 		if bone && ent:GetBoneName(bone) && foundbone == false then
@@ -1281,6 +1294,7 @@ function PLY_Meta:FindCenterDistance(ent)
 end
 
 function ENT_Meta:FindCenter(ent)
+	if !IsValid(ent) then return self:GetPos() end
 	return ent:GetPos() +ent:OBBCenter()
 end
 

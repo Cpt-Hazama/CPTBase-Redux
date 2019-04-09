@@ -135,7 +135,7 @@ function ENT:TASKFUNC_WALKLASTPOSITION()
 	end
 end
 
-function ENT:TASKFUNC_RUNLASTPOSITION()
+function ENT:TASKFUNC_RUNLASTPOSITION(endFace)
 	if self.CanMove == false then return end
 	if self.UseNavMesh && !self.IsPossessed then
 		self:MoveNavMesh("run")
@@ -146,6 +146,9 @@ function ENT:TASKFUNC_RUNLASTPOSITION()
 	_lastpositiontask:EngTask("TASK_GET_PATH_TO_LASTPOSITION",0)
 	-- _lastpositiontask:EngTask("TASK_RUN_PATH",0)
 	_lastpositiontask:EngTask("TASK_WAIT_FOR_MOVEMENT",0)
+	if endFace then
+		_lastpositiontask:EngTask("TASK_FACE_TARGET",0)
+	end
 	self:StartSchedule(_lastpositiontask)
 	self:SetMovementAnimation("Run")
 	if self.UsePlayermodelMovement then

@@ -27,7 +27,8 @@ ENT.MaxTurnSpeed = 50 -- How fast the NPC can turn
 
 	-- AI Variables --
 ENT.DefaultAIType = AITYPE_NORMAL
-ENT.ProcessingTime = 0.2
+ENT.ProcessingTime = 0.3 -- AI Processing will run every X seconds (lower numbers = more lag)
+ENT.LoseEnemiesTime = 20 -- Time until the NPC loses its' targets and becomes idle
 ENT.UseCPTBaseAINavigation = false -- Can this NPC use the generated nodegraph instead of the default?
 ENT.UseNavMesh = false -- Can this NPC use nav mesh instead of nodes?
 ENT.CanSeeAllEnemies = false -- If set to true, it can see every enemy on the map
@@ -96,6 +97,8 @@ ENT.BloodDecal = {}
 ENT.HasFlinchAnimation = false -- Does the NPC flinch when attacked?
 ENT.FlinchChance = 10 -- Chance the NPC will flinch
 ENT.TurnsOnDamage = true -- Does the NPC turn when damaged (No present enemy)
+ENT.ShoutForHelpTime = 0.3 -- Time until the NPC shouts for allies after being hurt
+ENT.ShoutForHelpDistance = 1500 -- How far can it call for allies to come aid it when damaged?
 ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
 ENT.HasDeathRagdoll = true -- Does the NPC leave a ragdoll when killed?
 ENT.DeathRagdollType = "prop_ragdoll"
@@ -215,6 +218,7 @@ function ENT:Initialize()
 	self.Possessor = nil
 	self.DidGetHit = false
 	self.tbl_EnemyMemory = {}
+	self.tbl_FriendMemory = {}
 	self.EnemyMemoryCount = 0
 	self:ClearMemory()
 	self.IsDead = false
@@ -267,6 +271,8 @@ function ENT:Initialize()
 	self.tbl_CreatedAttacks = {}
 	self.NPC_Enemy = nil
 	self.Enemy = NULL
+	self.LastSpottedEnemyT = 0
+	self.HasAutoResetEnemy = false
 	self:SetNWString("CPTBase_NPCFaction",self.Faction)
 	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
 		self.UseCPTBaseAINavigation = true
@@ -1109,7 +1115,6 @@ function ENT:CheckPoseParameters()
 		if self.AlreadyResetPoseParamaters == false then
 			self.AlreadyResetPoseParamaters = true
 			self:ClearPoseParameters()
-			self:ClearMemory()
 		end
 	else
 		self.AlreadyResetPoseParamaters = false
@@ -1272,24 +1277,39 @@ function ENT:Think()
 	-- self:UpdateRelations()
 	-- self:UpdateMemory()
 	-- print(self:GetEnemy(),self.IsPossessed)
-	if IsValid(self:GetEnemy()) && !self.IsPossessed then
-		local enemy = self:GetEnemy()
-		local dist = self:FindCenterDistance(enemy)
-		local nearest = self:GetClosestPoint(enemy)
-		local disp = self:Disposition(enemy)
-		local time = self:GetPathTimeToGoal()
-		if self:MovementType() != MOVETYPE_FLY then
-			if self.bInSchedule != true && !self.IsPossessed then
-				self:HandleSchedules(enemy,dist,nearest,disp,time)
-			end
-		else
-			if self.IsSwimType != true then
-				self:HandleSchedules_Fly(enemy,dist,nearest,disp)
+	if IsValid(self:GetEnemy()) then
+		if !self.IsPossessed then
+			local enemy = self:GetEnemy()
+			local dist = self:FindCenterDistance(enemy)
+			local nearest = self:GetClosestPoint(enemy)
+			local disp = self:Disposition(enemy)
+			local time = self:GetPathTimeToGoal()
+			if self:MovementType() != MOVETYPE_FLY then
+				if self.bInSchedule != true && !self.IsPossessed then
+					self:HandleSchedules(enemy,dist,nearest,disp,time)
+				end
 			else
-				self:HandleSchedules(enemy,dist,nearest,disp,time)
+				if self.IsSwimType != true then
+					self:HandleSchedules_Fly(enemy,dist,nearest,disp)
+				else
+					self:HandleSchedules(enemy,dist,nearest,disp,time)
+				end
 			end
 		end
+		self.HasAutoResetEnemy = false
+		if self:GetEnemy():Visible(self) then
+			self.LastSpottedEnemyT = CurTime() +self.LoseEnemiesTime
+		end
+		if CurTime() > self.LastSpottedEnemyT && !self.HasAutoResetEnemy then
+			self.HasAutoResetEnemy = true
+			-- self:PlayerChat("RESET")
+			self:OnLostEnemy(self:GetEnemy())
+			self:ClearMemory()
+		-- else
+			-- self:PlayerChat(self.LastSpottedEnemyT -CurTime())
+		end
 	end
+	-- self:PlayerChat(self:GetEnemy())
 	self:PoseParameters()
 	self:FootStepCode()
 	if self.IsSwimType == false then
@@ -1318,6 +1338,8 @@ function ENT:Think()
 	end
 	self:NextThink(CurTime() +self.ProcessingTime)
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnLostEnemy(ent) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink_NotPossessed() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1803,6 +1825,7 @@ function ENT:UpdateFriends()
 				if (v:GetFaction() != nil && v.Faction == self:GetFaction()) then
 					self:SetRelationship(v,D_LI)
 					self:OnSpottedFriendly(v)
+					UpdateTableList(self.tbl_FriendMemory,v)
 				end
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
@@ -1810,6 +1833,7 @@ function ENT:UpdateFriends()
 				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
 					self:OnSpottedFriendly(v)
+					UpdateTableList(self.tbl_FriendMemory,v)
 				end
 			end
 		end
@@ -2035,7 +2059,8 @@ function ENT:CheckForValidMemory()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ClearMemory()
-	self:SetEnemy(nil)
+	self:SetEnemy(NULL)
+	table.Empty(self.tbl_EnemyMemory)
 	self.tbl_EnemyMemory = {}
 	self.EnemyMemoryCount = 0
 end
@@ -2067,6 +2092,50 @@ function ENT:CreateBloodDecals(dmg,dmginfo,hitbox)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:CallNearbyAllies(range,moveRange)
+	local tb = {}
+	for _,v in ipairs(ents.FindInSphere(self:GetPos(),range)) do
+		if v:IsNPC() && v != self && self:IsAlly(v) && !IsValid(v:GetEnemy()) then
+			if v:Visible(self) then
+				if math.random(1,2) == 1 then
+					if v.CPTBase_NPC then
+						v:StopCompletely()
+						v:SetTarget(self)
+						v:TASKFUNC_RUNLASTPOSITION(true)
+						v:OnRepondToHelp(self)
+					else
+						v:SetSchedule(SCHED_FORCED_GO_RUN)
+					end
+				else
+					if v.CPTBase_NPC then
+						v:StopCompletely()
+						v:TASKFUNC_FACEPOSITION(self:GetPos())
+						v:OnRepondToHelp(self)
+					else
+						v:SetSchedule(SCHED_FORCED_GO_RUN)
+					end
+				end
+			else
+				v:SetLastPosition(self:GetPos() +Vector(math.random(-moveRange,moveRange),math.random(-moveRange,moveRange),0))
+				if v.CPTBase_NPC then
+					v:StopCompletely()
+					v:SetTarget(self)
+					v:TASKFUNC_RUNLASTPOSITION(true)
+					v:OnRepondToHelp(self)
+				else
+					v:SetSchedule(SCHED_FORCED_GO_RUN)
+				end
+			end
+			table.insert(tb,v)
+		end
+	end
+	return tb
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnShoutForHelp(allies) end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnRepondToHelp(ally) end
+---------------------------------------------------------------------------------------------------------------------------------------------
 ENT.NextPainSoundT = 0
 ENT.NextShoutForHelpT = 0
 function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
@@ -2074,7 +2143,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 	-- local dmginfo = self.tblDamageInfo
 	local DoIgnore = false
 	local _Damage = dmg:GetDamage()
-	local _Attacker = dmginfo:GetAttacker()
+	local _Attacker = dmg:GetAttacker()
 	local _Type = dmg:GetDamageType()
 	local _Pos = dmg:GetDamagePosition()
 	local _Force = dmg:GetDamageForce()
@@ -2105,18 +2174,13 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 	end
 	if self.IsDead == false then
 		if CurTime() > self.NextShoutForHelpT then
-			for _,v in ipairs(ents.FindInSphere(self:GetPos(),4000)) do
-				if v:IsNPC() && v != self && (v:Disposition(self) == D_NU || v:Disposition(self) == D_LI) && !IsValid(v:GetEnemy()) then
-					v:SetLastPosition(self:GetPos() +Vector(math.random(-200,200),math.random(-200,200),0))
-					if v.CPTBase_NPC then
-						v:StopCompletely()
-						v:TASKFUNC_GETPATHANDGO()
-					else
-						v:SetSchedule(SCHED_FORCED_GO_RUN)
-					end
-					self.NextShoutForHelpT = CurTime() +math.random(7,10)
+			timer.Simple(self.ShoutForHelpTime,function()
+				if IsValid(self) then
+					local allies = self:CallNearbyAllies(self.ShoutForHelpDistance,200)
+					self:OnShoutForHelp(allies)
 				end
-			end
+			end)
+			self.NextShoutForHelpT = CurTime() +math.random(7,10)
 		end
 		if !IsValid(self:GetEnemy()) then
 			if self:GetState() == NPC_STATE_IDLE then
@@ -2163,6 +2227,9 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 			end
 			self:SetRelationship(_Inflictor,D_HT)
 		end
+	end
+	if DoIgnore == true then
+		return false
 	end
 	if self:Health() <= 0 && self.IsDead == false then
 		self:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)

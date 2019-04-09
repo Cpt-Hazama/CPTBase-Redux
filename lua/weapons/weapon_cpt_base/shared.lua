@@ -616,6 +616,13 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		bullet.Num = self.Primary.TotalShots
 		bullet.Src = self:GetBulletPos()
 		if self.Owner:IsNPC() then
+			local aimPos = self.Owner:FindHeadPosition(self.Owner:GetEnemy())
+			if math.random(1,math.random(2,3)) == 1 then
+				aimPos = self.Owner:FindCenter(self.Owner:GetEnemy())
+				-- self:PlayerChat("body")
+			-- else
+				-- self:PlayerChat("head")
+			end
 			local npcspread = self.Primary.Spread
 			if self.NPC_Spread != nil then
 				npcspread = self.NPC_Spread
@@ -625,7 +632,7 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 					bullet.Dir = (((self.Owner:Possess_AimTarget()) -self:GetBulletPos()) +self:GetUp() *math.Rand(-npcspread,npcspread) +self:GetRight() *math.Rand(-npcspread,npcspread))
 				else
 					if IsValid(self.Owner:GetEnemy()) then
-						bullet.Dir = (((self.Owner:GetEnemy():GetPos() +self.Owner:GetEnemy():OBBCenter()) -self:GetBulletPos()) +self:GetUp() *math.Rand(-npcspread,npcspread) +self:GetRight() *math.Rand(-npcspread,npcspread))
+						bullet.Dir = (((aimPos) -self:GetBulletPos()) +self:GetUp() *math.Rand(-npcspread,npcspread) +self:GetRight() *math.Rand(-npcspread,npcspread))
 					end
 				end
 			end
@@ -642,7 +649,7 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 			bullet.Spread = Vector(self.Primary.Spread,self.Primary.Spread,0)
 		end
 		bullet.Tracer = self.Primary.Tracer
-		if self.Primary.TracerEffect != false then
+		if self.Owner:IsPlayer() && self.Primary.TracerEffect != false then
 			bullet.TracerName = self.Primary.TracerEffect
 		end
 		bullet.Force = self.Primary.Force
@@ -650,15 +657,7 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		local dmg = math.Round(self.Primary.Damage *(self.WeaponCondition /100))
 		local finaldmg
 		if self.Owner:IsNPC() then
-			if dif == 1 then
-				finaldmg = dmg *0.5
-			elseif dif == 2 then
-				finaldmg = dmg
-			elseif dif == 3 then
-				finaldmg = dmg *2
-			elseif dif == 4 then
-				finaldmg = dmg *4
-			end
+			finaldmg = AdaptCPTBaseDamage(dmg)
 		else
 			finaldmg = dmg
 		end
