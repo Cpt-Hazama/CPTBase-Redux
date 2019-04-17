@@ -63,7 +63,7 @@ SWEP.ShellTable = {
 	Velocity = {Right = math.Rand(140,180),Up = math.Rand(40,60),Forward = 0}
 }
 
-SWEP.Primary.Volume = 85 -- Volume of the primary sound
+SWEP.Primary.Volume = 78 -- Volume of the primary sound
 SWEP.Primary.TotalShots = 1 -- Number of bullets that are fired
 SWEP.Primary.Spread = 7 -- Spead of the bullets
 SWEP.Primary.Tracer = 1 -- Basically, this is a math.random; the bullets have a X chance to be visible

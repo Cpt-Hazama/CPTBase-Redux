@@ -97,6 +97,7 @@ ENT.BloodDecal = {}
 ENT.HasFlinchAnimation = false -- Does the NPC flinch when attacked?
 ENT.FlinchChance = 10 -- Chance the NPC will flinch
 ENT.TurnsOnDamage = true -- Does the NPC turn when damaged (No present enemy)
+ENT.HateFriendlyPlayerThreshold = 4 -- Chance that the NPC will hate you upon being hit
 ENT.ShoutForHelpTime = 0.3 -- Time until the NPC shouts for allies after being hurt
 ENT.ShoutForHelpDistance = 1500 -- How far can it call for allies to come aid it when damaged?
 ENT.CanMutate = false -- This is basically fallout 4's mutation system in which the enemy becomes stronger near death
@@ -578,6 +579,7 @@ function ENT:Possess_Move(possessor)
 	local posTestOutput = math.Clamp((self:GetPos():Distance(posTraceTest.HitPos)),0,350)
 	local posAim = possessor:GetAimVector()
 	if self.Possessor_CanMove == false then return end
+	local movePositionMax = math.Clamp(self:GetSequenceGroundSpeed(self:GetSequence()),0,375)
 	if self:GetMoveType() != MOVETYPE_FLY then
 		if !self:CanPerformProcess() then return end
 		if (possessor:KeyDown(IN_FORWARD)) then
@@ -592,7 +594,8 @@ function ENT:Possess_Move(possessor)
 			-- end
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
-				endpos = self:GetPos() +self:OBBCenter() +posAim *self.Possessor_MaxMoveDistanceForward,
+				-- endpos = self:GetPos() +self:OBBCenter() +posAim *self.Possessor_MaxMoveDistanceForward,
+				endpos = self:GetPos() +self:OBBCenter() +posAim *movePositionMax,
 				filter = {self,possessor}
 			})
 			local domove = trace.HitPos
@@ -649,7 +652,8 @@ function ENT:Possess_Move(possessor)
 			PlayersVectorBack.z = 0
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
-				endpos = self:GetPos() +self:OBBCenter() +possessor:GetForward() *-self.Possessor_MaxMoveDistanceBackward,
+				-- endpos = self:GetPos() +self:OBBCenter() +possessor:GetForward() *-self.Possessor_MaxMoveDistanceBackward,
+				endpos = self:GetPos() +self:OBBCenter() +possessor:GetForward() *-movePositionMax,
 				filter = {self,possessor}
 			})
 			if trace.HitPos:Distance(self:GetPos()) <= self.Possessor_MinMoveDistance then
@@ -696,7 +700,8 @@ function ENT:Possess_Move(possessor)
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
-				endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *-self.Possessor_MaxMoveDistanceLeft,
+				-- endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *-self.Possessor_MaxMoveDistanceLeft,
+				endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *-movePositionMax,
 				filter = {self,possessor}
 			})
 			if trace.HitPos:Distance(self:GetPos()) <= self.Possessor_MinMoveDistance then
@@ -743,7 +748,8 @@ function ENT:Possess_Move(possessor)
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
-				endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *self.Possessor_MaxMoveDistanceRight,
+				-- endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *self.Possessor_MaxMoveDistanceRight,
+				endpos = self:GetPos() +self:OBBCenter() +possessor:GetRight() *movePositionMax,
 				filter = {self,possessor}
 			})
 			if trace.HitPos:Distance(self:GetPos()) <= self.Possessor_MinMoveDistance then
@@ -1296,18 +1302,7 @@ function ENT:Think()
 				end
 			end
 		end
-		self.HasAutoResetEnemy = false
-		if self:GetEnemy():Visible(self) then
-			self.LastSpottedEnemyT = CurTime() +self.LoseEnemiesTime
-		end
-		if CurTime() > self.LastSpottedEnemyT && !self.HasAutoResetEnemy then
-			self.HasAutoResetEnemy = true
-			-- self:PlayerChat("RESET")
-			self:OnLostEnemy(self:GetEnemy())
-			self:ClearMemory()
-		-- else
-			-- self:PlayerChat(self.LastSpottedEnemyT -CurTime())
-		end
+		self:LoseEnemies()
 	end
 	-- self:PlayerChat(self:GetEnemy())
 	self:PoseParameters()
@@ -1337,6 +1332,21 @@ function ENT:Think()
 		self:HearingCode()
 	end
 	self:NextThink(CurTime() +self.ProcessingTime)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:LoseEnemies()
+	self.HasAutoResetEnemy = false
+	if self:GetEnemy():Visible(self) then
+		self.LastSpottedEnemyT = CurTime() +self.LoseEnemiesTime
+	end
+	if CurTime() > self.LastSpottedEnemyT && !self.HasAutoResetEnemy then
+		self.HasAutoResetEnemy = true
+		-- self:PlayerChat("RESET")
+		self:OnLostEnemy(self:GetEnemy())
+		self:ClearMemory()
+	-- else
+		-- self:PlayerChat(self.LastSpottedEnemyT -CurTime())
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnLostEnemy(ent) end
@@ -1673,7 +1683,7 @@ function ENT:SelectSchedule(bSchedule)
 		end
 	end
 	-- self:PlayerChat(tostring(self.EnemyMemoryCount))
-	if(self.EnemyMemoryCount == 0) then
+	if table.Count(self.tbl_EnemyMemory) <= 0 then
 		if(self:GetState() == NPC_STATE_ALERT) then
 			self:OnAreaCleared()
 			self:SetState(NPC_STATE_IDLE)
@@ -2210,7 +2220,7 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 		end
 	end
 	if IsValid(_Inflictor) then 
-		if (self.FriendlyToPlayers && _Inflictor:IsPlayer() && self:Disposition(_Inflictor) == D_LI) then
+		if (self.FriendlyToPlayers && _Inflictor:IsPlayer() && self:Disposition(_Inflictor) == D_LI) && math.random(1,self.HateFriendlyPlayerThreshold) == 1 then
 			self.FriendlyToPlayers = false
 			if self.Faction == "FACTION_PLAYER" then
 				self.Faction = "FACTION_PLAYER_ENEMY"
@@ -2488,6 +2498,7 @@ function ENT:OnRemove()
 		if self.CurrentPlayingSound != nil && (self.tbl_Sounds["Death"] != nil && table.HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound)) then
 			return
 		end
+		if self.tbl_Sounds["Death"] && table.HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound) then return end
 		self.CurrentSound:Stop()
 	end
 	self:WhenRemoved()
