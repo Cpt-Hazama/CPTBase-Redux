@@ -2,8 +2,8 @@
 "VertexLitGeneric"
 {
 	
-	//"$envmap" "env_cubemap"
-	//"$envmaptint" "[1.0 0.9 0.0]"
+	"$envmap" "env_cubemap"
+	"$envmaptint" "[0 0.9 0]"
 	"$basetexture" "models/fassassin/eye"
 	"$model" 1
 }

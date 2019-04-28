@@ -252,7 +252,9 @@ function ENT:OnLand()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFoundEnemy(count,oldcount,ent)
-	self:PlaySound("Spot",80)
+	if self:Visible(ent) then
+		self:PlaySound("Spot",80)
+	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnKilledEnemy(ent)

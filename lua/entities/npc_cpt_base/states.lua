@@ -13,14 +13,16 @@ function ENT:GetState()
 	return self:GetNPCState()
 end
 
-function ENT:SetState(state)
+function ENT:SetState(state,checkscript)
 	if state != NPC_STATE_SCRIPT && self:GetNPCState() == NPC_STATE_SCRIPT then return end
+	if checkscript && self:GetNPCState() == NPC_STATE_SCRIPT then return end
 	local old = self:GetNPCState()
 	self:OnStateChanged(old,state)
 	self:SetNPCState(state)
 end
 
 function ENT:OnStateChanged(laststate,currentstate)
+	-- print(laststate,currentstate)
 	if laststate == NPC_STATE_IDLE then
 		if currentstate == NPC_STATE_ALERT then
 			self:PlaySound("NormalToAlert")

@@ -11,6 +11,8 @@ ENT.ModelTable = {"models/cpthazama/fassassin.mdl"}
 ENT.StartHealth = 70
 ENT.WanderChance = 0
 
+ENT.AlphaRate = 10
+
 ENT.Faction = "FACTION_COMBINE"
 
 ENT.MeleeAttackDistance = 60
@@ -43,7 +45,8 @@ ENT.tbl_Sounds = {
 		"npc/stalker/stalker_footstep_right2.wav"
 	},
 	-- ["Fire"] = {"cptbase/cassassin/fire_pistol01.wav","cptbase/cassassin/fire_pistol02.wav"},
-	["Fire"] = {"weapons/pistol/pistol_fire2.wav"},
+	-- ["Fire"] = {"weapons/pistol/pistol_fire2.wav"},
+	["Fire"] = {"cptbase/cassassin_fire1.wav","cptbase/cassassin_fire2.wav","cptbase/cassassin_fire3.wav"},
 	["Pain"] = {"npc/combine_soldier/pain1.wav","npc/combine_soldier/pain2.wav","npc/combine_soldier/pain3.wav"},
 	["Death"] = {"npc/combine_soldier/die1.wav","npc/combine_soldier/die2.wav","npc/combine_soldier/die3.wav"},
 	["Spot"] = {"npc/turret_floor/ping.wav"},
@@ -61,10 +64,13 @@ function ENT:SetInit()
 	self.IsRangeAttacking = false
 	self.IsDodging = false
 	self.NextJumpT = 0
+	self.IsCloaked = false
+	self.NextCloakT = 0
+	self.AlphaColor = 255
 	self.eye = ents.Create("env_sprite")
 	self.eye:SetKeyValue("model","cptbase/sprites/glow01.spr")
 	self.eye:SetKeyValue("rendermode","5")
-	self.eye:SetKeyValue("rendercolor","232 85 50")
+	self.eye:SetKeyValue("rendercolor","0 85 0")
 	self.eye:SetKeyValue("scale","0.1")
 	self.eye:SetKeyValue("spawnflags","1")
 	self.eye:SetParent(self)
@@ -73,7 +79,7 @@ function ENT:SetInit()
 	self.eye:Activate()
 	self:DeleteOnRemove(self.eye)
 	self.light = ents.Create("light_dynamic")
-	self.light:SetKeyValue("_light","232 85 50")
+	self.light:SetKeyValue("_light","0 85 0")
 	self.light:SetKeyValue("brightness","1")
 	self.light:SetKeyValue("distance","25")
 	self.light:SetKeyValue("style","0")
@@ -83,7 +89,11 @@ function ENT:SetInit()
 	self.light:Activate()
 	self.light:Fire("TurnOn","",0)
 	self.light:DeleteOnRemove(self)
-	util.SpriteTrail(self,self:LookupAttachment("Eye"),Color(232,85,50),true,8,8,0.8,0.125,"models/combine_fassassin/eyetrail.vmt")
+	self:SpawnCombineTrail()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SpawnCombineTrail()
+	self.EyeTrail = util.SpriteTrail(self,self:LookupAttachment("Eye"),Color(0,85,0),true,8,8,0.8,0.125,"models/combine_fassassin/eyetrail.vmt")
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnPlaySound(sound,tbl)
@@ -98,8 +108,8 @@ end
 function ENT:OnFoundEnemy(count,oldcount,ent)
 	self:PlaySound("Spot",70,90,108)
 	if self.eye then
-		self.eye:SetKeyValue("rendercolor","127 0 0")
-		timer.Simple(0.5,function() if self:IsValid() then self.eye:SetKeyValue("rendercolor","232 85 50") end end)
+		self.eye:SetKeyValue("rendercolor","255 0 0")
+		timer.Simple(0.5,function() if self:IsValid() then self.eye:SetKeyValue("rendercolor","0 85 0") end end)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -174,6 +184,80 @@ function ENT:DoRangeAttack()
 	self:AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Cloak()
+	self:DrawShadow(false)
+	self:SetNPCRenderMode(RENDERMODE_TRANSADD)
+	self.eye:Fire("HideSprite")
+	self.light:Fire("TurnOff","",0)
+	self.EyeTrail:Remove()
+	self.IsCloaked = true
+	self:EmitSound("buttons/button19.wav",50,88)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:UnCloak(alpha)
+	self:DrawShadow(true)
+	self.eye:Fire("ShowSprite")
+	self.light:Fire("TurnOn","",0)
+	self:SpawnCombineTrail()
+	self.IsCloaked = false
+	self:EmitSound("buttons/combine_button7.wav",50,105)
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnDeath()
+	if self.IsCloaked then
+		self:SetNPCRenderMode(RENDERMODE_NORMAL)
+		self:SetColor(Color(255,255,255,255))
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_Reload(possessor)
+	if self.IsCloaked then
+		self:UnCloak()
+	else
+		self:Cloak()
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnThink()
+	if self.IsPossessed && self.IsRangeAttacking then
+		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
+	end
+	if self.IsCloaked then
+		if self.AlphaColor <= 30 then
+			self:SetNoTarget(true)
+		else
+			self:SetNoTarget(false)
+		end
+		if self.AlphaColor != 15 then
+			self.AlphaColor = self.AlphaColor -self.AlphaRate
+			if self.AlphaColor < 15 then
+				self.AlphaColor = 15
+			end
+		end
+		self:SetColor(Color(255,255,255,self.AlphaColor))
+	else
+		if self.AlphaColor != 255 then
+			self.AlphaColor = self.AlphaColor +self.AlphaRate
+			if self.AlphaColor > 255 then
+				self.AlphaColor = 255
+			end
+		end
+		self:SetColor(Color(255,255,255,self.AlphaColor))
+	end
+	if !self.IsPossessed then
+		if IsValid(self:GetEnemy()) then
+			if !self.IsCloaked && CurTime() > self.NextCloakT then
+				self:Cloak()
+				self.NextCloakT = CurTime() +math.Rand(6,10)
+			end
+		else
+			if self.IsCloaked then
+				self:UnCloak()
+			end
+		end
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoDodge(forceanim)
 	if self.IsDodging then return end
 	local act = {BACK,LEFT,RIGHT}
@@ -199,7 +283,7 @@ function ENT:DoDodge(forceanim)
 		self:PlayActivity(tryact,0)
 		self.IsDodging = true
 		timer.Simple(self:AnimationLength(tryact),function() if self:IsValid() then self.IsDodging = false end end)
-		self.NextJumpT = CurTime() +math.random(1,3)
+		self.NextJumpT = CurTime() +self:AnimationLength(tryact) +math.Rand(0,1.5)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -225,7 +309,7 @@ function ENT:Possess_Jump(possessor)
 		self.IsDodging = true
 		self.IsRangeAttacking = true
 		timer.Simple(animtime,function() if self:IsValid() then self.IsRangeAttacking = false self.IsDodging = false end end)
-		self.NextJumpT = CurTime() +math.random(1,3)
+		self.NextJumpT = CurTime() +animtime +math.Rand(0,1.5)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

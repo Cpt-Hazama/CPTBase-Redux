@@ -2,6 +2,8 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include('shared.lua')
 
+ENT.TurnRadius = 25
+
 function ENT:Initialize()
 	self:SetModel("models/effects/teleporttrail.mdl")
 	self:SetMoveType(MOVETYPE_NONE)
@@ -60,6 +62,7 @@ function ENT:PossessTheNPC()
 	self.Possessor:SetMoveType(MOVETYPE_OBSERVER)
 	self.Possessor:DrawViewModel(false)
 	self.Possessor:DrawWorldModel(false)
+	self.Possessor.PossessorView = self.PossessorView
 	self.Possessor.DefaultHealth = self.Possessor:Health()
 	self.Possessor.DefaultArmor = self.Possessor:Armor()
 	if (IsValid(self.Possessor:GetActiveWeapon())) then 
@@ -70,6 +73,13 @@ function ENT:PossessTheNPC()
 		table.insert(self.PossessorCurrentWeapons,v:GetClass())
 	end
 	self.Possessor:StripWeapons()
+	local targetPos = self.PossessorView:GetPos() +self.Possessor:GetAimVector() *400
+	self.PossessorBlock = self:CreateTestingBlock(targetPos,nil,true)
+end
+
+function ENT:UpdateBlock()
+	local targetPos = self.PossessorView:GetPos() +self.Possessor:GetAimVector() *400
+	self.PossessorBlock:SetPos(targetPos)
 end
 
 function ENT:PossessedNPC(possessed)
@@ -90,7 +100,13 @@ end
 
 function ENT:FaceForward()
 	if self.PossessedNPC.Possessor_CanMove == true then
-		self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorView:GetPos() +self.Possessor:GetAimVector() *400)
+		if self.PossessedNPC:GetForward():Dot((self.PossessorBlock:GetPos() -self.PossessedNPC:GetPos() +self.PossessedNPC:GetForward() *15):GetNormalized()) < math.cos(math.rad(self.TurnRadius)) then
+		-- if self:CheckCanSee(self.PossessorBlock,10) then
+			-- self:PlayerChat("TURN")
+			self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorBlock:GetPos())
+		-- else
+			-- self:PlayerChat("GUCCI")
+		end
 	end
 end
 
@@ -102,6 +118,7 @@ function ENT:Think()
 	if !IsValid(self.Possessor) or self.Possessor:KeyDown(IN_USE) or self.Possessor:Health() <= 0 or (!self.Possessor.IsPossessing) or !IsValid(self.PossessedNPC) or self.PossessedNPC:Health() <= 0 then self:StopPossessing() return end
 	if self.Possessor.IsPossessing != true then return end
 	if (self.Possessor.IsPossessing) && IsValid(self.PossessedNPC) then
+		self:UpdateBlock()
 		self.PossessedNPC.CanChaseEnemy = false
 		self.PossessedNPC:Possess_Think(self.Possessor,self)
 		self.PossessedNPC:Possess_Commands(self.Possessor)

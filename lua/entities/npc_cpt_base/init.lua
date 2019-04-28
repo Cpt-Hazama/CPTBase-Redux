@@ -224,7 +224,7 @@ function ENT:Initialize()
 	self:ClearMemory()
 	self.IsDead = false
 	self.HasStoppedMovingToAttack = false
-	self.NextAnimT = 0
+	self.NextAnimT = CurTime()
 	self.IdleAnimation = ACT_IDLE
 	self.NextIdleAnimationT = 0
 	self.IsRagdolled = false
@@ -309,10 +309,6 @@ function ENT:Initialize()
 		end
 	end
 
-	self:UpdateFriends()
-	self:UpdateEnemies()
-	self:UpdateRelations()
-
 	if self.SetupSoundTables == true then
 		if self.SoundDirectory == nil then MsgN("CPTBase warning: " .. self .. " has no sound directory. Please add a sound directory.") return end
 		self:FindSounds()
@@ -347,6 +343,10 @@ function ENT:Initialize()
 	if GetConVarNumber("cpt_npchearing_advanced") == 1 then
 		self.UseAdvancedHearing = true
 	end
+
+	-- self:UpdateFriends()
+	-- self:UpdateEnemies()
+	-- self:UpdateRelations()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SpawnNavMeshEntity()
@@ -578,20 +578,17 @@ function ENT:Possess_Move(possessor)
 	local posTraceTest = self:DoCustomTrace(self:GetPos() +Vector(0,0,20),posMoveTrace,{self},true)
 	local posTestOutput = math.Clamp((self:GetPos():Distance(posTraceTest.HitPos)),0,350)
 	local posAim = possessor:GetAimVector()
+	local wKey = possessor:KeyDown(IN_FORWARD)
+	local aKey = possessor:KeyDown(IN_MOVELEFT)
+	local sKey = possessor:KeyDown(IN_BACK)
+	local dKey = possessor:KeyDown(IN_MOVERIGHT)
 	if self.Possessor_CanMove == false then return end
 	local movePositionMax = math.Clamp(self:GetSequenceGroundSpeed(self:GetSequence()),0,375)
 	if self:GetMoveType() != MOVETYPE_FLY then
 		if !self:CanPerformProcess() then return end
-		if (possessor:KeyDown(IN_FORWARD)) then
-			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,((self:Possess_AimTarget() -self:Possess_EyeTrace(self.Possessor).Normal) -self:GetPos()):Angle().y,20),0))
-			-- self:PlayerChat("hit "..tostring(posTraceTest.HitPos.z))
-			-- self:PlayerChat("self "..tostring(self:GetPos().z -20))
-			-- if posTraceTest.HitPos.z < self:GetPos().z && self:GetPos():Distance(posTraceTest.HitPos) <= posTestOutput then
-				-- self:PlayerChat("Yaes")
-				-- posMove = posTraceTest.HitPos
-			-- else
-				-- posMove = self:GetPos() +self:GetForward() *200
-			-- end
+		if wKey then
+			-- self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,((self:Possess_AimTarget() -self:Possess_EyeTrace(self.Possessor).Normal) -self:GetPos()):Angle().y,20),0))
+			self:SetAngles(Angle(0,LerpAngle(self:GetMaxYawSpeed() *0.001,self:GetAngles(),((self:Possess_AimTarget() -self:Possess_EyeTrace(self.Possessor).Normal) -self:GetPos()):Angle()).y,0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
 				-- endpos = self:GetPos() +self:OBBCenter() +posAim *self.Possessor_MaxMoveDistanceForward,
@@ -610,30 +607,12 @@ function ENT:Possess_Move(possessor)
 					posMove = domove +self:GetForward() *(-self:GetCollisionBounds().y)
 				end
 			end
+			if aKey then
+				posMove = posMove +possessor:GetRight() *-movePositionMax *1.3
+			elseif dKey then
+				posMove = posMove +possessor:GetRight() *movePositionMax *1.3
+			end
 			posMove = posMove +Vector(0,0,15)
-			-- if self.blockA == NULL || self.blockA == nil then
-				-- self.blockA = ents.Create("prop_dynamic")
-				-- self.blockA:SetModel("models/hunter/blocks/cube025x025x025.mdl")
-				-- self.blockA:SetPos(posMove)
-				-- self.blockA:SetColor(0,255,89,255)
-				-- self.blockA:Spawn()
-				-- local glow = ents.Create("light_dynamic")
-				-- glow:SetKeyValue("_light","0 255 89 200")
-				-- glow:SetKeyValue("brightness","2")
-				-- glow:SetKeyValue("distance","150")
-				-- glow:SetKeyValue("style","0")
-				-- glow:SetPos(self.blockA:GetPos() +self.blockA:OBBCenter())
-				-- glow:SetParent(self.blockA)
-				-- glow:Spawn()
-				-- glow:Activate()
-				-- glow:Fire("TurnOn","",0)
-				-- glow:DeleteOnRemove(self.blockA)
-				-- timer.Simple(0.3,function()
-					-- if self.blockA:IsValid() then
-						-- self.blockA:Remove()
-					-- end
-				-- end)
-			-- end
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
 				self:TASKFUNC_RUNLASTPOSITION()
@@ -646,10 +625,9 @@ function ENT:Possess_Move(possessor)
 				self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Forward)
 				self:SetPoseParameter("move_y",0)
 			end
-		elseif (possessor:KeyDown(IN_BACK)) then
-			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
-			local PlayersVectorBack = possessor:GetAimVector() *-1
-			PlayersVectorBack.z = 0
+		elseif sKey then
+			-- self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
+			self:SetAngles(Angle(0,LerpAngle(self:GetMaxYawSpeed() *0.001,self:GetAngles(),possessor:GetAimVector():Angle()).y,0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
 				-- endpos = self:GetPos() +self:OBBCenter() +possessor:GetForward() *-self.Possessor_MaxMoveDistanceBackward,
@@ -661,30 +639,11 @@ function ENT:Possess_Move(possessor)
 			else
 				posMove = trace.HitPos
 			end
-			-- if self.blockB == NULL || self.blockB == nil then
-				-- self.blockB = ents.Create("prop_dynamic")
-				-- self.blockB:SetModel("models/hunter/blocks/cube025x025x025.mdl")
-				-- self.blockB:SetPos(posMove)
-				-- self.blockB:SetColor(0,255,89,255)
-				-- self.blockB:Spawn()
-				-- local glow = ents.Create("light_dynamic")
-				-- glow:SetKeyValue("_light","0 255 89 200")
-				-- glow:SetKeyValue("brightness","2")
-				-- glow:SetKeyValue("distance","150")
-				-- glow:SetKeyValue("style","0")
-				-- glow:SetPos(self.blockB:GetPos() +self.blockB:OBBCenter())
-				-- glow:SetParent(self.blockB)
-				-- glow:Spawn()
-				-- glow:Activate()
-				-- glow:Fire("TurnOn","",0)
-				-- glow:DeleteOnRemove(self.blockB)
-				-- timer.Simple(0.3,function()
-					-- if self.blockB:IsValid() then
-						-- self.blockB:Remove()
-					-- end
-				-- end)
-			-- end
-			-- posMove = self:GetPos() +(PlayersVectorBack *self.Possessor_MaxMoveDistanceBackward)
+			if aKey then
+				posMove = posMove +possessor:GetRight() *-movePositionMax
+			elseif dKey then
+				posMove = posMove +possessor:GetRight() *movePositionMax
+			end
 			posMove = posMove +Vector(0,0,15)
 			self:SetLastPosition(posMove)
 			if possessor:KeyDown(IN_SPEED) && self.Possessor_CanSprint then
@@ -696,7 +655,7 @@ function ENT:Possess_Move(possessor)
 				self:SetPoseParameter("move_x",self.PlayermodelMovementSpeed_Backward) -- -1
 				self:SetPoseParameter("move_y",0)
 			end
-		elseif (possessor:KeyDown(IN_MOVELEFT)) then
+		elseif aKey then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
@@ -709,29 +668,6 @@ function ENT:Possess_Move(possessor)
 			else
 				posMove = trace.HitPos
 			end
-			-- if self.blockC == NULL || self.blockC == nil then
-				-- self.blockC = ents.Create("prop_dynamic")
-				-- self.blockC:SetModel("models/hunter/blocks/cube025x025x025.mdl")
-				-- self.blockC:SetPos(posMove)
-				-- self.blockC:SetColor(0,255,89,255)
-				-- self.blockC:Spawn()
-				-- local glow = ents.Create("light_dynamic")
-				-- glow:SetKeyValue("_light","0 255 89 200")
-				-- glow:SetKeyValue("brightness","2")
-				-- glow:SetKeyValue("distance","150")
-				-- glow:SetKeyValue("style","0")
-				-- glow:SetPos(self.blockC:GetPos() +self.blockC:OBBCenter())
-				-- glow:SetParent(self.blockC)
-				-- glow:Spawn()
-				-- glow:Activate()
-				-- glow:Fire("TurnOn","",0)
-				-- glow:DeleteOnRemove(self.blockC)
-				-- timer.Simple(0.3,function()
-					-- if self.blockC:IsValid() then
-						-- self.blockC:Remove()
-					-- end
-				-- end)
-			-- end
 			posMove = posMove +Vector(0,0,15)
 			-- posMove = self:GetPos() +(possessor:GetRight() *-self.Possessor_MaxMoveDistanceLeft)
 			self:SetLastPosition(posMove)
@@ -744,7 +680,7 @@ function ENT:Possess_Move(possessor)
 				self:SetPoseParameter("move_x",0)
 				self:SetPoseParameter("move_y",self.PlayermodelMovementSpeed_Left) -- -1
 			end
-		elseif (possessor:KeyDown(IN_MOVERIGHT)) then
+		elseif dKey then
 			self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,possessor:GetAimVector():Angle().y,4),0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
@@ -757,29 +693,6 @@ function ENT:Possess_Move(possessor)
 			else
 				posMove = trace.HitPos
 			end
-			-- if self.blockD == NULL || self.blockD == nil then
-				-- self.blockD = ents.Create("prop_dynamic")
-				-- self.blockD:SetModel("models/hunter/blocks/cube025x025x025.mdl")
-				-- self.blockD:SetPos(posMove)
-				-- self.blockD:SetColor(0,255,89,255)
-				-- self.blockD:Spawn()
-				-- local glow = ents.Create("light_dynamic")
-				-- glow:SetKeyValue("_light","0 255 89 200")
-				-- glow:SetKeyValue("brightness","2")
-				-- glow:SetKeyValue("distance","150")
-				-- glow:SetKeyValue("style","0")
-				-- glow:SetPos(self.blockD:GetPos() +self.blockD:OBBCenter())
-				-- glow:SetParent(self.blockD)
-				-- glow:Spawn()
-				-- glow:Activate()
-				-- glow:Fire("TurnOn","",0)
-				-- glow:DeleteOnRemove(self.blockD)
-				-- timer.Simple(0.3,function()
-					-- if self.blockD:IsValid() then
-						-- self.blockD:Remove()
-					-- end
-				-- end)
-			-- end
 			posMove = posMove +Vector(0,0,15)
 			-- posMove = self:GetPos() +(possessor:GetRight() *self.Possessor_MaxMoveDistanceRight)
 			self:SetLastPosition(posMove)
@@ -965,13 +878,13 @@ function ENT:SetupBloodDecals()
 		if table.HasValue(self.BloodEffect,"blood_impact_red_01") then
 			table.insert(self.BloodDecal,"Blood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_yellow_01") then
+		if table.HasValue(self.BloodEffect,"blood_impact_yellow_01") || table.HasValue(self.BloodEffect,"blood_impact_green_01") then
 			table.insert(self.BloodDecal,"YellowBlood")
 		end
 		if table.HasValue(self.BloodEffect,"blood_impact_blue") then
 			table.insert(self.BloodDecal,"CPTBase_BlueBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_green") || table.HasValue(self.BloodEffect,"blood_impact_green_01") then
+		if table.HasValue(self.BloodEffect,"blood_impact_green") then
 			table.insert(self.BloodDecal,"CPTBase_GreenBlood")
 		end
 		if table.HasValue(self.BloodEffect,"blood_impact_purple") then
@@ -1306,6 +1219,7 @@ function ENT:Think()
 	end
 	-- self:PlayerChat(self:GetEnemy())
 	self:PoseParameters()
+	self:SetStatus()
 	self:FootStepCode()
 	if self.IsSwimType == false then
 		if self:IsFalling(self.FallingHeight) then
@@ -1358,6 +1272,7 @@ function ENT:OnStartedAnimation(activity) end
 function ENT:OnHearSound(ent)
 	if self.ReactsToSound == false then return end
 	if self.IsPossessed == true then return end
+	if !self.CanMove then return end
 	if ent:Visible(self) then
 		self:SetTarget(ent)
 		self:SetSchedule(SCHED_TARGET_FACE)
@@ -1683,12 +1598,6 @@ function ENT:SelectSchedule(bSchedule)
 		end
 	end
 	-- self:PlayerChat(tostring(self.EnemyMemoryCount))
-	if table.Count(self.tbl_EnemyMemory) <= 0 then
-		if(self:GetState() == NPC_STATE_ALERT) then
-			self:OnAreaCleared()
-			self:SetState(NPC_STATE_IDLE)
-		end
-	end
 	self:StartIdleAnimation()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -1761,6 +1670,16 @@ function ENT:GetIdleAnimation()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetStatus()
+	if IsValid(self:GetEnemy()) then
+		self:SetState(NPC_STATE_COMBAT,true)
+	elseif IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self) then
+		self:SetState(NPC_STATE_ALERT,true)
+	elseif table.Count(self.tbl_EnemyMemory) <= 0 && (self:GetState() == NPC_STATE_ALERT || self:GetState() == NPC_STATE_COMBAT) then
+		self:SetState(NPC_STATE_IDLE,true)
+	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PoseParameters()
 	self:CheckPoseParameters()
 	if !self.UseDefaultPoseParameters then return end
@@ -1787,7 +1706,7 @@ function ENT:OnCondition(iCondition)
 	local state = self:GetState()
 	self:CustomOnCondition(cond,state)
 	if state == NPC_STATE_DEAD then return end
-	if state != NPC_STATE_COMBAT then
+	-- if state != NPC_STATE_COMBAT then
 		-- self:UpdateEnemies()
 		if state != NPC_STATE_LOST && IsValid(self:GetEnemy()) then
 			if self.HasAlertAnimation == false then
@@ -1804,10 +1723,10 @@ function ENT:OnCondition(iCondition)
 					self:PlayAnimation("Alert",2)
 				end
 			end
-			self:SetState(NPC_STATE_COMBAT)
+			-- self:SetState(NPC_STATE_COMBAT)
 		end
-		return
-	end
+		-- return
+	-- end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CanSetAsEnemy(ent)
@@ -1876,6 +1795,7 @@ function ENT:FindAllEnemies()
 		if ((v:IsNPC() && v != self) || (v:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0 && self.FriendlyToPlayers == false && self:GetFaction() != "FACTION_PLAYER")) then
 			if v.Faction == "FACTION_NOTARGET" || v.UseNotarget then return end
 			if v:Health() > 0 && self.Faction != v.Faction && self:Disposition(v) != D_LI then
+				-- print(self,v)
 				return v
 			end
 		end
@@ -1972,6 +1892,7 @@ function ENT:UpdateEnemies()
 	end
 	local lastenemy = self:GetEnemy()
 	local newenemy
+	local oldcount = table.Count(self.tbl_EnemyMemory)
 	self:UpdateMemory()
 	if self.CanSeeAllEnemies == true then
 		newenemy = self:FindAllEnemies()
@@ -1987,9 +1908,9 @@ function ENT:UpdateEnemies()
 	end
 	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
 		table.insert(self.tbl_EnemyMemory,newenemy)
+		self:OnFoundEnemy(table.Count(self.tbl_EnemyMemory),oldcount,newenemy)
 	end
-	local findenemy = self:GetClosestEntity(self.tbl_EnemyMemory)
-	self.Enemy = findenemy
+	self.Enemy = self:GetClosestEntity(self.tbl_EnemyMemory)
 	self:SetEnemy(self.Enemy)
 	if lastenemy != self.Enemy then
 		self:OnEnemyChanged(self.Enemy)
@@ -2012,6 +1933,8 @@ end
 function ENT:UpdateMemory()
 	local enemymemory = self.tbl_EnemyMemory
 	for _,v in ipairs(enemymemory) do
+		-- print(IsValid(v))
+		-- if !IsValid(v) then self:RemoveFromMemory(v) end
 		if v:IsPlayer() && (v.IsPossessing || v.UseNotarget) then
 			self:RemoveFromMemory(v)
 		end
@@ -2032,15 +1955,22 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:RemoveFromMemory(foundent)
 	local enemymemory = self.tbl_EnemyMemory
+	local oldCount = table.Count(enemymemory)
 	if foundent == nil then return false end
 	if foundent == self:GetEnemy() then
 		self:SetEnemy(nil)
 		self:SetEnemy(NULL)
 	end
 	enemymemory[foundent] = nil
+	table.remove(enemymemory,enemymemory[foundent])
 	self.EnemyMemoryCount = self.EnemyMemoryCount -1
 	if self.EnemyMemoryCount < 0 then
 		self.EnemyMemoryCount = 0
+	end
+	-- self:PlayerChat(oldCount)
+	-- self:PlayerChat(table.Count(enemymemory))
+	if oldCount > 0 && table.Count(enemymemory) <= 0 then
+		self:OnAreaCleared()
 	end
 	return true
 end
@@ -2242,9 +2172,14 @@ function ENT:OnTakeDamage(dmg,hitgroup,dmginfo)
 		return false
 	end
 	if self:Health() <= 0 && self.IsDead == false then
-		self:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
+		local canDie = self:BeforeDoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
+		if canDie then
+			self:DoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox)
+		end
 	end
 end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:BeforeDoDeath(dmg,dmginfo,_Attacker,_Type,_Pos,_Force,_Inflictor,_Hitbox) return true end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	if self.HasFlinchAnimation == true then
@@ -2783,6 +2718,17 @@ function ENT:GetClosestEntity(tbl,argent)
 	return self:GetEntitiesByDistance(tbl,argent)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetEntitiesByDistance_NEW(tbl,argent)
+	local outputTable = {}
+	local argent = argent or self
+	for i = 1,#tbl do
+		if IsValid(tbl[i]) then
+			table.insert(outputTable,tbl[i]:GetPos():Distance(argent:GetPos()))
+		end
+	end
+	return table.SortByKey(outputTable,true)[1]
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetEntitiesByDistance(tbl,argent)
 	local close = {}
 	local endtbl = {}
@@ -2791,9 +2737,12 @@ function ENT:GetEntitiesByDistance(tbl,argent)
 	if !IsValid(findent) then findent = self end
 	for _,v in pairs(tbl) do
 		if IsValid(v) then
-			close[v] = findent:GetPos():Distance(v:GetPos())
+			close[v] = v:GetPos():Distance(findent:GetPos())
 		end
 	end
+	-- print("-------------------------------")
+	-- print("I am " .. self:GetClass())
+	-- PrintTable(close)
 	endtbl = table.SortByKey(close,true)
 	result = endtbl[1]
 	return result
@@ -3143,6 +3092,20 @@ function ENT:PlayDeathSound()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PlayFootStepSound()
+	-- local tr = util.TraceLine({
+		-- start = self:GetBonePosition(3),
+		-- endpos = self:GetBonePosition(3) +self:GetUp() *-10,
+		-- filter = {self}
+	-- })
+	-- local dist = self:GetBonePosition(3):Distance(tr.HitPos)
+	-- if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) then
+		-- if dist <= 3.9 && !self.LeftFootTouched then
+			-- self.LeftFootTouched = true
+			-- self:PlaySound("FootStep_" .. self:GetSpaceTexture(15),self.WalkSoundVolume,90,self.StepSoundPitch,true)
+		-- else
+			-- self.LeftFootTouched = false
+		-- end
+	-- end
 	if (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
 		self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
 		self:DoPlaySound("FootStep")

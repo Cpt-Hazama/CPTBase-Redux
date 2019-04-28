@@ -43,6 +43,12 @@ SWEP.IdleAnimation = ACT_VM_IDLE
 SWEP.FireAnimation = ACT_VM_PRIMARYATTACK
 SWEP.ReloadAnimation = ACT_VM_RELOAD
 
+SWEP.AdjustViewModel = true
+SWEP.ViewModelAdjust = {
+	Pos = {Right = -3,Forward = 2,Up = 1},
+	Ang = {Right = 0,Up = 0,Forward = 0}
+}
+
 SWEP.tbl_Sounds = {
 	["DryFire"] = {"weapons/clipempty_pistol.wav"},
 	["Fire"] = {"weapons/fiveseven/fiveseven-1.wav"},

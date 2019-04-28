@@ -27,6 +27,14 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function LerpValue(clampedFraction,startValue,endValue)
+	return (1 -clampedFraction) *startValue +clampedFraction *endValue
+end
+
+function RankTable(tbl)
+	table.SortByKey(tbl,true)
+end
+
 function UpdateTableList(tb,v)
 	if !table.HasValue(tb,v) then
 		table.insert(tb,v)
@@ -137,6 +145,24 @@ end
 function NPC_Meta:SetNoTarget(nt)
 	self.UseNotarget = nt
 	self.VJ_NoTarget = nt
+	-- if nt then
+		-- for _,v in ipairs(ents.GetAll()) do
+			-- if (v:GetClass() != ent:GetClass() && v:GetClass() != "npc_grenade_frag") && v:IsNPC() && ent:Visible(v) then
+				-- v:AddEntityRelationship(ent,D_NU,99)
+				-- if IsValid(v:GetEnemy()) && v:GetEnemy() == self then
+					-- if v.IsVJBaseSNPC then
+						-- v.MyEnemy = NULL
+						-- v:SetEnemy(NULL)
+						-- v:ClearEnemyMemory()
+					-- elseif v.CPTBase_SNPC then
+						-- v.Enemy = NULL
+						-- v:SetEnemy(NULL)
+						-- v:ClearEnemyMemory()
+					-- end
+				-- end
+			-- end
+		-- end
+	-- end
 end
 
 function PLY_Meta:SpawnCPTBaseRagdoll(ent,velocity,caller)
@@ -1504,6 +1530,50 @@ function NPC_Meta:PlayerChat(text)
 	for _,v in ipairs(player.GetAll()) do
 		v:ChatPrint(tostring(text))
 	end
+end
+
+function ENT_Meta:PlayerChat(text)
+	for _,v in ipairs(player.GetAll()) do
+		v:ChatPrint(tostring(text))
+	end
+end
+
+function ENT_Meta:CreateTestingBlock(pos,time,invis)
+	if !IsValid(self.testBlock) then
+		self.testBlock = ents.Create("prop_dynamic")
+		self.testBlock:SetModel("models/hunter/blocks/cube025x025x025.mdl")
+		self.testBlock:SetPos(pos)
+		self.testBlock:SetColor(0,255,89,255)
+		self.testBlock:Spawn()
+		if !invis then
+			local glow = ents.Create("light_dynamic")
+			glow:SetKeyValue("_light","0 255 89 200")
+			glow:SetKeyValue("brightness","2")
+			glow:SetKeyValue("distance","150")
+			glow:SetKeyValue("style","0")
+			glow:SetPos(self.testBlock:GetPos() +self.testBlock:OBBCenter())
+			glow:SetParent(self.testBlock)
+			glow:Spawn()
+			glow:Activate()
+			glow:Fire("TurnOn","",0)
+			glow:DeleteOnRemove(self.testBlock)
+		else
+			self.testBlock:SetNoDraw(true)
+		end
+		local block = self.testBlock
+		if time == nil then
+			self.testBlock:DeleteOnRemove(self)
+		end
+		if time != nil then
+			timer.Simple(time,function()
+				if block:IsValid() then
+					block:Remove()
+				end
+			end)
+		end
+		return block
+	end
+	-- return self
 end
 
 function NPC_Meta:StripWeapons()

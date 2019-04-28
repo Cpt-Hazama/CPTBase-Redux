@@ -3,8 +3,6 @@
 {
 	"$basetexture" "models/fassassin/arm"
 	"$bumpmap" "models/fassassin/neck_normal"
-	//"$envmap" "models/fassassin/cubemap"
-	//"$envmaptint" "[0.3 0.3 0.5]"
 	"$model" 1
 	
 	// -- From here down is new stuff which will only be applied if $phong is set to 1 --

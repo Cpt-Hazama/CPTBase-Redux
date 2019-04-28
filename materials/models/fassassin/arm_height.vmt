@@ -2,6 +2,6 @@
 "VertexLitGeneric"
 {
 	"$bumpmap" "models/fassassin/arm_normal"
-	//"$envmap" "shadertest/cubemap"
+	"$envmap" "shadertest/cubemap"
 	"$model" 1
 }
