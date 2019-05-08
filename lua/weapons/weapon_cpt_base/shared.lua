@@ -33,6 +33,17 @@ SWEP.LuaMovementScale_Forward = 0.0400
 SWEP.LuaMovementScale_Right = 0.0084
 SWEP.LuaMovementScale_Up = 0.022
 
+SWEP.CanBeEnchanted = true
+SWEP.EnchantmentCost = 10
+SWEP.Enchantments = {
+	dmg=true,
+	recoil=true,
+	ammo=true,
+	spread=true,
+	delay=true,
+	cond=true
+}
+
 SWEP.StartingClips = 2
 SWEP.AmmoNameTypes = "clips" -- clips, rounds, etc.
 SWEP.DrawTime = false -- Leaving to false will auto-select the time
@@ -795,6 +806,26 @@ function SWEP:WeaponConditionThink()
 		self.Owner:DropWeapon(self)
 		self:Remove()
 	end
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:EnhanceWeapon()
+	if self.CanBeEnhanced then return end
+	local enhanceChance = 0
+	for _,v in pairs(self.Enchantments) do
+		if v == true then
+			enhanceChance = enhanceChance +1
+		end
+	end
+	local enhancement = self.Enchantments[math.random(1,enhanceChance)]
+/*
+	dmg=true,
+	recoil=true,
+	ammo=true,
+	spread=true,
+	delay=true,
+	cond=true
+*/
+	print(enhancement)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnThink() end

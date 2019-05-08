@@ -852,10 +852,23 @@ function ENT:LoadObjectData(datamod,dataname) // Similar to PredatorCZ's system,
 	return objectcache
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:ErrorOccured(data)
+	self:SetModel("models/Kleiner.mdl")
+	self:CapabilitiesAdd(bit.bor(CAP_ANIMATEDFACE,CAP_TURN_HEAD))
+	if math.random(1,2) == 1 then
+		self:EmitSound("vo/k_lab/kl_fiddlesticks.wav",110,100)
+	else
+		self:EmitSound("vo/k_lab/kl_dearme.wav",110,100)
+	end
+	self:PlayerChat(tostring(self) .. " has errored out!")
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetNPCModel(mdl)
 	if mdl == nil then
 		if table.Count(self.ModelTable) > 0 then
 			self:SetModel(self:SelectFromTable(self.ModelTable))
+		-- else
+			-- self:ErrorOccured()
 		end
 	else
 		self:SetModel(mdl)
@@ -1249,17 +1262,19 @@ function ENT:Think()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:LoseEnemies()
-	self.HasAutoResetEnemy = false
-	if self:GetEnemy():Visible(self) then
-		self.LastSpottedEnemyT = CurTime() +self.LoseEnemiesTime
-	end
-	if CurTime() > self.LastSpottedEnemyT && !self.HasAutoResetEnemy then
-		self.HasAutoResetEnemy = true
-		-- self:PlayerChat("RESET")
-		self:OnLostEnemy(self:GetEnemy())
-		self:ClearMemory()
-	-- else
-		-- self:PlayerChat(self.LastSpottedEnemyT -CurTime())
+	if IsValid(self:GetEnemy()) then
+		self.HasAutoResetEnemy = false
+		if self:GetEnemy():Visible(self) then
+			self.LastSpottedEnemyT = CurTime() +self.LoseEnemiesTime
+		end
+		if CurTime() > self.LastSpottedEnemyT && !self.HasAutoResetEnemy then
+			self.HasAutoResetEnemy = true
+			-- self:PlayerChat("RESET")
+			self:OnLostEnemy(self:GetEnemy())
+			self:ClearMemory()
+		-- else
+			-- self:PlayerChat(self.LastSpottedEnemyT -CurTime())
+		end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

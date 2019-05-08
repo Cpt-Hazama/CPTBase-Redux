@@ -1320,6 +1320,9 @@ function PLY_Meta:FindCenterDistance(ent)
 end
 
 function ENT_Meta:FindCenter(ent)
+	if ent == nil then
+		ent = self
+	end
 	if !IsValid(ent) then return self:GetPos() end
 	return ent:GetPos() +ent:OBBCenter()
 end

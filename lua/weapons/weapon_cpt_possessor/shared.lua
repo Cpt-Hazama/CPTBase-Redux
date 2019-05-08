@@ -41,26 +41,127 @@ SWEP.Primary.MaximumClip		= -1
 SWEP.Primary.Automatic 			= false
 SWEP.Primary.Ammo 				= "none"
 
+SWEP.ViewModelAdjust = {
+	Pos = {Right = 4,Forward = 0,Up = 0},
+	Ang = {Right = 0,Up = 0,Forward = 30}
+}
+
+local snd_aP = {
+	"vo/npc/male01/sorrydoc01.wav",
+	"vo/npc/male01/sorrydoc02.wav",
+	"vo/npc/male01/sorrydoc04.wav",
+}
+
+local snd_nCN = {
+	"vo/npc/male01/vanswer04.wav",
+	"vo/npc/male01/vanswer07.wav",
+	"vo/npc/male01/vanswer10.wav",
+	"vo/npc/male01/vanswer13.wav",
+	"vo/npc/male01/vanswer14.wav",
+	"vo/npc/male01/vquestion03.wav",
+	"vo/npc/male01/vquestion04.wav",
+}
+
+local snd_aPLY = {
+	"vo/npc/male01/wetrustedyou01.wav",
+	"vo/npc/male01/wetrustedyou02.wav",
+	"vo/npc/male01/ow02.wav",
+	"vo/npc/male01/ohno.wav",
+	"vo/npc/male01/moan05.wav",
+	"vo/npc/male01/imstickinghere01.wav",
+	"vo/npc/male01/illstayhere01.wav",
+}
+
+local snd_cBP = {
+	"vo/npc/male01/answer01.wav",
+	"vo/npc/male01/answer02.wav",
+	"vo/npc/male01/answer03.wav",
+	"vo/npc/male01/answer04.wav",
+	"vo/npc/male01/answer05.wav",
+	"vo/npc/male01/answer07.wav",
+	"vo/npc/male01/answer12.wav",
+	"vo/npc/male01/answer13.wav",
+	"vo/npc/male01/answer14.wav",
+	"vo/npc/male01/answer15.wav",
+	"vo/npc/male01/answer18.wav",
+	"vo/npc/male01/answer19.wav",
+	"vo/npc/male01/answer20.wav",
+	"vo/npc/male01/answer21.wav",
+}
+
+local snd_Spawn = {
+	"vo/npc/male01/hi01.wav",
+	"vo/npc/male01/hi02.wav",
+	"vo/npc/male01/heydoc01.wav",
+	"vo/npc/male01/heydoc02.wav",
+	"vo/npc/male01/abouttime01.wav",
+	"vo/npc/male01/abouttime02.wav",
+	"vo/npc/male01/ahgordon01.wav",
+	"vo/npc/male01/ahgordon02.wav",
+}
+
+local snd_Idle = {
+	"vo/npc/male01/answer09.wav",
+	"vo/npc/male01/answer16.wav",
+	"vo/npc/male01/answer17.wav",
+	"vo/npc/male01/answer26.wav",
+	"vo/npc/male01/answer28.wav",
+	"vo/npc/male01/answer30.wav",
+	"vo/npc/male01/answer31.wav",
+	"vo/npc/male01/answer33.wav",
+	"vo/npc/male01/answer37.wav",
+	"vo/npc/male01/answer38.wav",
+	"vo/npc/male01/answer39.wav",
+	"vo/npc/male01/freeman.wav",
+	"vo/npc/male01/getgoingsoon.wav",
+	"vo/npc/male01/gordead_ans01.wav",
+	"vo/npc/male01/gordead_ans16.wav",
+	"vo/npc/male01/gordead_ans19.wav",
+	"vo/npc/male01/illstayhere01.wav",
+	"vo/npc/male01/imstickinghere01.wav",
+	"vo/npc/male01/moan01.wav",
+	"vo/npc/male01/moan02.wav",
+	"vo/npc/male01/moan03.wav",
+	"vo/npc/male01/moan04.wav",
+	"vo/npc/male01/moan05.wav",
+	"vo/npc/male01/myleg01.wav",
+	"vo/npc/male01/notthemanithought02.wav",
+	"vo/npc/male01/oneforme.wav",
+	"vo/npc/male01/question05.wav",
+	"vo/npc/male01/question06.wav",
+	"vo/npc/male01/question07.wav",
+	"vo/npc/male01/question08.wav",
+	"vo/npc/male01/question09.wav",
+	"vo/npc/male01/question12.wav",
+	"vo/npc/male01/question19.wav",
+	"vo/npc/male01/question23.wav",
+	"vo/npc/male01/question27.wav",
+	"vo/npc/male01/whoops01.wav",
+	"vo/npc/male01/yeah02.wav",
+	"npc/zombie_poison/pz_alert1.wav",
+}
+
+function SWEP:PickSound(tbl)
+	if tbl == nil then return tbl end
+	return tbl[math.random(1,#tbl)]
+end
+
 function SWEP:Initialize()
 	self:SetWeaponHoldType(self.HoldType)
 	self.CPTBase_Weapon = true
 	self.UseLuaMovement = true
-	self:EmitSound(Sound("cptbase/fx_melee_claw_flesh0" .. math.random(1,2) .. ".wav"),60,100)
-	if IsValid(self.Owner) && self.Owner:IsPlayer() then
+	if CLIENT && IsValid(self.Owner) && self.Owner:IsPlayer() then
 		self.Owner:ChatPrint("Weapon Controls:")
-		self.Owner:ChatPrint("LMB - Possess NPC at crosshair")
-		self.Owner:ChatPrint("RMB - Find closest NPC to crosshair")
+		self.Owner:ChatPrint("LMB - Possess the NPC at your crosshair")
+		self.Owner:ChatPrint("RMB - Find the closest NPC to your crosshair")
 	end
 end
 
 function SWEP:Deploy()
-	self:EmitSound(Sound("cptbase/fx_melee_claw_flesh0" .. math.random(1,2) .. ".wav"),60,100)
+	self:EmitSound(self:PickSound(snd_Spawn),40,100)
+	self.NextIdleT = CurTime() +5
 	self:SendWeaponAnim(ACT_VM_IDLE)
 	return true
-end
-
-function SWEP:Think()
-	self:SendWeaponAnim(ACT_VM_IDLE)
 end
 
 function SWEP:PrimaryAttack()
@@ -70,20 +171,25 @@ function SWEP:PrimaryAttack()
 	tracedata.endpos = self.Owner:GetShootPos() +self.Owner:GetAimVector() *10000
 	tracedata.filter = self.Owner
 	local tr = util.TraceLine(tracedata) 
-	if tr.Entity && IsValid( tr.Entity ) && tr.Entity:Health() > 0 then
+	if tr.Entity && IsValid(tr.Entity) && tr.Entity:Health() > 0 then
+		if tr.Entity:IsPlayer() then
+			self.Owner:ChatPrint("......that's a player...")
+			self:EmitSound(self:PickSound(snd_aPLY),40,100)
+			return
+		end
 		if tr.Entity.IsPossessed == true then
 			self.Owner:ChatPrint("This (S)NPC is already being possessed!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_aP),40,100)
 			return
 		end
 		if tr.Entity:IsNPC() && tr.Entity.CPTBase_NPC != true then
 			self.Owner:ChatPrint("You are unable to possess this (S)NPC!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_nCN),40,100)
 			return
 		end
 		if tr.Entity:IsNPC() && tr.Entity.Possessor_CanBePossessed == false then
 			self.Owner:ChatPrint("This entity can not be possessed!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_cBP),40,100)
 			return
 		end
 		for i = 0,self.Owner:GetBoneCount() -1 do
@@ -131,17 +237,17 @@ function SWEP:SecondaryAttack()
 	if ent && IsValid(ent) && ent:Health() > 0 then
 		if ent.IsPossessed == true then
 			self.Owner:ChatPrint("This (S)NPC is already being possessed!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_aP),40,100)
 			return
 		end
 		if ent:IsNPC() && ent.CPTBase_NPC != true then
 			self.Owner:ChatPrint("You are unable to possess this (S)NPC!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_nCN),40,100)
 			return
 		end
 		if ent:IsNPC() && ent.Possessor_CanBePossessed == false then
 			self.Owner:ChatPrint("This entity can not be possessed!")
-			self:EmitSound(Sound("npc/antlion/distract1.wav"),40,math.random(120,150))
+			self:EmitSound(self:PickSound(snd_cBP),40,100)
 			return
 		end
 		for i = 0,self.Owner:GetBoneCount() -1 do
@@ -183,7 +289,15 @@ function SWEP:GetEntitiesByDistance(tbl,pos)
 	return table.SortByKey(disttbl,false)
 end
 
-function SWEP:Think() end
+if SERVER then
+	function SWEP:Think()
+		if CurTime() > self.NextIdleT && math.random(1,40) == 1 then
+			local selectSound = self:PickSound(snd_Idle)
+			self:EmitSound(selectSound,40,100)
+			self.NextIdleT = CurTime() +math.Rand(8,22)
+		end
+	end
+end
 
 function SWEP:Reload() end
 
@@ -197,6 +311,15 @@ if CLIENT then
 		local jump = 0
 		local move1 = 0
 		local move2 =  0
+		opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+		opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+		opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+		pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
+		pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
+		pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
+		ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
+		ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
+		ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
 		if self.Owner:IsOnGround() then
 			if jump > 0 then
 				jump = jump -0.5
