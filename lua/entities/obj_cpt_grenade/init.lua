@@ -8,6 +8,8 @@ ENT.CollisionGroup = COLLISION_GROUP_PROJECTILE
 ENT.MoveCollide = COLLISION_GROUP_PROJECTILE
 ENT.MoveType = MOVETYPE_VPHYSICS
 ENT.AlreadyIgnited = false
+ENT.HasTickLight = true
+ENT.TickSound = "buttons/button16.wav"
 
 function ENT:SetTimer(seconds)
 	self.GrenadeTimer = seconds
@@ -38,18 +40,20 @@ function ENT:GrenadeInitialize()
 	for i = 0, self.GrenadeTimer do
 		timer.Simple(i,function()
 			if IsValid(self) then
-				self:EmitSound("buttons/button16.wav",68,85)
-				local eyeglow1 = ents.Create("env_sprite")
-				eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
-				eyeglow1:SetKeyValue("scale","0.05")
-				eyeglow1:SetKeyValue("rendermode","5")
-				eyeglow1:SetKeyValue("rendercolor","255 0 0")
-				eyeglow1:SetKeyValue("spawnflags","1")
-				eyeglow1:SetPos(self:GetPos())
-				eyeglow1:SetParent(self)
-				eyeglow1:Spawn()
-				eyeglow1:Activate()
-				self:DeleteOnRemove(eyeglow1)
+				self:EmitSound(self.TickSound,68,85)
+				if self.HasTickLight then
+					local eyeglow1 = ents.Create("env_sprite")
+					eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
+					eyeglow1:SetKeyValue("scale","0.05")
+					eyeglow1:SetKeyValue("rendermode","5")
+					eyeglow1:SetKeyValue("rendercolor","255 0 0")
+					eyeglow1:SetKeyValue("spawnflags","1")
+					eyeglow1:SetPos(self:GetPos())
+					eyeglow1:SetParent(self)
+					eyeglow1:Spawn()
+					eyeglow1:Activate()
+					self:DeleteOnRemove(eyeglow1)
+				end
 			end
 		end)
 	end
@@ -57,30 +61,34 @@ function ENT:GrenadeInitialize()
 		if IsValid(self) then
 			if math.random(1,200) == 1 then
 				self:EmitSound("vo/ravenholm/madlaugh04.wav",90,150)
-				local eyeglow1 = ents.Create("env_sprite")
-				eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
-				eyeglow1:SetKeyValue("scale",tostring(0.05 *self.GrenadeTimer))
-				eyeglow1:SetKeyValue("rendermode","5")
-				eyeglow1:SetKeyValue("rendercolor","255 255 0")
-				eyeglow1:SetKeyValue("spawnflags","1")
-				eyeglow1:SetPos(self:GetPos())
-				eyeglow1:SetParent(self)
-				eyeglow1:Spawn()
-				eyeglow1:Activate()
-				self:DeleteOnRemove(eyeglow1)
+				if self.HasTickLight then
+					local eyeglow1 = ents.Create("env_sprite")
+					eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
+					eyeglow1:SetKeyValue("scale",tostring(0.05 *self.GrenadeTimer))
+					eyeglow1:SetKeyValue("rendermode","5")
+					eyeglow1:SetKeyValue("rendercolor","255 255 0")
+					eyeglow1:SetKeyValue("spawnflags","1")
+					eyeglow1:SetPos(self:GetPos())
+					eyeglow1:SetParent(self)
+					eyeglow1:Spawn()
+					eyeglow1:Activate()
+					self:DeleteOnRemove(eyeglow1)
+				end
 			else
-				self:EmitSound("buttons/button16.wav",90,150)
-				local eyeglow1 = ents.Create("env_sprite")
-				eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
-				eyeglow1:SetKeyValue("scale",tostring(0.05 *self.GrenadeTimer))
-				eyeglow1:SetKeyValue("rendermode","5")
-				eyeglow1:SetKeyValue("rendercolor","0 255 0")
-				eyeglow1:SetKeyValue("spawnflags","1")
-				eyeglow1:SetPos(self:GetPos())
-				eyeglow1:SetParent(self)
-				eyeglow1:Spawn()
-				eyeglow1:Activate()
-				self:DeleteOnRemove(eyeglow1)
+				self:EmitSound(self.TickSound,90,150)
+				if self.HasTickLight then
+					local eyeglow1 = ents.Create("env_sprite")
+					eyeglow1:SetKeyValue("model","sprites/glow1.vmt")
+					eyeglow1:SetKeyValue("scale",tostring(0.05 *self.GrenadeTimer))
+					eyeglow1:SetKeyValue("rendermode","5")
+					eyeglow1:SetKeyValue("rendercolor","0 255 0")
+					eyeglow1:SetKeyValue("spawnflags","1")
+					eyeglow1:SetPos(self:GetPos())
+					eyeglow1:SetParent(self)
+					eyeglow1:Spawn()
+					eyeglow1:Activate()
+					self:DeleteOnRemove(eyeglow1)
+				end
 			end
 		end
 	end)

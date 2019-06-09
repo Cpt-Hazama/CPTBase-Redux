@@ -116,7 +116,7 @@ end
 function ENT:HandleEvents(...)
 	local event = select(1,...)
 	local arg1 = select(2,...)
-	local spread = 20
+	local spread = math.random(10,20)
 	if(event == "emit") then
 		if(arg1 == "Foot") then
 			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
@@ -130,13 +130,6 @@ function ENT:HandleEvents(...)
 	if(event == "rattack") then
 		if !IsValid(self:GetEnemy()) && self.IsPossessed == false then return true end
 		local muzzle = self:GetAttachment(self:LookupAttachment(arg1 == "right" && "RightMuzzle" || "LeftMuzzle"))
-		-- if(arg1 == "left") then
-			-- muzzle = self:GetAttachment(self:LookupAttachment("LeftMuzzle"))
-		-- elseif(arg2 == "right") then
-			-- muzzle = self:GetAttachment(self:LookupAttachment("RightMuzzle"))
-			-- return true
-		-- else
-		-- end
 		local bullet = {}
 		bullet.Num = 1
 		bullet.Src = muzzle.Pos
@@ -144,12 +137,16 @@ function ENT:HandleEvents(...)
 			bullet.Dir = self:Possess_AimTarget() -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		else
 			if !IsValid(self:GetEnemy()) then return true end
-			bullet.Dir = (self:GetEnemy():GetPos() +self:GetEnemy():OBBCenter()) -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
+			local aimPos = self:FindHeadPosition(self:GetEnemy())
+			if math.random(1,math.random(2,3)) == 1 then
+				aimPos = self:FindCenter(self:GetEnemy())
+			end
+			bullet.Dir = aimPos -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		end
 		bullet.Spread = spread
 		bullet.Tracer = 1
 		bullet.Force = 5
-		bullet.Damage = 6
+		bullet.Damage = math.random(4,8)
 		bullet.AmmoType = "Pistol"
 		self:FireBullets(bullet)
 		self:SoundCreate(self:SelectFromTable(self.tbl_Sounds["Fire"]),90)

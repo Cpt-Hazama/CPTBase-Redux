@@ -10,7 +10,7 @@ ENT.UseDefaultWeaponThink = false
 
 ENT.GrenadeDistance = 1000
 ENT.GrenadeMinDistance = 450
-ENT.GrenadeChance = 15
+ENT.GrenadeChance = 65
 
 ENT.BloodEffect = {"blood_impact_red"}
 
@@ -33,6 +33,7 @@ function ENT:SetInit()
 	self.NextGrenadeT = CurTime() +1
 	self.TimeUntilPutAwayWeapon = 0
 	self.ArmorDeduction = 0.65
+	self.NumGrenades = math.random(2,5)
 	local wep = self:SelectFromTable(self.tbl_PrimaryWeapons)
 	self:GiveNPCWeapon(wep,false)
 	if wep == "weapon_cpt_shotgun" then
@@ -186,6 +187,7 @@ function ENT:SetUpRangeAttackTarget()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ThrowGrenade()
+	if self.NumGrenades <= 0 then return end
 	if CurTime() > self.NextGrenadeT then
 		if self:CanPerformProcess() == false then return end
 		self:StopCompletely()
@@ -193,31 +195,27 @@ function ENT:ThrowGrenade()
 		self.IsRangeAttacking = true
 		timer.Simple(0.6,function()
 			if IsValid(self) then
-				-- local grenent = ents.Create("npc_grenade_frag")
-				-- grenent:SetModel("models/Items/grenadeAmmo.mdl")
-				-- grenent:SetPos(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Pos)
-				-- grenent:SetAngles(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Ang)
-				-- grenent:Fire("SetParentAttachment","anim_attachment_LH")
-				-- grenent:Spawn()
-				-- grenent:Activate()
-				-- grenent:Input("SetTimer",self:GetOwner(),self:GetOwner(),3.5)
 				local grenent = ents.Create("obj_cpt_grenade")
 				grenent:SetPos(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Pos)
 				grenent:SetAngles(self:GetAttachment(self:LookupAttachment("anim_attachment_LH")).Ang)
 				grenent:SetParent(self)
 				grenent:Fire("SetParentAttachment","anim_attachment_LH")
 				grenent:SetTimer(4)
+				grenent.HasTickLight = false
+				grenent.TickSound = "weapons/grenade/tick1.wav"
 				grenent:Spawn()
+				grenent:SetModel("models/Items/grenadeAmmo.mdl")
 				grenent:Activate()
 				local phys = grenent:GetPhysicsObject()
 				if IsValid(phys) then
 					grenent:SetParent(NULL)
 					phys:SetVelocity(self:SetUpRangeAttackTarget() *math.Rand(1,2) +self:GetUp() *200)
 				end
+				self.NumGrenades = self.NumGrenades -1
 			end
 		end)
 		self:AttackFinish()
-		local dif = GetConVarNumber("cpt_aidifficulty")
+		local dif = math.Round(GetConVarNumber("cpt_aidifficulty"))
 		local time
 		if dif == 1 then
 			time = math.random(12,20)

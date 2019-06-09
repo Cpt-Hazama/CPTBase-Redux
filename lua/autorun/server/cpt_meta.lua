@@ -27,6 +27,22 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function ENT_Meta:SelectDistance(iType,vec,vecOther,optional) -- 1 = Least laggy, 4 = Most laggy
+	if iType == 1 then -- Distance
+		return vec:Distance(vecOther)
+	elseif iType == 2 then -- DistToSqr
+		return vec:DistToSqr(vecOther) < (optional *optional)
+	elseif iType == 3 then -- Length
+		return (vecOther -vec):Length()
+	elseif iType == 4 then -- NearestPoint
+		local epos = optional:NearestPoint(self:GetPos() +optional:OBBCenter())
+		local spos = self:NearestPoint(optional:GetPos() +self:OBBCenter())
+		epos.z = optional:GetPos().z
+		spos.z = self:GetPos().z
+		return epos:Distance(spos)
+	end
+end
+
 function LerpValue(clampedFraction,startValue,endValue)
 	return (1 -clampedFraction) *startValue +clampedFraction *endValue
 end
@@ -120,6 +136,14 @@ function util.FindInSphere(pos,dist)
 		end
 	end
 	return tb
+end
+
+function RandValue(v,vb,d)
+	if d then
+		return math.Rand(v,vb)
+	else
+		return math.random(v,vb)
+	end
 end
 
 function FindLuaFile(luadir)
@@ -1979,7 +2003,7 @@ function NPC_Meta:AttackFinish(seq,time)
 		if anim == nil then
 			animtime = 0
 		else
-			animtime = self:AnimationLength(anim)
+			animtime = self:AnimationLength(anim)  /self:GetPlaybackRate()
 		end
 		if time != nil then
 			animtime = time
@@ -2000,7 +2024,7 @@ function NPC_Meta:AttackFinish(seq,time)
 		if anim == nil then
 			animtime = 0
 		else
-			animtime = self:SequenceDuration(anim)
+			animtime = self:SequenceDuration(anim)  /self:GetPlaybackRate()
 		end
 		if time != nil then
 			animtime = time

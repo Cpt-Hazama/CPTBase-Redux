@@ -393,6 +393,16 @@ function SWEP:SetWeaponSlot(hud_slot,hud_importance)
 	self.SlotPos = hud_importance
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:SetDefaultHoldType(htype)
+	-- self:SetWeaponHoldType(htype)
+	self:SetHoldType(htype)
+	self.DefaultHoldType = htype
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function SWEP:ReturnHoldType()
+	return self.DefaultHoldType
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Initialize()
 	-- self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
 	-- self:SetNWEntity("cpt_CModel",self)
@@ -409,9 +419,8 @@ function SWEP:Initialize()
 		self.Owner.ReloadingWeapon = false
 		hook.Add("Think",self,self.NPC_Think)
 	end
-	self:SetWeaponHoldType(self.HoldType)
+	self:SetDefaultHoldType(self.HoldType)
 	self:SetWeaponSlot(self.HUDSlot,self.HUDImportance)
-	self.DefaultHoldType = self.HoldType
 	self.CPTBase_Weapon = true
 	self.IsFiring = false
 	self.IsReloading = false
@@ -630,9 +639,6 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 			local aimPos = self.Owner:FindHeadPosition(self.Owner:GetEnemy())
 			if math.random(1,math.random(2,3)) == 1 then
 				aimPos = self.Owner:FindCenter(self.Owner:GetEnemy())
-				-- self:PlayerChat("body")
-			-- else
-				-- self:PlayerChat("head")
 			end
 			local npcspread = self.Primary.Spread
 			if self.NPC_Spread != nil then

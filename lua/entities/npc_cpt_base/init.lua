@@ -196,7 +196,7 @@ function ENT:Initialize()
 	end
 	self:SetSolid(SOLID_BBOX)
 	self:SetMaxYawSpeed(self.MaxTurnSpeed)
-	local dif = GetConVarNumber("cpt_aidifficulty")
+	local dif = math.Round(GetConVarNumber("cpt_aidifficulty"))
 	local start = self.StartHealth
 	local hp
 	if dif == 1 then
