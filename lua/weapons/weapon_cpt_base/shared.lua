@@ -134,13 +134,13 @@ SWEP.NextFireTime_NPC = 0
 -- net.Receive("cpt_CModelshootpos",function(len,pl)
 	-- vec = net.ReadVector()
 	-- ent = net.ReadEntity()
-	-- ent:SetNWVector("cpt_CModel_MuzzlePos",vec)
+	-- ent:SetNW2Vector("cpt_CModel_MuzzlePos",vec)
 -- end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
 -- net.Receive("cpt_CModel",function(len,pl)
 	-- ent = net.ReadEntity()
 	-- owner = net.ReadEntity()
-	-- owner:SetNWEntity("cpt_CModel",ent)
+	-- owner:SetNW2Entity("cpt_CModel",ent)
 -- end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SetNPCIdleAnimation(anim)
@@ -239,7 +239,7 @@ end
 function SWEP:GetViewModelPosition(pos,ang)
 	local opos = pos *1
 	if self.AdjustViewModel == true then
-		if self:GetNWBool("cptbase_UseIronsights") == false then
+		if self:GetNW2Bool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
 			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
 			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
@@ -249,7 +249,7 @@ function SWEP:GetViewModelPosition(pos,ang)
 			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
 			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
-		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
 			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
 			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
 			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
@@ -261,7 +261,7 @@ function SWEP:GetViewModelPosition(pos,ang)
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
 		end
 	else
-		if self:GetNWBool("cptbase_UseIronsights") == false then
+		if self:GetNW2Bool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *0)
 			opos:Add(ang:Forward() *0)
 			opos:Add(ang:Up() *0)
@@ -271,7 +271,7 @@ function SWEP:GetViewModelPosition(pos,ang)
 			ang:RotateAroundAxis(ang:Right(),0)
 			ang:RotateAroundAxis(ang:Up(),0)
 			ang:RotateAroundAxis(ang:Forward(),0)
-		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
 			opos:Add(ang:Right() *(self.Ironsights.Pos.Right))
 			opos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
 			opos:Add(ang:Up() *(self.Ironsights.Pos.Up))
@@ -404,10 +404,10 @@ function SWEP:ReturnHoldType()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Initialize()
-	-- self:SetNWVector("cpt_CModel_MuzzlePos",self:GetPos())
-	-- self:SetNWEntity("cpt_CModel",self)
-	self:SetNWBool("cptbase_UseIronsights",false)
-	self:SetNWInt("CPTBase_WeaponCondition",100)
+	-- self:SetNW2Vector("cpt_CModel_MuzzlePos",self:GetPos())
+	-- self:SetNW2Entity("cpt_CModel",self)
+	self:SetNW2Bool("cptbase_UseIronsights",false)
+	self:SetNW2Int("CPTBase_WeaponCondition",100)
 	self.Weapon:SetClip1(self.Primary.ClipSize)
 	self.Primary.DefaultClip = self.Primary.ClipSize
 	self.FixClip = self.Primary.DefaultClip
@@ -483,7 +483,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DamageWeaponCondition(dmg)
 	self:SetWeaponCondition(self.WeaponCondition -dmg)
-	self:SetNWInt("CPTBase_WeaponCondition",self.WeaponCondition)
+	self:SetNW2Int("CPTBase_WeaponCondition",self.WeaponCondition)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 -- function SWEP:OnInit() end
@@ -622,10 +622,10 @@ function SWEP:GetBulletPos()
 	if self.ExtraViewModel == nil then
 		return self.Owner:GetShootPos()
 	else
-		if self:GetNWVector("cpt_CModelshootpos") == nil then
+		if self:GetNW2Vector("cpt_CModelshootpos") == nil then
 			return self.Owner:GetShootPos()
 		else
-			return self:GetNWVector("cpt_CModelshootpos")
+			return self:GetNW2Vector("cpt_CModelshootpos")
 		end
 	end
 end
@@ -722,10 +722,10 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:SecondaryAttack()
 	if self.HasIronsights == false then return false end
-	if self.IsFiring == false && self:GetNWBool("cptbase_UseIronsights") == false then
-		self:SetNWBool("cptbase_UseIronsights",true)
+	if self.IsFiring == false && self:GetNW2Bool("cptbase_UseIronsights") == false then
+		self:SetNW2Bool("cptbase_UseIronsights",true)
 	else
-		self:SetNWBool("cptbase_UseIronsights",false)
+		self:SetNW2Bool("cptbase_UseIronsights",false)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -761,8 +761,8 @@ function SWEP:BeforePrimaryAttack_NPC() end
 function SWEP:AfterPrimaryAttack_NPC() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:Think()
-	-- print(self:GetNWEntity("cpt_CModel"))
-	-- print(self:GetNWEntity("cpt_CModel"):LookupAttachment("muzzle"))
+	-- print(self:GetNW2Entity("cpt_CModel"))
+	-- print(self:GetNW2Entity("cpt_CModel"):LookupAttachment("muzzle"))
 	self:WeaponConditionThink()
 	self:OnThink()
 	-- if self.Owner:IsNPC() then

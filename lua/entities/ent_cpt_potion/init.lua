@@ -78,11 +78,11 @@ function ENT:Use(act,v)
 			self:Remove()
 			return
 		end
-		v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_Magicka") +self.PotionLoad)
-		if v:GetNWInt("CPTBase_Magicka") > v:GetNWInt("CPTBase_MaxMagicka") then
-			v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_MaxMagicka"))
+		v:SetNW2Int("CPTBase_Magicka",v:GetNW2Int("CPTBase_Magicka") +self.PotionLoad)
+		if v:GetNW2Int("CPTBase_Magicka") > v:GetNW2Int("CPTBase_MaxMagicka") then
+			v:SetNW2Int("CPTBase_Magicka",v:GetNW2Int("CPTBase_MaxMagicka"))
 		end
-		v:ChatPrint("You have " .. tostring(v:GetNWInt("CPTBase_Magicka")) .. "/" .. tostring(v:GetNWInt("CPTBase_MaxMagicka")) .. " magicka")
+		v:ChatPrint("You have " .. tostring(v:GetNW2Int("CPTBase_Magicka")) .. "/" .. tostring(v:GetNW2Int("CPTBase_MaxMagicka")) .. " magicka")
 		v:EmitSound(self.PickupSound,75,100 *GetConVarNumber("host_timescale"))
 		self:Remove()
 	end

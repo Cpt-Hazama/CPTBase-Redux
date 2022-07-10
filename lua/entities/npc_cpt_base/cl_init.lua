@@ -3,6 +3,7 @@ include('shared.lua')
 ENT.RenderGroup = RENDERGROUP_BOTH
 
 function ENT:Initialize()
+	self:ControllerInitialize()
 	self:OnClientInit()
 end
 
@@ -50,12 +51,12 @@ function ENT:OnDraw() end
 function ENT:OnClientThink() end
 
 function ENT:AnimateBones(boneCount,bones)
-	-- print(self:GetNWBool("LUADATA_PLAYINGANIMATION"),self:GetNWInt("LUADATA_ANIMATION_FRAME"),self:GetNWVector("LUADATA_POS_ANIMATIONID_"),self:GetNWAngle("LUADATA_ANG_ANIMATIONID_"))
-	if self:GetNWBool("LUADATA_PLAYINGANIMATION") then
-		if self:GetNWInt("LUADATA_ANIMATION_FRAME") != nil then
+	-- print(self:GetNW2Bool("LUADATA_PLAYINGANIMATION"),self:GetNW2Int("LUADATA_ANIMATION_FRAME"),self:GetNW2Vector("LUADATA_POS_ANIMATIONID_"),self:GetNW2Angle("LUADATA_ANG_ANIMATIONID_"))
+	if self:GetNW2Bool("LUADATA_PLAYINGANIMATION") then
+		if self:GetNW2Int("LUADATA_ANIMATION_FRAME") != nil then
 			for i = 0,self:GetBoneCount() -1 do
-				if self:GetNWInt("LUADATA_ANIMATION_BONEID_" .. i) != nil then
-					self:SetBonePosition(self:GetNWInt("LUADATA_ANIMATION_BONEID_" .. i),self:GetNWVector("LUADATA_POS_ANIMATIONID_" .. i),self:GetNWAngle("LUADATA_ANG_ANIMATIONID_" .. i))
+				if self:GetNW2Int("LUADATA_ANIMATION_BONEID_" .. i) != nil then
+					self:SetBonePosition(self:GetNW2Int("LUADATA_ANIMATION_BONEID_" .. i),self:GetNW2Vector("LUADATA_POS_ANIMATIONID_" .. i),self:GetNW2Angle("LUADATA_ANG_ANIMATIONID_" .. i))
 				end
 			end
 		end

@@ -19,3 +19,64 @@ end
 function ENT:PhysicsCollide(data,phys) end
 
 function ENT:PhysicsUpdate(phys) end
+
+function ENT:SetupDataTables()
+	self:NetworkVar("Int",0,"HP")
+
+	self:NetworkVar("Entity",0,"Possessor")
+	self:NetworkVar("Entity",1,"CurrentEnemy")
+end
+
+if (CLIENT) then
+	local C_LerpVec = Vector(0,0,0)
+	local C_LerpAng = Angle(0,0,0)
+	local C_Vec0 = Vector(0,0,0)
+	local C_Vec1 = Vector(1,1,1)
+
+	function ENT:ControllerInitialize()
+		hook.Add("CalcView",self,function(self,ply,origin,angles,fov,znear,zfar)
+			local possessor = self:GetPossessor()
+			if possessor != ply then return end
+
+			if IsValid(ply:GetViewEntity()) && ply:GetViewEntity():GetClass() == "gmod_cameraprop" then
+				return
+			end
+			if ply:GetObserverTarget() != self then
+				return
+			end
+			local view = {}
+			local targetPos = self:GetCenter() + self:GetUp() * self:OBBMaxs().z * 0.5
+			local tr = util.TraceHull({
+				start = targetPos,
+				endpos = targetPos +ply:EyeAngles():Forward() *-math.max(ply.CPTBase_Possessor_Zoom or 100,self:BoundingRadius()),
+				mask = MASK_SHOT,
+				filter = {self,ply},
+				mins = Vector(-8,-8,-8),
+				maxs = Vector(8,8,8)
+			})
+			targetPos = tr.HitPos +tr.HitNormal *5
+			C_LerpVec = LerpVector(FrameTime() *10,C_LerpVec,targetPos)
+			C_LerpAng = LerpAngle(FrameTime() *10,C_LerpAng,ply:EyeAngles())
+
+			view.origin = C_LerpVec
+			view.angles = C_LerpAng
+			view.fov = fov
+		
+			return view
+		end)
+
+		hook.Add("PlayerBindPress",self,function(self,ply,bind,pressed)
+			local possessor = self:GetPossessor()
+			if possessor != ply then return end
+	
+			if (bind == "invprev" or bind == "invnext") then
+				ply.CPTBase_Possessor_Zoom = ply.CPTBase_Possessor_Zoom or 100
+				if bind == "invprev" then
+					ply.CPTBase_Possessor_Zoom = math.Clamp(ply.CPTBase_Possessor_Zoom -5,0,500)
+				else
+					ply.CPTBase_Possessor_Zoom = math.Clamp(ply.CPTBase_Possessor_Zoom +5,0,500)
+				end
+			end
+		end)
+	end
+end

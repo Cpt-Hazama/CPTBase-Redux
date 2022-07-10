@@ -1,9 +1,15 @@
+AddCSLuaFile()
+
 if !CPTBase then return end
 -------------------------------------------------------------------------------------------------------------------
 local ENT_Meta = FindMetaTable("Entity")
 local NPC_Meta = FindMetaTable("NPC")
 local PLY_Meta = FindMetaTable("Player")
 local WPN_Meta = FindMetaTable("Weapon")
+
+function ENT_Meta:GetCenter()
+	return self:GetPos() + self:OBBCenter()
+end
 
 function PLY_Meta:GetWeaponAmmoName()
 	local CPTBase_DefaultAmmoTypes = {

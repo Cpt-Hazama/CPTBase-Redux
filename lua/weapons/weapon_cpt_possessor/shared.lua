@@ -199,14 +199,15 @@ function SWEP:PrimaryAttack()
 			util.ParticleTracerEx("vortigaunt_beam",self.Owner:GetPos(),tr.Entity:GetBonePosition(i),false,self:EntIndex(),4)
 			ParticleEffect("vortigaunt_glow_beam_cp0",tr.Entity:GetBonePosition(i),Angle(0,0,0),nil)
 		end
-		local possessor = ents.Create("ent_cpt_possessor")
-		possessor.Possessor = self.Owner
-		possessor:PossessedNPC(tr.Entity)
-		possessor:Spawn()
+		-- local possessor = ents.Create("ent_cpt_possessor")
+		-- possessor.Possessor = self.Owner
+		-- possessor:PossessedNPC(tr.Entity)
+		-- possessor:Spawn()
+		tr.Entity:ControlNPC(true,self.Owner)
 		sound.Play("cptbase/fx_poison_stinger.wav",self:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
 		sound.Play("beams/beamstart5.wav",self:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
 		sound.Play("beams/beamstart5.wav",tr.Entity:GetPos(),60,115 *GetConVarNumber("host_timescale"),1)
-		possessor:PossessTheNPC()
+		-- possessor:PossessTheNPC()
 		if self.Owner:GetViewModel() != nil then
 			self.Owner:GetViewModel():SetRenderFX(kRenderFxNone)
 		end

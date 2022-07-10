@@ -7,6 +7,9 @@ local WPN_Meta = FindMetaTable("Weapon")
 local NBT_Meta = FindMetaTable("NextBot")
 local PHYS_Meta = FindMetaTable("PhysObj")
 
+local table_insert = table.insert
+local table_remove = table.remove
+
 if (SERVER) then
 	NPC_STATE_LOST = 8
 	MOVETYPE_SWIM = 12
@@ -27,20 +30,108 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
-function ENT_Meta:SelectDistance(iType,vec,vecOther,optional) -- 1 = Least laggy, 4 = Most laggy
-	if iType == 1 then -- Distance
-		return vec:Distance(vecOther)
-	elseif iType == 2 then -- DistToSqr
-		return vec:DistToSqr(vecOther) < (optional *optional)
-	elseif iType == 3 then -- Length
-		return (vecOther -vec):Length()
-	elseif iType == 4 then -- NearestPoint
+function PICK(tbl)
+	if tbl == nil then
+		return tbl
+	end
+	if !istable(tbl) then
+		return tbl
+	end
+
+	return tbl[math.random(1,#tbl)]
+end
+
+function DebugBlock(pos,time)
+	local b = ents.Create("prop_dynamic")
+	b:SetModel("models/hunter/blocks/cube025x025x025.mdl")
+	b:SetPos(pos)
+	b:Spawn()
+	b:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
+	SafeRemoveEntityDelayed(ent,time)
+end
+
+function ENT_Meta:GetCenter()
+	return self:GetPos() + self:OBBCenter()
+end
+
+function ENT_Meta:GetAnimationData(seq)
+	if type(seq) == "number" then
+		seq = self:GetSequenceName(self:SelectWeightedSequence(seq))
+	end
+	local info = nil
+	local done = self:GetAnimInfo(0).label
+	local i = 1
+	while i < 1600 do
+		info = self:GetAnimInfo(i)
+		if string.find(info.label,"@" .. seq) or string.find(info.label,"a_" .. seq) then
+			return info
+		end
+		if(info.label == done) then break end
+		i = i + 1
+	end
+	return nil
+end
+
+function ENT_Meta:GetAnimationFrameRate(seq)
+	if type(seq) == "number" then
+		seq = self:GetSequenceName(self:SelectWeightedSequence(seq))
+	end
+	return self:GetAnimationData(seq).fps
+end
+
+function ENT_Meta:GetAnimationFrameCount(seq)
+	if type(seq) == "number" then
+		seq = self:GetSequenceName(self:SelectWeightedSequence(seq))
+	end
+	return self:GetAnimationData(seq).numframes
+end
+
+function ENT_Meta:GetDistance(iDistType,vVec,vEntVec,optional)
+	if self:GetClass() == "gmod_lamp" then
+		return GetConVarNumber("lamp_distance")
+	end
+	local vVec = vVec or self
+	local vEntVec = vEntVec or self:GetEnemy()
+	if !IsValid(vVec) then return end
+	if !IsValid(vEntVec) then return end
+	local num = 0
+	if iDistType == 1 then
+		num = vVec:Distance(vEntVec)
+	elseif iDistType == 2 then
+		num = (vEntVec -vVec):Length()
+	elseif iDistType == 3 then
+		num = vVec:DistToSqr(vEntVec) < (optional *optional)
+	elseif iDistType == 4 then
 		local epos = optional:NearestPoint(self:GetPos() +optional:OBBCenter())
 		local spos = self:NearestPoint(optional:GetPos() +self:OBBCenter())
 		epos.z = optional:GetPos().z
 		spos.z = self:GetPos().z
-		return epos:Distance(spos)
+		num = epos:Distance(spos)
 	end
+	return num
+end
+
+function NPC_Meta:GetDisp(ent)
+	if IsValid(ent) then
+		return self:Disposition(ent)
+	else
+		return D_NU
+	end
+end
+
+function NPC_Meta:FindDispositions(tbDisp)
+	local tbl = {}
+	local function checkDisp(disp)
+		for _,v in pairs(ents.GetAll()) do
+			if self:GetDisp(v) == disp then
+				tbl[#tbl +1] = ent
+			end
+		end
+	end
+	for _,disp in pairs(tbDisp) do
+		checkDisp(disp)
+	end
+	return tbl
 end
 
 function LerpValue(clampedFraction,startValue,endValue)
@@ -52,7 +143,7 @@ function RankTable(tbl)
 end
 
 function UpdateTableList(tb,v)
-	if !table.HasValue(tb,v) then
+	if !tb[v] then
 		table.insert(tb,v)
 	end
 end
@@ -835,6 +926,16 @@ hook.Add("Think","CPTBase_MutationEffects",function()
 	end
 end)
 
+function RunTrace(start,endpos,filter)
+	local tr = util.TraceLine({
+		start = start,
+		endpos = endpos,
+		filter = filter
+	})
+
+	return tr
+end
+
 function NPC_Meta:DoCustomTrace_Mask(enter,exit,mask,filt)
 	local tracedata = {}
 	tracedata.start = enter
@@ -1159,14 +1260,14 @@ function WPN_Meta:PlayWeaponAnimation(tbl)
 end
 
 function NPC_Meta:UpdateNPCFaction()
-	if self.Faction != self:GetNWString("CPTBase_NPCFaction") then
-		self.Faction = self:GetNWString("CPTBase_NPCFaction")
+	if self.Faction != self:GetNW2String("CPTBase_NPCFaction") then
+		self.Faction = self:GetNW2String("CPTBase_NPCFaction")
 	end
 end
 
 function PLY_Meta:UpdateNPCFaction()
-	if self.Faction != self:GetNWString("CPTBase_NPCFaction") then
-		self.Faction = self:GetNWString("CPTBase_NPCFaction")
+	if self.Faction != self:GetNW2String("CPTBase_NPCFaction") then
+		self.Faction = self:GetNW2String("CPTBase_NPCFaction")
 	end
 end
 
@@ -1194,22 +1295,22 @@ end
 hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
 	local canrun = false
 	if ent:IsNPC() then
-		if table.HasValue(ent:FindAntlionFaction(),ent:GetClass()) then
+		if ent:FindAntlionFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_ANTLION"
 			canrun = true
-		elseif table.HasValue(ent:FindMilitaryFaction(),ent:GetClass()) then
+		elseif ent:FindMilitaryFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_MILITARY"
 			canrun = true
-		elseif table.HasValue(ent:FindCombineFaction(),ent:GetClass()) then
+		elseif ent:FindCombineFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_COMBINE"
 			canrun = true
-		elseif table.HasValue(ent:FindRebelFaction(),ent:GetClass()) then
+		elseif ent:FindRebelFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_PLAYER"
 			canrun = true
-		elseif table.HasValue(ent:FindXenFaction(),ent:GetClass()) then
+		elseif ent:FindXenFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_XEN"
 			canrun = true
-		elseif table.HasValue(ent:FindZombieFaction(),ent:GetClass()) then
+		elseif ent:FindZombieFaction()[ent:GetClass()] then
 			ent.Faction = "FACTION_ZOMBIE"
 			canrun = true
 		end
@@ -1227,17 +1328,25 @@ hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
 	end
 end)
 
-function ENT_Meta:SetRelationship(ent,value)
-	self:AddEntityRelationship(ent,value,99)
-	if !ent:IsPlayer() then
-		ent:AddEntityRelationship(self,value,99)
+function NPC_Meta:SetRelationship(ent,value,tb,priority)
+	priority = priority or 99
+	self:AddEntityRelationship(ent,value,priority)
+	if !ent:IsPlayer() && !ent:IsNextBot() then
+		ent:AddEntityRelationship(self,value,priority)
 	end
-	if (value == D_HT) && self.tbl_EnemyMemory != nil && !table.HasValue(self.tbl_EnemyMemory,ent) then
-		table.insert(self.tbl_EnemyMemory,ent)
-		self.EnemyMemoryCount = self.EnemyMemoryCount +1
-		local oldcount = self.EnemyMemoryCount -1
-		if self.EnemyMemoryCount > 0 && self:GetEnemy() != ent then
-			self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,ent)
+	if tb then
+		if value == D_HT && self.tbl_Enemies then
+			table_insert(self.tbl_Enemies,ent)
+			if self.tbl_EnemyMemory != nil && !self.tbl_EnemyMemory[ent] then
+				table_insert(self.tbl_EnemyMemory,ent)
+				self.EnemyMemoryCount = self.EnemyMemoryCount +1
+				local oldcount = self.EnemyMemoryCount -1
+				if self.EnemyMemoryCount > 0 && self:GetEnemy() != ent then
+					self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,ent)
+				end
+			end
+		elseif value == D_LI && self.tbl_Allies then
+			table_insert(self.tbl_Allies,ent)
 		end
 	end
 end
@@ -1396,7 +1505,7 @@ end
 
 function NPC_Meta:PlaySound(_Sound,_SoundLevel,_SoundVolume,_SoundPitch,_UseDotPlay)
 	if self.IsSLVBaseNPC == true then return self:slvPlaySound(_Sound) end
-	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_PlaySound(_Sound,_SoundLevel) end -- Community contribution by Ivan
+	if self:GetNW2Bool("bZelusSNPC") == true then return self:Zelus_PlaySound(_Sound,_SoundLevel) end -- Community contribution by Ivan
 	if !self.CanPlaySounds then return end
 	if self.tbl_Sentences[_Sound] then
 		self:PlaySoundName(_Sound,_SoundLevel,_SoundPitch)
@@ -1509,8 +1618,8 @@ function ENT_Meta:Zelus_MoveToPosition(hPos) -- Community contribution by Ivan
 	end
 end
 
-function NPC_Meta:MoveToPosition(pos)
-	if self:GetNWBool("bZelusSNPC") == true then return self:Zelus_MoveToPosition(pos) end -- Community contribution by Ivan
+function NPC_Meta:MoveToPosition(pos,type)
+	if self:GetNW2Bool("bZelusSNPC") == true then return self:Zelus_MoveToPosition(pos) end -- Community contribution by Ivan
 	local tr = util.TraceLine({
 		start = pos +Vector(0,0,100),
 		endpos = pos -Vector(0,0,100),
@@ -1526,8 +1635,8 @@ function NPC_Meta:MoveToPosition(pos)
 	if tr.Hit then
 		dist = self:GetPos():Distance(tr.HitPos) -self:OBBMaxs().y
 	end
-	self:SetLastPosition(self:GetPos() +(pos -self:GetPos()):GetNormal() *dist)
-	self:TASKFUNC_LASTPOSITION()
+	-- self:SetLastPosition(self:GetPos() +(pos -self:GetPos()):GetNormal() *dist)
+	self:TASKFUNC_LASTPOSITION(self:GetPos() +(pos -self:GetPos()):GetNormal() *dist,type)
 end
 
 -- if SERVER then
@@ -1570,7 +1679,7 @@ function ENT_Meta:CreateTestingBlock(pos,time,invis)
 		self.testBlock = ents.Create("prop_dynamic")
 		self.testBlock:SetModel("models/hunter/blocks/cube025x025x025.mdl")
 		self.testBlock:SetPos(pos)
-		self.testBlock:SetColor(0,255,89,255)
+		self.testBlock:SetColor(Color(0,255,89,255))
 		self.testBlock:Spawn()
 		if !invis then
 			local glow = ents.Create("light_dynamic")

@@ -44,7 +44,7 @@ function CPTBase_Chat(ply,spoke)
 	if (ply:IsAdmin() or ply:IsSuperAdmin()) && (string.sub(lowered,1,11) == "!setfaction") then
 		local in_faction = string.sub(string.upper(spoke),13)
 		ply.Faction = in_faction
-		ply:SetNWString("CPTBase_NPCFaction",in_faction)
+		ply:SetNW2String("CPTBase_NPCFaction",in_faction)
 		ply:ChatPrint("Set faction to " .. in_faction)
 	end
 end
@@ -70,7 +70,7 @@ hook.Add("PlayerSpawn","CPTBase_StopIgnition",function(ply)
 end)
 
 hook.Add("InitialPlayerSpawn","CPTBase_AddDefaultInitialPlayerValues",function(ply)
-	ply:SetNWBool("CPTBase_IsPossessing",false)
+	ply:SetNW2Bool("CPTBase_IsPossessing",false)
 end)
 
 hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
@@ -92,28 +92,28 @@ hook.Add("PlayerSpawn","CPTBase_AddDefaultPlayerValues",function(ply)
 	ply.CPTBase_CurrentSoundtrackNPC = NULL
 	ply.CPTBase_CurrentSoundtrackTime = 0
 	ply.CPTBase_CurrentSoundtrackRestartTime = 0
-	if ply:GetNWString("CPTBase_NPCFaction") == nil then
-		ply:SetNWString("CPTBase_NPCFaction","FACTION_PLAYER")
+	if ply:GetNW2String("CPTBase_NPCFaction") == nil then
+		ply:SetNW2String("CPTBase_NPCFaction","FACTION_PLAYER")
 	end
-	ply:SetNWBool("CPTBase_IsPossessing",false)
-	ply:SetNWString("CPTBase_PossessedNPCClass",nil)
-	ply:SetNWEntity("CPTBase_PossessedNPC",NULL)
-	ply:SetNWInt("CPTBase_Magicka",100)
-	ply:SetNWInt("CPTBase_MaxMagicka",100)
-	ply:SetNWInt("CPTBase_NextMagickaT",5)
-	ply:SetNWString("CPTBase_SpellConjuration","npc_cpt_parasite")
+	ply:SetNW2Bool("CPTBase_IsPossessing",false)
+	ply:SetNW2String("CPTBase_PossessedNPCClass",nil)
+	ply:SetNW2Entity("CPTBase_PossessedNPC",NULL)
+	ply:SetNW2Int("CPTBase_Magicka",100)
+	ply:SetNW2Int("CPTBase_MaxMagicka",100)
+	ply:SetNW2Int("CPTBase_NextMagickaT",5)
+	ply:SetNW2String("CPTBase_SpellConjuration","npc_cpt_parasite")
 end)
 
 if SERVER then
 	hook.Add("Think","CPTBase_PlayerRagdolling",function()
 		for _,v in ipairs(player.GetAll()) do
 			v:UpdateNPCFaction()
-			if v:GetNWInt("CPTBase_Magicka") < v:GetNWInt("CPTBase_MaxMagicka") && CurTime() > v:GetNWInt("CPTBase_NextMagickaT") then
-				v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_Magicka") +1)
-				if v:GetNWInt("CPTBase_Magicka") > v:GetNWInt("CPTBase_MaxMagicka") then
-					v:SetNWInt("CPTBase_Magicka",v:GetNWInt("CPTBase_MaxMagicka"))
+			if v:GetNW2Int("CPTBase_Magicka") < v:GetNW2Int("CPTBase_MaxMagicka") && CurTime() > v:GetNW2Int("CPTBase_NextMagickaT") then
+				v:SetNW2Int("CPTBase_Magicka",v:GetNW2Int("CPTBase_Magicka") +1)
+				if v:GetNW2Int("CPTBase_Magicka") > v:GetNW2Int("CPTBase_MaxMagicka") then
+					v:SetNW2Int("CPTBase_Magicka",v:GetNW2Int("CPTBase_MaxMagicka"))
 				end
-				v:SetNWInt("CPTBase_NextMagickaT",CurTime() +1)
+				v:SetNW2Int("CPTBase_NextMagickaT",CurTime() +1)
 			end
 			if IsValid(v) && v.CPTBase_HasBeenRagdolled then
 				if IsValid(v:GetCPTBaseRagdoll()) then
@@ -169,7 +169,7 @@ end
 if CLIENT then
 	hook.Add("PlayerStartVoice","CPTBase_SetVoiceData",function(ply)
 		for _,v in ipairs(ents.GetAll()) do
-			if v:IsValid() && v:IsNPC() && v:GetNWBool("IsCPTBase_NPC") then
+			if v:IsValid() && v:IsNPC() && v:GetNW2Bool("IsCPTBase_NPC") then
 				net.Start("cpt_SpeakingPlayer")
 				net.WriteEntity(v)
 				net.WriteEntity(ply)
@@ -178,3 +178,28 @@ if CLIENT then
 		end
 	end)
 end
+
+properties.Add("Control NPC", {
+	MenuLabel = "#Control NPC",
+	Order = 9999,
+	MenuIcon = "icon16/pill.png",
+
+	Filter = function(self,ent,ply)
+		if !IsValid(ent) then return false end
+		if !ent:IsNPC() then return false end
+		if ent.Base != "npc_cpt_base" then return false end
+		return true
+	end,
+	Action = function(self,ent) -- CS
+		self:MsgStart()
+			net.WriteEntity(ent)
+		self:MsgEnd()
+	end,
+	Receive = function(self,length,player) -- SV
+		local ent = net.ReadEntity()
+		if !self:Filter(ent,player) then return end
+		if ent.IsPossessed && ent:GetPossessor() != player then return end
+		local switch = !ent.IsPossessed
+		ent:ControlNPC(switch,player)
+	end
+})

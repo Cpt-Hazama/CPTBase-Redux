@@ -31,16 +31,16 @@ function SWEP:ViewModelDrawn()
 					-- net.WriteVector(ShootPos)
 					-- net.WriteEntity(self)
 					-- net.SendToServer()
-					self:SetNWVector("cpt_CModelshootpos",ShootPos)
+					self:SetNW2Vector("cpt_CModelshootpos",ShootPos)
 				end
 			end
 			-- net.Start("cpt_CModel")
 			-- net.WriteEntity(self._CModel)
 			-- net.WriteEntity(self)
 			-- net.SendToServer()
-			self:SetNWVector("cpt_CModelshootpos",ShootPos)
-			self:SetNWEntity("cpt_CModel",self._CModel)
-			-- print(self:GetNWEntity("cpt_CModel"))
+			self:SetNW2Vector("cpt_CModelshootpos",ShootPos)
+			self:SetNW2Entity("cpt_CModel",self._CModel)
+			-- print(self:GetNW2Entity("cpt_CModel"))
 			-- print(self._CModel)
 		end
 	end
@@ -97,7 +97,7 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	local move1 = 0
 	local move2 =  0
 	if self.AdjustViewModel == true then
-		if self:GetNWBool("cptbase_UseIronsights") == false then
+		if self:GetNW2Bool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
 			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
 			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
@@ -107,7 +107,7 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
 			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
-		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
 			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
 			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
 			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
@@ -119,7 +119,7 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
 		end
 	else
-		if self:GetNWBool("cptbase_UseIronsights") == false then
+		if self:GetNW2Bool("cptbase_UseIronsights") == false then
 			opos:Add(ang:Right() *0)
 			opos:Add(ang:Forward() *0)
 			opos:Add(ang:Up() *0)
@@ -129,7 +129,7 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 			ang:RotateAroundAxis(ang:Right(),0)
 			ang:RotateAroundAxis(ang:Up(),0)
 			ang:RotateAroundAxis(ang:Forward(),0)
-		elseif self:GetNWBool("cptbase_UseIronsights") == true then
+		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
 			-- opos:Add(ang:Right() *(self.Ironsights.Pos.Right))
 			-- opos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
 			-- opos:Add(ang:Up() *(self.Ironsights.Pos.Up))
@@ -152,7 +152,7 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	end
 
 	if self.UseLuaMovement == true then
-		if !self:GetNWBool("cptbase_UseIronsights") then
+		if !self:GetNW2Bool("cptbase_UseIronsights") then
 			ang = ang +Angle(math.cos(CurTime() *frameMultiply),math.cos(CurTime() *frameMultiply) /2,math.cos(CurTime() *frameMultiply))
 		end
 		if self.Owner:IsOnGround() then

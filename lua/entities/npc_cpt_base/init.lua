@@ -2,12 +2,15 @@ if !CPTBase then return end
 AddCSLuaFile('cl_init.lua')
 AddCSLuaFile('shared.lua')
 include('ai_schedules.lua')
-include('animator.lua')
+include('controller.lua')
 include('shared.lua')
 include('tasks.lua')
 include('states.lua')
 
-	-- Adds base_ai data to base_entity --
+local table_HasValue = table.HasValue
+local table_insert = table.insert
+local table_Count = table.Count
+
 AccessorFunc(ENT,"m_iClass","NPCClass",FORCE_NUMBER)
 AccessorFunc(ENT,"m_fMaxYawSpeed","MaxYawSpeed",FORCE_NUMBER)
 
@@ -184,9 +187,9 @@ function ENT:Initialize()
 	if !IsValid(self:GetOwner()) then
 		self:SetOwner(self:GetCreator())
 	end
-	self:SetNWBool("IsCPTBase_NPC",true)
-	self:SetNWEntity("cpt_SpokenPlayer",NULL)
-	self:SetNWString("cpt_Faction",self.Faction)
+	self:SetNW2Bool("IsCPTBase_NPC",true)
+	self:SetNW2Entity("cpt_SpokenPlayer",NULL)
+	self:SetNW2String("cpt_Faction",self.Faction)
 	self:SetNPCModel()
 	self:DrawShadow(true)
 	self:SetHullSizeNormal()
@@ -216,7 +219,6 @@ function ENT:Initialize()
 	self:SetNPCRenderMode(RENDERMODE_NORMAL)
 	self.HasSetTypeOnSpawn = false
 	self.IsPossessed = false
-	self.Possessor = nil
 	self.DidGetHit = false
 	self.tbl_EnemyMemory = {}
 	self.tbl_FriendMemory = {}
@@ -274,7 +276,7 @@ function ENT:Initialize()
 	self.Enemy = NULL
 	self.LastSpottedEnemyT = 0
 	self.HasAutoResetEnemy = false
-	self:SetNWString("CPTBase_NPCFaction",self.Faction)
+	self:SetNW2String("CPTBase_NPCFaction",self.Faction)
 	if GetConVarNumber("cpt_aiusecustomnodes") == 1 then
 		self.UseCPTBaseAINavigation = true
 	end
@@ -295,12 +297,12 @@ function ENT:Initialize()
 		self.LeavesBlood = false
 	end
 	if self.LeavesBlood == true then
-		if self.AutomaticallySetsUpDecals && table.Count(self.BloodDecal) <= 0 then
+		if self.AutomaticallySetsUpDecals && table_Count(self.BloodDecal) <= 0 then
 			self:SetupBloodDecals()
 		end
 	end
 
-	if table.Count(self.tbl_Capabilities) > 0 then
+	if table_Count(self.tbl_Capabilities) > 0 then
 		for _,cap in ipairs(self.tbl_Capabilities) do
 			if type(cap) == "number" then
 				self:CapabilitiesAdd(bit.bor(cap))
@@ -422,9 +424,10 @@ function ENT:OnDeath(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnDeathAnimationFinished(dmg,dmginfo,hitbox) end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:SetUpRangeAttackTarget(subtractdist)
+function ENT:SetUpRangeAttackTarget(subtractdist,proj)
+	local ent = proj or self
 	if self.IsPossessed then
-		return (self:Possess_AimTarget() -self:LocalToWorld(Vector(0,0,0)))
+		return (self:Possess_AimTarget() -ent:GetPos())
 	else
 		if IsValid(self:GetEnemy()) then
 			if self:GetEnemy():IsPlayer() then
@@ -433,7 +436,7 @@ function ENT:SetUpRangeAttackTarget(subtractdist)
 				return (self:GetEnemy():GetPos() -self:LocalToWorld(Vector(0,0,0)))
 			end
 		else
-			return ((self:GetPos() +self:GetForward() *900) -self:LocalToWorld(Vector(0,0,0)))
+			return ((ent:GetPos() +self:GetForward() *900) -self:LocalToWorld(Vector(0,0,0)))
 		end
 	end
 end
@@ -518,19 +521,11 @@ end
 -- end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_AimTarget()
-	return self:Possess_EyeTrace(self.Possessor).HitPos
+	return self:PossessorTrace().HitPos
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_EyeTrace(possessor)
-	if possessor == nil then
-		error("CONGRATULATIONS! YOU DIDN'T READ THE DESCRIPTION! :D THIS TRULY SHOWS YOU HAVE A LOW IQ..IF YOU WANT TO FIX THIS ERROR, THEN READ THE DESCRIPTION. IF I SEE YOU REPORT THIS ERROR ON THE WORKSHOP PAGE, YOU'LL BE INSTANTLY BLOCKED! IF YOU STILL WANT TO USE SILVERLAN'S MODS, THEN GO HERE: https://steamcommunity.com/workshop/filedetails/?id=1516704388")
-		return
-	end
-	local tracedata = {}
-	tracedata.start = possessor:GetEyeTrace().HitPos
-	tracedata.endpos = tracedata.start +possessor:GetAimVector() *32768
-	tracedata.filter = {possessor,self}
-	return util.TraceLine(tracedata)
+	return self:PossessorTrace().HitPos
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Commands(possessor)
@@ -550,7 +545,7 @@ function ENT:Possess_Commands(possessor)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetPossessorKey(key)
-	return self.Possessor:KeyDown(key)
+	return self:GetPossessor():KeyDown(key)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_CustomCommands(possessor)
@@ -587,8 +582,8 @@ function ENT:Possess_Move(possessor)
 	if self:GetMoveType() != MOVETYPE_FLY then
 		if !self:CanPerformProcess() then return end
 		if wKey then
-			-- self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,((self:Possess_AimTarget() -self:Possess_EyeTrace(self.Possessor).Normal) -self:GetPos()):Angle().y,20),0))
-			self:SetAngles(Angle(0,LerpAngle(self:GetMaxYawSpeed() *0.001,self:GetAngles(),((self:Possess_AimTarget() -self:Possess_EyeTrace(self.Possessor).Normal) -self:GetPos()):Angle()).y,0))
+			-- self:SetAngles(Angle(0,math.ApproachAngle(self:GetAngles().y,((self:Possess_AimTarget() -self:Possess_EyeTrace(self:GetPossessor()).Normal) -self:GetPos()):Angle().y,20),0))
+			self:SetAngles(Angle(0,LerpAngle(self:GetMaxYawSpeed() *0.001,self:GetAngles(),((self:Possess_AimTarget() -self:Possess_EyeTrace(self:GetPossessor()).Normal) -self:GetPos()):Angle()).y,0))
 			local trace = util.TraceLine({
 				start = self:GetPos() +self:OBBCenter(),
 				-- endpos = self:GetPos() +self:OBBCenter() +posAim *self.Possessor_MaxMoveDistanceForward,
@@ -840,13 +835,13 @@ function ENT:LoadObjectData(datamod,dataname) // Similar to PredatorCZ's system,
 	}
 	for _,data in ipairs(files) do
 		if string.find(data,".mdl") then
-			table.insert(objectcache["Models"],data)
+			table_insert(objectcache["Models"],data)
 		end
 		if string.find(data,".pcf") then
-			table.insert(objectcache["Particles"],data)
+			table_insert(objectcache["Particles"],data)
 		end
 		if string.find(data,".wav") then
-			table.insert(objectcache["Sounds"],data)
+			table_insert(objectcache["Sounds"],data)
 		end
 	end
 	return objectcache
@@ -865,7 +860,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetNPCModel(mdl)
 	if mdl == nil then
-		if table.Count(self.ModelTable) > 0 then
+		if table_Count(self.ModelTable) > 0 then
 			self:SetModel(self:SelectFromTable(self.ModelTable))
 		-- else
 			-- self:ErrorOccured()
@@ -880,43 +875,67 @@ function ENT:UpdateSight(sight,find)
 	self.FindEntitiesDistance = find
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:ApplyAngles(ang,speed,y)
+	local target = (type(ang) == "Vector" && (ang -self:GetPos()):Angle()) or ang
+	if y then
+		self:SetIdealYawAndUpdate(target.y,speed)
+		return
+	end
+	self:SetAngles(LerpAngle(FrameTime() *speed,self:GetAngles(),target))
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:TurnToPosition(pos,speed)
+	local ang = Angle(0,(pos -self:GetPos()):Angle().y,0)
+	self:SetIdealYawAndUpdate(ang.y,speed or self:GetMaxYawSpeed())
+	self:SetAngles(Angle(ang.p,self:GetAngles().y,ang.r))
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetLastPosition()
+	return self:GetInternalVariable("m_vecLastPosition")
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:FacePosition(pos)
+	self:SetLastPosition(pos)
+	self:RunTaskArray({"TASK_FACE_LASTPOSITION"},{0})
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetupBloodDecals()
-	if table.Count(self.BloodEffect) > 0 && table.Count(self.BloodDecal) <= 0 then
-		if table.HasValue(self.BloodEffect,"blood_impact_red") then
-			table.insert(self.BloodDecal,"CPTBase_RedBlood")
+	if table_Count(self.BloodEffect) > 0 && table_Count(self.BloodDecal) <= 0 then
+		if table_HasValue(self.BloodEffect,"blood_impact_red") then
+			table_insert(self.BloodDecal,"CPTBase_RedBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_yellow") then
-			table.insert(self.BloodDecal,"CPTBase_YellowBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_yellow") then
+			table_insert(self.BloodDecal,"CPTBase_YellowBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_red_01") then
-			table.insert(self.BloodDecal,"Blood")
+		if table_HasValue(self.BloodEffect,"blood_impact_red_01") then
+			table_insert(self.BloodDecal,"Blood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_yellow_01") || table.HasValue(self.BloodEffect,"blood_impact_green_01") then
-			table.insert(self.BloodDecal,"YellowBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_yellow_01") || table_HasValue(self.BloodEffect,"blood_impact_green_01") then
+			table_insert(self.BloodDecal,"YellowBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_blue") then
-			table.insert(self.BloodDecal,"CPTBase_BlueBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_blue") then
+			table_insert(self.BloodDecal,"CPTBase_BlueBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_green") then
-			table.insert(self.BloodDecal,"CPTBase_GreenBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_green") then
+			table_insert(self.BloodDecal,"CPTBase_GreenBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_purple") then
-			table.insert(self.BloodDecal,"CPTBase_PurpleBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_purple") then
+			table_insert(self.BloodDecal,"CPTBase_PurpleBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_orange") then
-			table.insert(self.BloodDecal,"CPTBase_OrangeBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_orange") then
+			table_insert(self.BloodDecal,"CPTBase_OrangeBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_white") then
-			table.insert(self.BloodDecal,"CPTBase_WhiteBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_white") then
+			table_insert(self.BloodDecal,"CPTBase_WhiteBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_black") then
-			table.insert(self.BloodDecal,"CPTBase_BlackBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_black") then
+			table_insert(self.BloodDecal,"CPTBase_BlackBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_pink") then
-			table.insert(self.BloodDecal,"CPTBase_PinkBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_pink") then
+			table_insert(self.BloodDecal,"CPTBase_PinkBlood")
 		end
-		if table.HasValue(self.BloodEffect,"blood_impact_infection") then
-			table.insert(self.BloodDecal,"CPTBase_ZombieBlood")
+		if table_HasValue(self.BloodEffect,"blood_impact_infection") then
+			table_insert(self.BloodDecal,"CPTBase_ZombieBlood")
 		end
 	end
 end
@@ -1021,7 +1040,7 @@ function ENT:UpdateRelations() // Obsolete
 				end
 			elseif v:IsPlayer() && v:Alive() && v.IsPossessing == false then
 				if v.Faction == "FACTION_NOTARGET" then return end
-				if (self:GetFaction() == "FACTION_PLAYER" || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+				if (self:GetFaction() == "FACTION_PLAYER" || self.FriendlyToPlayers == true) && !table_HasValue(self.tbl_AddToEnemies,v) then
 					if v.IsPossessing == true then return end
 					if GetConVarNumber("ai_ignoreplayers") == 1 then return end
 					self:SetRelationship(v,D_LI)
@@ -1231,6 +1250,9 @@ function ENT:Think()
 		self:LoseEnemies()
 	end
 	-- self:PlayerChat(self:GetEnemy())
+	if self.IsPossessed then
+		self:ControlMovement()
+	end
 	self:PoseParameters()
 	self:SetStatus()
 	self:FootStepCode()
@@ -1246,7 +1268,7 @@ function ENT:Think()
 	elseif self.IsSwimType == true then
 		self:SwimAI()
 		if self.IsPossessed then
-			self.Possessor:ChatPrint("Swim AI is not possessable yet. Removing SNPC to prevent errors.")
+			self:GetPossessor():ChatPrint("Swim AI is not possessable yet. Removing SNPC to prevent errors.")
 			self:Remove()
 		end
 	end
@@ -1327,8 +1349,8 @@ end
 function ENT:HearingCode()
 	if self.ReactsToSound then
 		for _,v in pairs(ents.FindInSphere(self:GetPos(),self.HearingDistance)) do
-			if v:IsPlayer() && !v.UseNotarget && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNWBool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
-				if (IsValid(self:GetNWEntity("cpt_SpokenPlayer")) && self:GetNWEntity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
+			if v:IsPlayer() && !v.UseNotarget && (v:GetMoveType() == MOVETYPE_WALK || v:GetMoveType() == MOVETYPE_LADDER) && v:GetNW2Bool("CPTBase_IsPossessing") == false && self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v.Faction != "FACTION_NOTARGET" && self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction then
+				if (IsValid(self:GetNW2Entity("cpt_SpokenPlayer")) && self:GetNW2Entity("cpt_SpokenPlayer") == v) || (!v:Crouching() && (v:KeyDown(IN_FORWARD) or v:KeyDown(IN_BACK) or v:KeyDown(IN_MOVELEFT) or v:KeyDown(IN_MOVERIGHT) or v:KeyDown(IN_JUMP))) then
 					if self:GetDistanceToVector(v:GetPos(),1) <= self.HearingDistance then
 						self:OnHearSound(v)
 					end
@@ -1345,7 +1367,7 @@ end
 net.Receive("cpt_SpeakingPlayer",function(len,pl)
 	v = net.ReadEntity()
 	ent = net.ReadEntity()
-	v:SetNWEntity("cpt_SpokenPlayer",ent)
+	v:SetNW2Entity("cpt_SpokenPlayer",ent)
 end)
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Swim_TurnAngle(turn)
@@ -1493,7 +1515,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetMovementType(move,onspawn)
 	local types = {MOVETYPE_STEP,MOVETYPE_NONE,MOVETYPE_FLY,MOVETYPE_SWIM}
-	if table.HasValue(types,move) then
+	if table_HasValue(types,move) then
 		self.MoveType = move
 		if move == MOVETYPE_FLY then
 			self:CapabilitiesAdd(bit.bor(CAP_MOVE_SWIM,CAP_SKIP_NAV_GROUND_CHECK))
@@ -1690,7 +1712,7 @@ function ENT:SetStatus()
 		self:SetState(NPC_STATE_COMBAT,true)
 	elseif IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self) then
 		self:SetState(NPC_STATE_ALERT,true)
-	elseif table.Count(self.tbl_EnemyMemory) <= 0 && (self:GetState() == NPC_STATE_ALERT || self:GetState() == NPC_STATE_COMBAT) then
+	elseif table_Count(self.tbl_EnemyMemory) <= 0 && (self:GetState() == NPC_STATE_ALERT || self:GetState() == NPC_STATE_COMBAT) then
 		self:SetState(NPC_STATE_IDLE,true)
 	end
 end
@@ -1701,7 +1723,7 @@ function ENT:PoseParameters()
 	local pp = self.DefaultPoseParameters
 	local pp_speed = self.DefaultPoseParamaterSpeed
 	if self.IsPossessed then
-		self:LookAtPosition(self:Possess_EyeTrace(self.Possessor).HitPos,self.DefaultPoseParameters,pp_speed,self.ReversePoseParameters)
+		self:LookAtPosition(self:Possess_EyeTrace(self:GetPossessor()).HitPos,self.DefaultPoseParameters,pp_speed,self.ReversePoseParameters)
 	else
 		if IsValid(self:GetEnemy()) then
 			-- self:LookAtPosition(self:FindHeadPosition(self:GetEnemy()),{"aim_pitch","aim_yaw","head_pitch","head_yaw"},10)
@@ -1774,7 +1796,7 @@ function ENT:UpdateFriends()
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
 			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
-				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table_HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
 					self:OnSpottedFriendly(v)
 					UpdateTableList(self.tbl_FriendMemory,v)
@@ -1796,7 +1818,7 @@ function ENT:UpdateFriends_WIP()
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then
 			if self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle) && !v.IsPossessing then
-				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table.HasValue(self.tbl_AddToEnemies,v) then
+				if v.Faction != "FACTION_NOTARGET" && (self:GetFaction() == "FACTION_PLAYER" || v.Faction == self.Faction || self.FriendlyToPlayers == true) && !table_HasValue(self.tbl_AddToEnemies,v) then
 					self:SetRelationship(v,D_LI,true)
 					self:OnSpottedFriendly(v)
 				end
@@ -1823,17 +1845,17 @@ function ENT:FindEnemiesByType(v,searchType)
 			if self.tbl_IgnoreEntities[v:GetClass()] then return end
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
 				if v.UseNotarget then return end
-				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tbl_BlackList,v) then
+				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table_HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
 		end
 	elseif searchType == 2 then -- Players
-		if self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
+		if self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self:GetPossessor() then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" then
 				if v.UseNotarget then return end
 				if v.Faction == "FACTION_NOTARGET" then return end
-				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tbl_BlackList,v) then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table_HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
@@ -1855,15 +1877,15 @@ function ENT:LocateEnemies()
 			if v:GetClass() == "bullseye_strider_focus" then break end
 			if v.UseNotarget then return end
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.Faction != "FACTION_NONE" && self:CanSetAsEnemy(v) then
-				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table.HasValue(self.tbl_BlackList,v) then
+				if ((v:GetFaction() == nil or v:GetFaction() != nil) && v.Faction != self:GetFaction()) && self:Disposition(v) != D_LI && !table_HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
-		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self.Possessor then
+		elseif self.FriendlyToPlayers == false && GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() && !v.IsPossessing && v != self:GetPossessor() then
 			if (self:Visible(v) && self:CanSeeEntities(v) && self:FindInCone(v,self.ViewAngle)) && v.IsPossessing != true && v.Faction != "FACTION_NONE" then
 				if v.UseNotarget then return end
 				if v.Faction == "FACTION_NOTARGET" then return end
-				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table.HasValue(self.tbl_BlackList,v) then
+				if self:GetFaction() != "FACTION_PLAYER" && self.Faction != v.Faction && !table_HasValue(self.tbl_BlackList,v) then
 					return v
 				end
 			end
@@ -1885,8 +1907,8 @@ function ENT:UpdateEnemies_WIP()
 	end
 	if newEnemy then
 		self:SetRelationship(newEnemy,D_HT)
-		if !table.HasValue(self.tbl_EnemyMemory,newEnemy) then
-			table.insert(self.tbl_EnemyMemory,newEnemy)
+		if !table_HasValue(self.tbl_EnemyMemory,newEnemy) then
+			table_insert(self.tbl_EnemyMemory,newEnemy)
 		end
 		self.Enemy = findEnemy
 		self:SetEnemy(self.Enemy)
@@ -1901,13 +1923,13 @@ function ENT:UpdateEnemies()
 	if self.Faction == "FACTION_NONE" || self.CanSetEnemy == false then return end
 	local totalenemies = self.EnemyMemoryCount
 	if IsValid(self:GetEnemy()) then
-		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy():GetNWBool("CPTBase_IsPossessing") || self:GetEnemy().Faction == "FACTION_NOTARGET"))) then
+		if (!IsValid(self:GetEnemy()) || self:GetEnemy():Health() <= 0) || (self.FriendlyToPlayers && (self:GetEnemy():IsPlayer() && (GetConVarNumber("ai_ignoreplayers") == 1 || self:GetEnemy():GetNW2Bool("CPTBase_IsPossessing") || self:GetEnemy().Faction == "FACTION_NOTARGET"))) then
 			self:RemoveFromMemory(self:GetEnemy())
 		end
 	end
 	local lastenemy = self:GetEnemy()
 	local newenemy
-	local oldcount = table.Count(self.tbl_EnemyMemory)
+	local oldcount = table_Count(self.tbl_EnemyMemory)
 	self:UpdateMemory()
 	if self.CanSeeAllEnemies == true then
 		newenemy = self:FindAllEnemies()
@@ -1916,14 +1938,14 @@ function ENT:UpdateEnemies()
 	end
 	if newenemy == nil then return end
 	if newenemy:IsPlayer() then
-		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNWBool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
+		if self.FriendlyToPlayers || GetConVarNumber("ai_ignoreplayers") == 1 || newenemy:GetNW2Bool("CPTBase_IsPossessing") then self:RemoveFromMemory(newenemy) end
 		self:SetRelationship(newenemy,D_HT,true)
 	else
 		self:SetRelationship(newenemy,D_HT)
 	end
-	if !table.HasValue(self.tbl_EnemyMemory,newenemy) then
-		table.insert(self.tbl_EnemyMemory,newenemy)
-		self:OnFoundEnemy(table.Count(self.tbl_EnemyMemory),oldcount,newenemy)
+	if !table_HasValue(self.tbl_EnemyMemory,newenemy) then
+		table_insert(self.tbl_EnemyMemory,newenemy)
+		self:OnFoundEnemy(table_Count(self.tbl_EnemyMemory),oldcount,newenemy)
 	end
 	self.Enemy = self:GetClosestEntity(self.tbl_EnemyMemory)
 	self:SetEnemy(self.Enemy)
@@ -1970,7 +1992,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:RemoveFromMemory(foundent)
 	local enemymemory = self.tbl_EnemyMemory
-	local oldCount = table.Count(enemymemory)
+	local oldCount = table_Count(enemymemory)
 	if foundent == nil then return false end
 	if foundent == self:GetEnemy() then
 		self:SetEnemy(nil)
@@ -1983,8 +2005,8 @@ function ENT:RemoveFromMemory(foundent)
 		self.EnemyMemoryCount = 0
 	end
 	-- self:PlayerChat(oldCount)
-	-- self:PlayerChat(table.Count(enemymemory))
-	if oldCount > 0 && table.Count(enemymemory) <= 0 then
+	-- self:PlayerChat(table_Count(enemymemory))
+	if oldCount > 0 && table_Count(enemymemory) <= 0 then
 		self:OnAreaCleared()
 	end
 	return true
@@ -1992,7 +2014,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CheckForValidMemory()
 	local memory = self.tbl_EnemyMemory
-	local nocheck_count = table.Count(memory)
+	local nocheck_count = table_Count(memory)
 	local checked_memory = {}
 	if nocheck_count <= 0 then
 		return 0
@@ -2001,11 +2023,11 @@ function ENT:CheckForValidMemory()
 			if ent != nil then
 				// wut
 			else
-				table.insert(checked_memory,ent)
+				table_insert(checked_memory,ent)
 			end
 		end
-		if table.Count(checked_memory) > 0 then
-			return table.Count(checked_memory)
+		if table_Count(checked_memory) > 0 then
+			return table_Count(checked_memory)
 		else
 			return 0
 		end
@@ -2021,17 +2043,17 @@ function ENT:ClearMemory()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateBloodEffects(dmg,hitgroup,dmginfo,doignore)
-	if table.Count(self.BloodEffect) <= 0 then return end
+	if table_Count(self.BloodEffect) <= 0 then return end
 	if dmg:GetDamagePosition() != Vector(0,0,0) or (self:IsOnFire() && (IsValid(dmg:GetAttacker()) && dmg:GetAttacker():GetClass() != "entityflame") && (DoIgnore == false)) then
-		ParticleEffect(self:SelectFromTable(self.BloodEffect),dmg:GetDamagePosition(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),false)
+		ParticleEffect(self:SelectFromTable(self.BloodEffect),dmg:GetDamagePosition(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)))
 	else
 		if (self:IsOnFire() && (IsValid(dmg:GetAttacker()) && dmg:GetAttacker():GetClass() == "entityflame")) then return end
-		ParticleEffect(self:SelectFromTable(self.BloodEffect),self:FindCenter(self),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),false)
+		ParticleEffect(self:SelectFromTable(self.BloodEffect),self:FindCenter(self),Angle(math.random(0,360),math.random(0,360),math.random(0,360)))
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:CreateBloodDecals(dmg,dmginfo,hitbox)
-	if table.Count(self.BloodDecal) <= 0 then return end
+	if table_Count(self.BloodDecal) <= 0 then return end
 	local min = 80
 	local max = 500
 	local tr = util.TraceLine({
@@ -2081,7 +2103,7 @@ function ENT:CallNearbyAllies(range,moveRange)
 					v:SetSchedule(SCHED_FORCED_GO_RUN)
 				end
 			end
-			table.insert(tb,v)
+			table_insert(tb,v)
 		end
 	end
 	return tb
@@ -2445,12 +2467,13 @@ function ENT:OnRemove()
 		end
 	end
 	if self.CurrentSound != nil then
-		if self.CurrentPlayingSound != nil && (self.tbl_Sounds["Death"] != nil && table.HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound)) then
+		if self.CurrentPlayingSound != nil && (self.tbl_Sounds["Death"] != nil && table_HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound)) then
 			return
 		end
-		if self.tbl_Sounds["Death"] && table.HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound) then return end
+		if self.tbl_Sounds["Death"] && table_HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound) then return end
 		self.CurrentSound:Stop()
 	end
+	self:ControlNPC(false,self:GetPossessor())
 	self:WhenRemoved()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -2517,8 +2540,8 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 	for _,ent in ipairs(ents.FindInSphere(pos,dist)) do
 		if ent:IsValid() && self:Visible(ent) then
 			if self.AllowPropDamage then
-				if table.HasValue(self.tbl_AttackablePropNames,ent:GetClass()) then
-					table.insert(tblprops,ent)
+				if table_HasValue(self.tbl_AttackablePropNames,ent:GetClass()) then
+					table_insert(tblprops,ent)
 				end
 				self:AttackProps(tblprops,dmg,dmgtype,force,OnHit)
 			end
@@ -2549,7 +2572,7 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,OnHit)
 						if(OnHit) then
 							OnHit(ent,dmginfo)
 						end
-						table.insert(tblhit,ent)
+						table_insert(tblhit,ent)
 						if self.CanRagdollEnemies then
 							if math.random(1,self.RagdollEnemyChance) == 1 then
 								self:RagdollEnemy(dist,self.RagdollEnemyVelocity,tblhit)
@@ -2718,7 +2741,7 @@ function ENT:AutoSetupSoundTable(tbl,needles)
 				if !self.tbl_Sounds[tbl] then
 					self.tbl_Sounds[tbl] = {}
 				end
-				table.insert(self.tbl_Sounds[tbl],sndfile)
+				table_insert(self.tbl_Sounds[tbl],sndfile)
 			end
 		end
 	end
@@ -2738,7 +2761,7 @@ function ENT:GetEntitiesByDistance_NEW(tbl,argent)
 	local argent = argent or self
 	for i = 1,#tbl do
 		if IsValid(tbl[i]) then
-			table.insert(outputTable,tbl[i]:GetPos():Distance(argent:GetPos()))
+			table_insert(outputTable,tbl[i]:GetPos():Distance(argent:GetPos()))
 		end
 	end
 	return table.SortByKey(outputTable,true)[1]
@@ -2771,7 +2794,7 @@ function ENT:GetClosestNodes(tbl,ent)
 		if self:GetPos():Distance(v) <= 375 && self:VisibleVec(v) then
 			close[v] = self:GetPos():Distance(v)
 		else
-			if table.HasValue(close,v) then
+			if table_HasValue(close,v) then
 				table.remove(close,close[v])
 			end
 		end
@@ -2796,7 +2819,7 @@ function ENT:FindWanderNodes(tbl)
 	local close = {}
 	for _,v in ipairs(tbl) do
 		if IsValid(v) && self:GetPos():Distance(v) <= 375 then
-			table.insert(close,v)
+			table_insert(close,v)
 		end
 	end
 	return close
@@ -2825,6 +2848,8 @@ function ENT:SetMovementAnimation(_Animation)
 	if self:GetMovementAnimation() != anim then
 		self:SetMovementActivity(anim)
 	end
+
+	return anim
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompatibility)
@@ -2875,7 +2900,11 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 			task = "TASK_PLAY_SEQUENCE"
 		end
 	end
-	self:ClearSchedule()
+	if self:GetActivity() == activity then
+		self:ResetSequenceInfo()
+		self:SetSaveValue("sequence",0)
+	end
+	-- self:ClearSchedule()
 	sched:EngTask(task,activity)
 	self:StartSchedule(sched)
 	self.CurrentAnimation = activity
@@ -2892,6 +2921,20 @@ function ENT:PlayActivity(activity,facetarget,usetime,addtime,slvbackwardscompat
 		end
 	end)
 	return activity
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:ForceAnimation(act)
+	if type(act) == "table" then
+		act = PICK(act)
+	end
+	if type(act) == "string" then
+		act = self:GetSequenceActivity(self:LookupSequence(act))
+	end
+	local sched = ai_sched_cpt.New(act)
+	sched:EngTask("TASK_PLAY_SEQUENCE",act)
+	self:StartSchedule(sched)
+	self:MaintainActivity()
+	self.CurrentAnimation = act
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFinishedAnimation(activity) end
@@ -2974,7 +3017,7 @@ function ENT:CreateAttackAnimation(callName,anim,facetarget,timestbl,dmgtbl,dmgd
 		dmgtype={},
 		temp=nil
 	}
-	-- table.insert(self.tbl_CreatedAttacks[callName],{animation = anim,face = facetarget,times = timestbl,dmg = dmgtbl,dmgdist = dmgdisttbl,dmgtype = dmgtypetbl,temp = tempanim})
+	-- table_insert(self.tbl_CreatedAttacks[callName],{animation = anim,face = facetarget,times = timestbl,dmg = dmgtbl,dmgdist = dmgdisttbl,dmgtype = dmgtypetbl,temp = tempanim})
 	self.tbl_CreatedAttacks[callName].animation = anim
 	self.tbl_CreatedAttacks[callName].facetarget = facetarget
 	self.tbl_CreatedAttacks[callName].times = timestbl
@@ -3001,13 +3044,13 @@ function ENT:PlayCreatedAttack(callName)
 		self:PlayActivity(anim,face)
 	end
 	for k,v in pairs(called.dmg) do
-		table.insert(dmgTable,v)
+		table_insert(dmgTable,v)
 	end
 	for k,v in pairs(called.dmgtype) do
-		table.insert(dmgtypeTable,v)
+		table_insert(dmgtypeTable,v)
 	end
 	for k,v in pairs(called.dmgdist) do
-		table.insert(dmgdistTable,v)
+		table_insert(dmgdistTable,v)
 	end
 	for k,v in pairs(called.times) do
 		timer.Simple(v,function()
@@ -3113,7 +3156,7 @@ function ENT:PlayFootStepSound()
 		-- filter = {self}
 	-- })
 	-- local dist = self:GetBonePosition(3):Distance(tr.HitPos)
-	-- if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) then
+	-- if (table_HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) then
 		-- if dist <= 3.9 && !self.LeftFootTouched then
 			-- self.LeftFootTouched = true
 			-- self:PlaySound("FootStep_" .. self:GetSpaceTexture(15),self.WalkSoundVolume,90,self.StepSoundPitch,true)
@@ -3121,13 +3164,13 @@ function ENT:PlayFootStepSound()
 			-- self.LeftFootTouched = false
 		-- end
 	-- end
-	if (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
+	if (table_HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
 		self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
 		self:DoPlaySound("FootStep")
 		self:OnStep("Walk")
 		self.NextFootSoundT_Walk = CurTime() + self.NextFootSound_Walk
 	end
-	if (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
+	if (table_HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
 		self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 		self:DoPlaySound("FootStep")
 		self:OnStep("Run")

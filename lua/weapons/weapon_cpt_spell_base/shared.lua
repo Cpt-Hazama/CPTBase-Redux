@@ -42,7 +42,7 @@ SWEP.FireAnimation = ACT_VM_PRIMARYATTACK_1
 function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	-- if self.IsDrawing == true then return end
 	-- if (!self:CanPrimaryAttack()) then return end
-	if self.CheckMagicka && self.Owner:GetNWInt("CPTBase_Magicka") < self.MagickaCost then self.Owner:ChatPrint("Not enough mana! *Required = " .. tostring(self.MagickaCost) .. " | Current: " .. tostring(self.Owner:GetNWInt("CPTBase_Magicka")) .. "/" .. tostring(self.Owner:GetNWInt("CPTBase_MaxMagicka")) .. "*") return end
+	if self.CheckMagicka && self.Owner:GetNW2Int("CPTBase_Magicka") < self.MagickaCost then self.Owner:ChatPrint("Not enough mana! *Required = " .. tostring(self.MagickaCost) .. " | Current: " .. tostring(self.Owner:GetNW2Int("CPTBase_Magicka")) .. "/" .. tostring(self.Owner:GetNW2Int("CPTBase_MaxMagicka")) .. "*") return end
 	self.IsFiring = true
 	self.CanUseIdle = false
 	timer.Simple(self.SpellDelay -self.SpellEffectDelay,function()
@@ -55,9 +55,9 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	if self.Owner:IsPlayer() then
 		self:DoFireAnimation()
 	end
-	local oldclip = self.Owner:GetNWInt("CPTBase_Magicka")
-	self.Owner:SetNWInt("CPTBase_Magicka",self.Owner:GetNWInt("CPTBase_Magicka") -self.MagickaCost)
-	local newclip = self.Owner:GetNWInt("CPTBase_Magicka")
+	local oldclip = self.Owner:GetNW2Int("CPTBase_Magicka")
+	self.Owner:SetNW2Int("CPTBase_Magicka",self.Owner:GetNW2Int("CPTBase_Magicka") -self.MagickaCost)
+	local newclip = self.Owner:GetNW2Int("CPTBase_Magicka")
 	self:OnPrimaryAttack(oldclip,newclip)
 	timer.Simple(self.SpellDelay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
 	timer.Simple(self.SpellDelay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
