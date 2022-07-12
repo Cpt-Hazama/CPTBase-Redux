@@ -57,10 +57,11 @@ SWEP.WorldModelAdjust = {
 
 SWEP.tbl_Sounds = {
 	["DryFire"] = {"weapons/ar2/ar2_empty.wav"},
-	["Fire"] = {"weapons/ar1/ar1_dist1.wav","weapons/ar1/ar1_dist2.wav"},
+	["Fire"] = {"^weapons/ar1/ar1_dist1.wav","^weapons/ar1/ar1_dist2.wav"},
 }
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnInit()
+	if CLIENT then return end
 	if self.Owner:IsNPC() && self.Owner.CPTBase_NPC != true then
 		self:Remove()
 	end

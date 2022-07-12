@@ -187,7 +187,7 @@ properties.Add("Control NPC", {
 	Filter = function(self,ent,ply)
 		if !IsValid(ent) then return false end
 		if !ent:IsNPC() then return false end
-		if ent.Base != "npc_cpt_base" then return false end
+		if ent.IsCPTBase_NPC != true then return false end
 		return true
 	end,
 	Action = function(self,ent) -- CS

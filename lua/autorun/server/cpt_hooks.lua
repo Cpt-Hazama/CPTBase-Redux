@@ -1,5 +1,23 @@
 if !CPTBase then return end
 -------------------------------------------------------------------------------------------------------------------
+cvars.AddChangeCallback("ai_ignoreplayers",function(convar_name,value_old,value_new)
+	if value_new == "1" then
+		local players = player.GetAll()
+		for _,npc in pairs(ents.FindByClass("npc_cpt_*")) do
+			for ply,data in pairs(npc.MemoryTable[D_HT]) do
+				if HasValue(players,ply) then
+					npc:RemoveFromMemory(ply,D_HT)
+				end
+			end
+			for ply,data in pairs(npc.MemoryTable[D_LI]) do
+				if HasValue(players,ply) then
+					npc:RemoveFromMemory(ply,D_LI)
+				end
+			end
+		end
+	end
+end)
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 	if ent.CPTBase_NPC == true then
 		ent.Hitbox = hitbox
@@ -9,14 +27,14 @@ hook.Add("ScaleNPCDamage","cpt_FindHitGroup",function(ent,hitbox,dmginfo)
 		end
 	end
 end)
-
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("ShouldCollide","CPTBase_NextbotNavShouldCollide_" .. math.Rand(1,99999999),function(ent1,ent2)
 	if ent1:GetClass() == "cpt_ai_pathfinding" && ent2 == ent1:GetOwner() then
 		return false
 	end
 	return true
 end)
-
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("EntityEmitSound","CPTBase_DetectEntitySounds",function(data)
 	if GetConVarNumber("ai_disabled") == 1 then
 		return nil -- Don't alter sound data, proceed
@@ -36,7 +54,7 @@ hook.Add("EntityEmitSound","CPTBase_DetectEntitySounds",function(data)
 	end
 	return nil
 end)
-
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("PlayerSpawnedNPC","cpt_SetOwnerNPC",function(ply,ent)
 	if ent:IsNPC() && ent.CPTBase_NPC then
 		if ent:GetOwner() == NULL then
@@ -44,7 +62,7 @@ hook.Add("PlayerSpawnedNPC","cpt_SetOwnerNPC",function(ply,ent)
 		end
 	end
 end)
-
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("OnNPCKilled","cpt_KilledNPC",function(victim,inflictor,killer)
 	if killer.CPTBase_NPC then
 		if killer != victim then
@@ -53,7 +71,7 @@ hook.Add("OnNPCKilled","cpt_KilledNPC",function(victim,inflictor,killer)
 		end
 	end
 end)
-
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("PlayerDeath","cpt_KilledPlayer",function(victim,inflictor,killer)
 	if killer.CPTBase_NPC then
 		if killer != victim then

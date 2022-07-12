@@ -12,6 +12,8 @@ ENT.GrenadeDistance = 1000
 ENT.GrenadeMinDistance = 450
 ENT.GrenadeChance = 65
 
+ENT.Possessor_CanFaceTrace = true
+
 ENT.BloodEffect = {"blood_impact_red"}
 
 ENT.tbl_Sounds = {
@@ -84,9 +86,9 @@ function ENT:OnThink()
 			self.ThrowEnemyPos = self:GetEnemy():GetPos()
 		end
 	end
-	if self.IsPossessed then
-		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
-	end
+	-- if self.IsPossessed then
+	-- 	self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
+	-- end
 	if IsValid(self:GetActiveWeapon()) then
 		self:GetActiveWeapon():OnNPCThink()
 		if self.IsMovingAround then

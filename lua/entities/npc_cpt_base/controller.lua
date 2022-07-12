@@ -1,14 +1,49 @@
 ENT.PossessorOptions = {}
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:ControlKeys(ent,keys)
-	if keys.lmb && self.DoAttack then
-		self:DoAttack()
+	if keys.lmb then
+		if self.Possess_Primary then
+			self:Possess_Primary(ent)
+		else
+			if self.DoAttack then
+				self:DoAttack()
+			end
+		end
 	end
-	if keys.rmb && self.DoRangeAttack then
-		self:DoRangeAttack()
+	if keys.rmb then
+		if self.Possess_Secondary then
+			self:Possess_Secondary(ent)
+		else
+			if self.DoRangeAttack then
+				self:DoRangeAttack()
+			end
+		end
 	end
-	if keys.space && self.DoLongAttack then
-		self:DoLongAttack()
+	if keys.space then
+		if self.Possess_Jump then
+			self:Possess_Jump(ent)
+		else
+			if self.DoLongAttack then
+				self:DoLongAttack()
+			elseif self.DoLeapAttack then
+				self:DoLeapAttack()
+			end
+		end
+	end
+	if keys.r then
+		if self.Possess_Reload then
+			self:Possess_Reload(ent)
+		end
+	end
+	if keys.ctrl then
+		if self.Possess_Duck then
+			self:Possess_Duck(ent)
+		end
+	end
+	if keys.alt then
+		if self.Possess_Walk then
+			self:Possess_Walk(ent)
+		end
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -54,18 +89,20 @@ function ENT:ControlNPC(setControlled,ply)
 	self.IsPossessed = false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:SetPossessorAimPos(vec)
+	self.PossessorAimPos = vec
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:GetPossessorAimPos()
+	return self.PossessorAimPos
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:PossessorTrace()
-	local ply = self:GetPossessor()
-	if !IsValid(ply) then return end
-
-	local tr = util.TraceLine({
-		start = ply:GetEyeTrace(),
-		endpos = ply:GetShootPos() +ply:GetAimVector() *32768,
-		filter = {ply,self},
-		mask = MASK_SHOT
-	})
-
-	return tr
+	return self:GetPossessorAimPos()
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_AimTarget() -- DEPRECATED, STOP USING THIS
+	return self:GetEnemy() or self:PossessorTrace()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:IsKeyDown(key)
@@ -84,6 +121,7 @@ function ENT:GetPlayerKeys(ent)
 		space=self:IsKeyDown(IN_JUMP),
 		shift=self:IsKeyDown(IN_SPEED),
 		zoom=self:IsKeyDown(IN_ZOOM),
+		ctrl=self:IsKeyDown(IN_DUCK),
 		e=self:IsKeyDown(IN_USE),
 		r=self:IsKeyDown(IN_RELOAD),
 		scroll_f=self:IsKeyDown(IN_WEAPON1),
@@ -106,12 +144,12 @@ function ENT:ControlMovement()
 	end
 
 	local contData = self.PossessorOptions
-	local contMoveType = contData.MovementType
 	local vec1,vec2 = self:GetCollisionBounds()
 	local centerPos = self:GetCenter()
 	local aimVec = ent:GetAimVector()
 	local forwardDir = ent:GetForward()
 	local rightDir = ent:GetRight()
+	local upDir = ent:GetUp()
 	local startPos = ent:GetPos() +Vector(0,0,10)
 	local movePos = startPos
 	local moveYaw = 0
@@ -119,18 +157,13 @@ function ENT:ControlMovement()
 	local moveAmount = math.Clamp(self:GetSequenceGroundSpeed(self:GetSequence()),50,450)
 	local act = self:GetActivity()
 	local isJumping = act == ACT_JUMP or act == ACT_GLIDE or act == ACT_LAND
+	local isAerial = self:GetMoveType() == MOVETYPE_FLY
+	if isAerial then
+		movePos = ent:GetPos()
+		offset = Vector(0,0,0)
+	end
+	local notMoving = (keys.w == false && keys.a == false && keys.s == false && keys.d == false)
 
-	if keys.zoom then
-		-- self:SetCalcViewData(nil,!self:GetNW2Bool("CH_ControllerUseBone"))
-	end
-	if keys.scroll_f then
-		-- local v = self:GetNW2Vector("CH_ControllerThirdOffset")
-		-- self:SetNW2Vector("CH_ControllerThirdOffset",Vector(v.x,v.y +2,v.z))
-	end
-	if keys.scroll_b then
-		-- local v = self:GetNW2Vector("CH_ControllerThirdOffset")
-		-- self:SetNW2Vector("CH_ControllerThirdOffset",Vector(v.x,v.y -2,v.z))
-	end
 	if self.CanMove then
 		local tr = RunTrace(centerPos,centerPos +self:GetForward() *moveAmount,{self,ent})
 		if tr.Hit then
@@ -142,36 +175,28 @@ function ENT:ControlMovement()
 		end
 		if keys.w then
 			movePos = movePos +forwardDir *moveAmount +offset
-			if contMoveType == 0 then
-				moveYaw = keys.a && 45 or keys.d && -45 or 0
-			else
-				moveYaw = 0
-			end
 		end
 		if keys.a then
 			movePos = movePos +rightDir *-moveAmount +offset
-			if contMoveType == 0 then
-				moveYaw = !keys.w && (keys.d && 0 or 90) or moveYaw
-			else
-				moveYaw = 90
-			end
 		end
 		if keys.d then
 			movePos = movePos +rightDir *moveAmount +offset
-			if contMoveType == 0 then
-				moveYaw = !keys.w && (keys.a && 0 or -90) or moveYaw
-			else
-				moveYaw = -90
-			end
 		end
 		if keys.s then
 			movePos = movePos +forwardDir *-moveAmount +offset
-			if contMoveType == 0 then
-				moveYaw = !keys.w && (keys.a && 135 or keys.d && -135 or 180) or moveYaw
-			else
-				moveYaw = 180
+		end
+		if isAerial then
+			if !notMoving then
+				startPos = ent:GetPos()
+			end
+			if keys.ctrl then
+				movePos = movePos +upDir *-moveAmount
+			end
+			if keys.space then
+				movePos = movePos +upDir *moveAmount
 			end
 		end
+
 		local tr = util.TraceHull({
 			start = startPos,
 			endpos = movePos +offset,
@@ -182,43 +207,46 @@ function ENT:ControlMovement()
 		if tr.Hit then
 			movePos = tr.HitPos -tr.Normal *2
 		end
-		-- if CurTime() > t then
-		-- 	self:TestBlock(movePos,3)
-		-- 	t = CurTime() +0.5
-		-- end
-		if (keys.w == false && keys.a == false && keys.s == false && keys.d == false) then
+
+		if (isAerial or !isAerial && !self.IsPlayingActivity) && movePos != (startPos) then
+			if isAerial then
+				local swimType = self.IsSwimType
+				local velocity = self:GetVelocity()
+				if !swimType && velocity:Length() <= 10 then
+					velocity = Vector(0,0,0)
+				end
+				self:ApplyAngles(movePos,self:GetMaxYawSpeed(),!swimType)
+				local moveDir = movePos -self:GetPos()
+				local moveSpeed = moveType == 1 && (swimType && self:GetSwimSpeed() or self:GetFlySpeed()) or (swimType && self:GetFastSwimSpeed() or self:GetFastFlySpeed())
+				self:SetLocalVelocity(moveDir:GetNormal() *moveSpeed)
+				return
+			end
+			
+			local turnPos = movePos
+			if self.Possessor_CanFaceTrace or self.ConstantlyFaceEnemy then
+			-- if self.Possessor_CanFaceTrace_Walking && moveType == 1 or self.Possessor_CanFaceTrace_Running && moveType == 2 then
+				turnPos = self:PossessorTrace()
+			end
+			self:ApplyAngles(turnPos,self:GetMaxYawSpeed(),true)
+			self:GoToPosition(movePos,moveType)
+		end
+		if notMoving then
 			if !self.IsPlayingActivity then
 				if self.Controller_UseFirstPerson then
 					-- if isJumping then return end
+					-- print("RUNNING FACE CODE")
 					self:FacePosition(self:WorldToLocal(vec0) +aimVec *400)
 				else
 					-- if isJumping then return end
+					-- print("RUNNING STOP CODE")
 					self:StopMovement()
 				end
 			end
 		end
-		if !self.IsPlayingActivity && movePos != (startPos) then
-			-- self:SetLastPos(movePos)
-			-- self:RunTaskData(moveType)
-			-- if isJumping then return end
-			self.ForcedMovement = true
-			local targetYaw = 0
-			if IsValid(self.ViewTarget) then
-				movePos = self.ViewTarget:GetPos()
-				targetYaw = moveYaw
-			end
-			
-			-- DebugBlock(movePos)
-			self:ApplyAngles(movePos,self.MaxTurnSpeed,true)
-			-- self:SetPoseParameter("move_yaw",targetYaw)
-			-- self:ForceAnimation(self:SetMovementAnimation(moveType == 1 && "Walk" or "Run"))
-			self:GoToPosition(movePos,moveType)
-		else
-			self.ForcedMovement = false
-		end
 	else
 		if !self.IsPlayingActivity && !self.DisableMovement then
 			-- if isJumping then return end
+			-- print("RUNNING FACE CODE BOTTOM")
 			self:FacePosition(self:WorldToLocal(vec0) +aimVec *400)
 		end
 	end

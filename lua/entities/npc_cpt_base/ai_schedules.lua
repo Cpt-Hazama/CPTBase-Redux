@@ -28,20 +28,23 @@ function ENT:StartSchedule(schedule)
 	-- if (self.IsPlayingSequence) then return end
 	self:ClearCondition(35)
 	for k,v in ipairs(schedule.Tasks) do
-		-- print(v.TaskName)
+		if v.TaskName == "TASK_FACE_TARGET" or v.TaskName == "TASK_FACE_ENEMY" then
+			schedule.ScheduleMoving_FaceTarget = true
+		end
 		if v.TaskName == "TASK_RUN_PATH" or v.TaskName == "TASK_RUN_PATH_FLEE" or v.TaskName == "TASK_RUN_PATH_TIMED" or v.TaskName == "TASK_RUN_PATH_FOR_UNITS" or v.TaskName == "TASK_RUN_PATH_WITHIN_DIST" then
-			schedule.cpt_ScheduleMoving = true
-			schedule.cpt_Schedule_Running = true
+			schedule.ScheduleMoving = true
+			schedule.Schedule_Running = true
 			break
 		end
 		if v.TaskName == "TASK_WALK_PATH" or v.TaskName == "TASK_WALK_PATH_TIMED" or v.TaskName == "TASK_WALK_PATH_WITHIN_DIST" or v.TaskName == "TASK_WALK_PATH_FOR_UNITS" then
-			schedule.cpt_ScheduleMoving = true
-			schedule.cpt_Schedule_Walking = true
+			schedule.ScheduleMoving = true
+			schedule.Schedule_Walking = true
 			break
 		end
-		schedule.cpt_ScheduleMoving = false
-		schedule.cpt_Schedule_Running = false
-		schedule.cpt_Schedule_Walking = false
+		schedule.ScheduleMoving = false
+		schedule.Schedule_Running = false
+		schedule.Schedule_Walking = false
+		schedule.ScheduleMoving_FaceTarget = false
 	end
 	self.CurrentSchedule = schedule
 	self.CurrentSchedule.Name = schedule

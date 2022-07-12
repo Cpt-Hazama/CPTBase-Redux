@@ -12,6 +12,8 @@ ENT.AutomaticFrameAdvance = true
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 
+ENT.IsCPTBase_NPC = true
+
 function ENT:SetAutomaticFrameAdvance(bUsingAnim)
 	self.AutomaticFrameAdvance = bUsingAnim
 end
@@ -27,7 +29,19 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Entity",1,"CurrentEnemy")
 end
 
-if (CLIENT) then
+if SERVER then
+	util.AddNetworkString("CPTBase_Possessor_HitPos")
+
+	net.Receive("CPTBase_Possessor_HitPos", function(len, ply)
+		local pos = net.ReadVector()
+		local ent = net.ReadEntity()
+
+		if !IsValid(ent) then return end
+		ent:SetPossessorAimPos(pos)
+	end)
+end
+
+if CLIENT then
 	local C_LerpVec = Vector(0,0,0)
 	local C_LerpAng = Angle(0,0,0)
 	local C_Vec0 = Vector(0,0,0)
@@ -57,6 +71,12 @@ if (CLIENT) then
 			targetPos = tr.HitPos +tr.HitNormal *5
 			C_LerpVec = LerpVector(FrameTime() *10,C_LerpVec,targetPos)
 			C_LerpAng = LerpAngle(FrameTime() *10,C_LerpAng,ply:EyeAngles())
+
+			local tr = util.TraceLine({start = C_LerpVec, endpos = C_LerpVec +C_LerpAng:Forward() *32768, filter = {ply,self}})
+			net.Start("CPTBase_Possessor_HitPos")
+				net.WriteVector(tr.HitPos)
+				net.WriteEntity(self)
+			net.SendToServer()
 
 			view.origin = C_LerpVec
 			view.angles = C_LerpAng

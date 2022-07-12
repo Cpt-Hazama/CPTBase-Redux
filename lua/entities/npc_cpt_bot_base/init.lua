@@ -11,12 +11,12 @@ ENT.CanUseChat = true
 ENT.CanJump = true
 ENT.HasFallingAnimation = true
 ENT.CanFollowPlayer = false
+ENT.ConstantlyFaceEnemy = true
 
 ENT.Faction = "FACTION_BOT"
 ENT.Team = "Team1"
 ENT.ShootCone = 70
 ENT.FallingHeight = 22
-ENT.IsCPTBaseBot = true
 
 ENT.LeavesBlood = true -- Don't need to set this to false if the table below is empty, it'll just not make decals
 ENT.BloodDecal = {"Blood"}
@@ -325,9 +325,9 @@ end
 function ENT:BotThink() end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnThink()
-	if self.IsPossessed then
-		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
-	end
+	-- if self.IsPossessed then
+	-- 	self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
+	-- end
 	if IsValid(self:GetActiveWeapon()) then
 		if self.IsMovingAround then
 			if !self.IsPossessed && IsValid(self:GetEnemy()) then
@@ -386,20 +386,11 @@ function ENT:MoveAway(force)
 		if !self:DoCustomTrace(self:GetPos() +self:OBBCenter(),self:GetPos() +self:OBBCenter() +trypos,{self},true).Hit then
 			self:SetLastPosition(self:GetPos() +trypos)
 			self:TASKFUNC_RUNLASTPOSITION()
-			if trynum == 1 then
-				self:BotMoveBackward()
-			elseif trynum == 2 then
-				self:BotMoveLeft()
-			else
-				self:BotMoveRight()
-			end
 			self.IsMovingAround = true
 			self.NextMoveAroundT = CurTime() +2
 			timer.Simple(2,function()
 				if self:IsValid() then
 					self.IsMovingAround = false
-					self:SetPoseParameter("move_x",0)
-					self:SetPoseParameter("move_y",0)
 				end
 			end)
 		end
@@ -486,8 +477,6 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 			if nearest > wep.NPC_EnemyFarDistance then
 				if !self.IsFollowingPlayer && self:CanPerformProcess() then
 					self:ChaseEnemy()
-					self:SetPoseParameter("move_x",1)
-					self:BotMoveForward()
 				end
 			end
 			if !!self.IsFollowingPlayer && self.CanUseJump == true && math.random(1,70) == 1 && enemy:Visible(self) then
@@ -505,8 +494,6 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 				elseif !enemy:Visible(self) && !self.IsFollowingPlayer then
 					wep:CanFire(false)
 					self:ChaseEnemy()
-					self:SetPoseParameter("move_x",1)
-					self:BotMoveForward()
 				end
 				if nearest <= wep.NPC_FireDistanceStop && !self.IsFollowingPlayer && !self.IsMovingAround then
 					self:SetAngles(Angle(0,(enemy:GetPos() -self:GetPos()):Angle().y,0))
@@ -517,8 +504,6 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 			elseif enemy:Visible(self) && !self.IsFollowingPlayer && !self.IsMovingAround then
 				wep:CanFire(false)
 				self:ChaseEnemy()
-				self:SetPoseParameter("move_x",1)
-				self:BotMoveForward()
 			else
 				wep:CanFire(false)
 			end

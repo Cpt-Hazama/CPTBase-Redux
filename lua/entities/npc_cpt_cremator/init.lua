@@ -87,9 +87,9 @@ function ENT:OnThink()
 	if !IsValid(self:GetEnemy()) && !self.IsPossessed then
 		self.IsLoopRangeAttacking = false
 	end
-	if self.IsPossessed then
-		self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
-	end
+	-- if self.IsPossessed then
+	-- 	self:SetAngles(Angle(0,(self:Possess_AimTarget() -self:GetPos()):Angle().y,0))
+	-- end
 	if self:WaterLevel() >= 2 then
 		self.IsLoopRangeAttacking = false
 	end
@@ -155,9 +155,11 @@ function ENT:OnThink()
 			if !self.IsPossessed then
 				self:StopCompletely()
 			end
+			self:PlayAnimation("RangeAttackStop")
 			self.HasFlameParticle = false
 			self.FireLoop:Stop()
 			self:StopParticles()
+			self:EmitSound("cptbase/cremator/plasma_stop.wav",62,100)
 		end
 	end
 end

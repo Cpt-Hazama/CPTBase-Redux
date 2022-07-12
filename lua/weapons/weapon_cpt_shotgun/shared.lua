@@ -51,6 +51,7 @@ SWEP.tbl_Sounds = {
 }
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnInit()
+	if CLIENT then return end
 	if self.Owner:IsNPC() && self.Owner.CPTBase_NPC != true then
 		self:Remove()
 	end

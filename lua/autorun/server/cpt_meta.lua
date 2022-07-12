@@ -30,6 +30,15 @@ if (SERVER) then
 	TASK_SPEAK_TO_ENTITY = 803
 end
 
+function HasValue(tbl, val)
+	for k, v in pairs(tbl) do
+		if (v == val) then
+			return true
+		end
+	end
+	return false
+end
+
 function PICK(tbl)
 	if tbl == nil then
 		return tbl
@@ -47,7 +56,7 @@ function DebugBlock(pos,time)
 	b:SetPos(pos)
 	b:Spawn()
 	b:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
-	SafeRemoveEntityDelayed(ent,time)
+	SafeRemoveEntityDelayed(b,time)
 end
 
 function ENT_Meta:GetCenter()
@@ -111,11 +120,11 @@ function ENT_Meta:GetDistance(iDistType,vVec,vEntVec,optional)
 	return num
 end
 
-function NPC_Meta:GetDisp(ent)
-	if IsValid(ent) then
-		return self:Disposition(ent)
+function ENT_Meta:GetDisp(ent)
+	if self.GetRelationship then
+		return self:GetRelationship(ent)
 	else
-		return D_NU
+		return self.Disposition && self:Disposition(ent) or D_ER
 	end
 end
 
@@ -926,14 +935,36 @@ hook.Add("Think","CPTBase_MutationEffects",function()
 	end
 end)
 
-function RunTrace(start,endpos,filter)
-	local tr = util.TraceLine({
-		start = start,
-		endpos = endpos,
-		filter = filter
-	})
+function RunTrace(start,endpos,filter,options)
+	local tr = {}
+	tr.start = start
+	tr.endpos = endpos
+	tr.filter = filter
 
-	return tr
+	if options then
+		for k,v in pairs(options) do
+			tr[k] = v
+		end
+	end
+
+	return util.TraceLine(tr)
+end
+
+function RunHullTrace(start,endpos,filter,mins,maxs,options)
+	local tr = {}
+	tr.start = start
+	tr.endpos = endpos
+	tr.filter = filter
+	tr.mins = mins
+	tr.maxs = maxs
+
+	if options then
+		for k,v in pairs(options) do
+			tr[k] = v
+		end
+	end
+
+	return util.TraceHull(tr)
 end
 
 function NPC_Meta:DoCustomTrace_Mask(enter,exit,mask,filt)
@@ -1289,65 +1320,6 @@ function ENT_Meta:GetFaction()
 		return "NO_FACTION"
 	else
 		return self.Faction
-	end
-end
-
-hook.Add("OnEntityCreated","cpt_CreateVanillaRelationships",function(ent)
-	local canrun = false
-	if ent:IsNPC() then
-		if ent:FindAntlionFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_ANTLION"
-			canrun = true
-		elseif ent:FindMilitaryFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_MILITARY"
-			canrun = true
-		elseif ent:FindCombineFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_COMBINE"
-			canrun = true
-		elseif ent:FindRebelFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_PLAYER"
-			canrun = true
-		elseif ent:FindXenFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_XEN"
-			canrun = true
-		elseif ent:FindZombieFaction()[ent:GetClass()] then
-			ent.Faction = "FACTION_ZOMBIE"
-			canrun = true
-		end
-		if canrun == true then
-			for _,v in ipairs(ents.GetAll()) do
-				if v:IsNPC() /*&& v:Disposition(self) == D_NU*/ && v.Faction != nil then
-					if ent.Faction != v.Faction && v:Disposition(ent) != D_HT then
-						v:SetRelationship(ent,D_HT)
-					elseif ent.Faction == v.Faction && v:Disposition(ent) != D_LI then
-						v:SetRelationship(ent,D_LI)
-					end
-				end
-			end
-		end
-	end
-end)
-
-function NPC_Meta:SetRelationship(ent,value,tb,priority)
-	priority = priority or 99
-	self:AddEntityRelationship(ent,value,priority)
-	if !ent:IsPlayer() && !ent:IsNextBot() then
-		ent:AddEntityRelationship(self,value,priority)
-	end
-	if tb then
-		if value == D_HT && self.tbl_Enemies then
-			table_insert(self.tbl_Enemies,ent)
-			if self.tbl_EnemyMemory != nil && !self.tbl_EnemyMemory[ent] then
-				table_insert(self.tbl_EnemyMemory,ent)
-				self.EnemyMemoryCount = self.EnemyMemoryCount +1
-				local oldcount = self.EnemyMemoryCount -1
-				if self.EnemyMemoryCount > 0 && self:GetEnemy() != ent then
-					self:OnFoundEnemy(self.EnemyMemoryCount,oldcount,ent)
-				end
-			end
-		elseif value == D_LI && self.tbl_Allies then
-			table_insert(self.tbl_Allies,ent)
-		end
 	end
 end
 
@@ -1971,6 +1943,15 @@ function NPC_Meta:PlayActivity_Fly(activity,usetime)
 	return activity
 end
 
+function NPC_Meta:StopMovement()
+	self:ClearSchedule()
+	self:StopMoving()
+	self:StopMoving()
+	if self:GetMoveType() == MOVETYPE_FLY then
+		self:SetLocalVelocity(Vector(0,0,0))
+	end
+end
+
 function NPC_Meta:StopCompletely()
 	self:StartEngineTask(GetTaskID("TASK_RESET_ACTIVITY"),0)
 	self:ClearSchedule()
@@ -1984,6 +1965,9 @@ function NPC_Meta:StopCompletely()
 	self.IsPlayingSequence = false
 	self.CurrentAnimation = nil
 	self.CurrentSchedule = nil
+	if self:GetMoveType() == MOVETYPE_FLY then
+		self:SetLocalVelocity(Vector(0,0,0))
+	end
 end
 
 function NPC_Meta:AnimationLength(activity,seq)
