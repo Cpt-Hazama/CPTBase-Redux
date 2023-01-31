@@ -2,7 +2,7 @@ include('shared.lua')
 
 ENT.TaskList = {}
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:StopMovement()
+function ENT:CPT_StopMovement()
 	self:StopMoving()
 	self:StopMoving()
 	self:ClearSchedule()
@@ -360,7 +360,7 @@ function ENT:TASKFUNC_CPTBASENAVIGATE(ent)
 		return
 	end
 	if CurTime() > nextnodet then
-		for _,nodepos in ipairs(self:GetNodeManager():GetNodes()) do
+		for _,nodepos in ipairs(self:CPT_GetNodeManager():GetNodes()) do
 			if self:VisibleVec(nodepos) then
 				if !table.HasValue(self.tbl_RegisteredNodes,nodepos) then
 					table.insert(self.tbl_RegisteredNodes,nodepos)

@@ -35,7 +35,7 @@ end
 function SWEP:OnPrimaryAttack_NPC()
 	if self.Owner:IsNPC() && self.NPC_FireAnimation != nil then
 		self:BeforePrimaryAttack_NPC()
-		self.Owner:PlayNPCGesture("range_dual_" .. self.LastFiredElite,2,1)
+		self.Owner:CPT_PlayNPCGesture("range_dual_" .. self.LastFiredElite,2,1)
 		if self.LastFiredElite == "r" then
 			self.LastFiredElite = "l"
 		else

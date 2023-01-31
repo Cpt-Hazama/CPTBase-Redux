@@ -1,10 +1,27 @@
 /*--------------------------------------------------
-	Copyright (c) 2019 by Cpt. Hazama, All rights reserved.
-	Nothing in these files or/and code may be reproduced, adapted, merged or
-	modified without prior written consent of the original author, Cpt. Hazama
+		Copyright © 2023 by Cpt. Hazama, All rights reserved.
+	All trademarks belong to their respective owners.
+	All content not owned or claimed by Cpt. Hazama belong to their respective owners.
+	Nothing in these files or/and code may be reproduced, adapted, merged or modified without prior written consent of the original author, Cpt. Hazama.
+	Any and all content that Cpt. Hazama has ported and rigged for Garry's Mod may NOT be used or reuploaded under any circumstance.
+	Doing so would be violating Valves Terms and Conditions.
+
+				Stealing my code?
+	⠀⣞⢽⢪⢣⢣⢣⢫⡺⡵⣝⡮⣗⢷⢽⢽⢽⣮⡷⡽⣜⣜⢮⢺⣜⢷⢽⢝⡽⣝
+	⠸⡸⠜⠕⠕⠁⢁⢇⢏⢽⢺⣪⡳⡝⣎⣏⢯⢞⡿⣟⣷⣳⢯⡷⣽⢽⢯⣳⣫⠇
+	⠀⠀⢀⢀⢄⢬⢪⡪⡎⣆⡈⠚⠜⠕⠇⠗⠝⢕⢯⢫⣞⣯⣿⣻⡽⣏⢗⣗⠏⠀
+	⠀⠪⡪⡪⣪⢪⢺⢸⢢⢓⢆⢤⢀⠀⠀⠀⠀⠈⢊⢞⡾⣿⡯⣏⢮⠷⠁⠀⠀
+	⠀⠀⠀⠈⠊⠆⡃⠕⢕⢇⢇⢇⢇⢇⢏⢎⢎⢆⢄⠀⢑⣽⣿⢝⠲⠉⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⡿⠂⡇⢇⠕⢈⣀⠀⠁⠡⠣⡣⡫⣂⣿⠯⢪⠰⠂⠀⠀⠀⠀ 
+	⠀⠀⠀⠀⡦⡙⡂⢀⢤⢣⠣⡈⣾⡃⠠⡄⢱⣌⣶⢏⢊⠂⠀⠀⠀⠀⠀⠀ 
+	⠀⠀⠀⠀⢝⡲⣜⡮⡏⢎⢌⢂⠙⠢⠐⢀⢘⢵⣽⣿⡿⠁⠁⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠨⣺⡺⡕⡕⡱⡑⡆⡕⡅⡕⡜⡼⢽⡻⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⣼⣳⣫⣾⣵⣗⡵⡱⡡⢣⢑⢕⢜⢕⡝⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⣴⣿⣾⣿⣿⣿⡿⡽⡑⢌⠪⡢⡣⣣⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⡟⡾⣿⢿⢿⢵⣽⣾⣼⣘⢸⢸⣞⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠁⠇⠡⠩⡫⢿⣝⡻⡮⣒⢽⠋
 --------------------------------------------------*/
-AddCSLuaFile('server/cpt_utilities.lua')
-include('server/cpt_utilities.lua')
+include("client/cpt_meta.lua")
 
 -- CPTBase.AddAddon("cptbase","54")
 
@@ -18,11 +35,13 @@ CPTBase.AddNPC("Mortar Synth","npc_cpt_mortarsynth","CPTBase Redux")
 CPTBase.AddNPC("Combine Soldier","npc_cpt_csoldier","CPTBase Redux")
 
 // Zombies + Enemy Aliens
-CPTBase.AddNPC("Parasite","npc_cpt_parasite","CPTBase Redux")
+CPTBase.AddNPC("Antlion Drone","npc_cpt_parasite","CPTBase Redux")
+-- CPTBase.AddNPC("Parasite","npc_cpt_parasite_broke","CPTBase Redux")
 CPTBase.AddNPC("Puker Zombie","npc_cpt_pukerzombie","CPTBase Redux")
 CPTBase.AddNPC("Infectious Zombie","npc_cpt_scientistzombie","CPTBase Redux")
 CPTBase.AddNPC("Zombie (NB)","nextbot_cpt_testnpc","CPTBase Redux")
 CPTBase.AddNPC("Ichthyosaur","npc_cpt_icky","CPTBase Redux")
+-- CPTBase.AddNPC("Imp","npc_cpt_imp","CPTBase Redux")
 
 CPTBase.AddConVar("cpt_npchearing_advanced",0)
 CPTBase.AddConVar("cpt_allowspecialdmg",1)
@@ -107,7 +126,7 @@ end)
 if SERVER then
 	hook.Add("Think","CPTBase_PlayerRagdolling",function()
 		for _,v in ipairs(player.GetAll()) do
-			v:UpdateNPCFaction()
+			v:CPT_UpdateNPCFaction()
 			if v:GetNW2Int("CPTBase_Magicka") < v:GetNW2Int("CPTBase_MaxMagicka") && CurTime() > v:GetNW2Int("CPTBase_NextMagickaT") then
 				v:SetNW2Int("CPTBase_Magicka",v:GetNW2Int("CPTBase_Magicka") +1)
 				if v:GetNW2Int("CPTBase_Magicka") > v:GetNW2Int("CPTBase_MaxMagicka") then
@@ -177,6 +196,30 @@ if CLIENT then
 			end
 		end
 	end)
+
+    CPTBase.AddSpriteAnimation("proj_fireball",{
+        Sequence = "idle",
+        Activity = ACT_IDLE,
+        Dir = "sprites/models/cpthazama/doom/",
+        Frames = {
+            "puffa0",
+            "puffb0",
+        },
+        FPS = 5,
+        Loop = true
+    })
+
+    CPTBase.AddSpriteAnimation("proj_fireball",{
+        Sequence = "explode",
+        Activity = ACT_DIESIMPLE,
+        Dir = "sprites/models/cpthazama/doom/",
+        Frames = {
+            "puffc0",
+            "puffd0",
+        },
+        FPS = 5,
+        Loop = true
+    })
 end
 
 properties.Add("Control NPC", {

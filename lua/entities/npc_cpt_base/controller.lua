@@ -56,7 +56,7 @@ function ENT:ControlNPC(setControlled,ply)
 		ply:GodEnable()
 		ply:Spectate(OBS_MODE_CHASE)
 		ply:SpectateEntity(self)
-		ply:SetNoTarget(true)
+		ply:CPT_SetNoTarget(true)
 		ply:DrawShadow(false)
 		ply:SetNoDraw(true)
 		ply:SetMoveType(MOVETYPE_OBSERVER)
@@ -76,7 +76,7 @@ function ENT:ControlNPC(setControlled,ply)
 		cont:GodDisable()
 		cont:SetNoDraw(false)
 		cont:DrawShadow(true)
-		cont:SetNoTarget(false)
+		cont:CPT_SetNoTarget(false)
 		cont:DrawViewModel(true)
 		cont:DrawWorldModel(true)
 		if ePlayer != 0 then
@@ -105,6 +105,15 @@ function ENT:Possess_AimTarget() -- DEPRECATED, STOP USING THIS
 	return self:GetEnemy() or self:PossessorTrace()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:Possess_EyeTrace() -- DEPRECATED, STOP USING THIS
+	local tr = util.TraceLine({
+		start = self:GetPos() +self:OBBCenter(),
+		endpos = self:GetPossessorAimPos(),
+		filter = self
+	})
+	return tr
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:IsKeyDown(key)
 	return self:GetPossessor():KeyDown(key)
 end
@@ -117,7 +126,7 @@ function ENT:GetPlayerKeys(ent)
 		s=self:IsKeyDown(IN_BACK),
 		lmb=self:IsKeyDown(IN_ATTACK),
 		rmb=self:IsKeyDown(IN_ATTACK2),
-		alt=self:IsKeyDown(IN_ALT1),
+		alt=self:IsKeyDown(IN_WALK),
 		space=self:IsKeyDown(IN_JUMP),
 		shift=self:IsKeyDown(IN_SPEED),
 		zoom=self:IsKeyDown(IN_ZOOM),
@@ -145,7 +154,7 @@ function ENT:ControlMovement()
 
 	local contData = self.PossessorOptions
 	local vec1,vec2 = self:GetCollisionBounds()
-	local centerPos = self:GetCenter()
+	local centerPos = self:CPT_GetCenter()
 	local aimVec = ent:GetAimVector()
 	local forwardDir = ent:GetForward()
 	local rightDir = ent:GetRight()
@@ -239,7 +248,7 @@ function ENT:ControlMovement()
 				else
 					-- if isJumping then return end
 					-- print("RUNNING STOP CODE")
-					self:StopMovement()
+					self:CPT_StopMovement()
 				end
 			end
 		end

@@ -37,6 +37,10 @@ ENT.tbl_Weapons = {}
 
 ENT.tbl_Capabilities = {CAP_ANIMATEDFACE,CAP_USE,CAP_OPEN_DOORS,CAP_MOVE_JUMP}
 ---------------------------------------------------------------------------------------------------------------------------------------------
+function ENT:OnStartTask(schedule)
+	
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SetInit()
 	self:SetHullType(HULL_HUMAN)
 	self:SetCollisionBounds(Vector(14,14,77), Vector(-14,-14,0))
@@ -59,7 +63,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:SpawnBotWeapon()
 	local swep = self:SelectFromTable(self.tbl_Weapons)
-	self:GiveNPCWeapon(swep)
+	self:CPT_GiveNPCWeapon(swep)
 	if IsValid(self:GetActiveWeapon()) then
 		local wep = self:GetActiveWeapon()
 		local ht = self:GetActiveWeapon().DefaultHoldType
@@ -86,7 +90,7 @@ function ENT:FaceOwner(owner)
 	local facetarget = ai_sched_cpt.New("cptbase_bot_faceowner")
 	facetarget:EngTask("TASK_FACE_TARGET",0)
 	self:StartSchedule(facetarget)
-	self:LookAtPosition(self:FindCenter(owner),self.DefaultPoseParameters,self.DefaultPoseParamaterSpeed)
+	self:CPT_LookAtPosition(self:CPT_FindCenter(owner),self.DefaultPoseParameters,self.DefaultPoseParamaterSpeed)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:FollowAI()
@@ -101,7 +105,7 @@ function ENT:FollowAI()
 		end
 		if !IsValid(self:GetEnemy()) then
 			if dist <= self.MinFollowDistance && self.FollowingPlayer:Visible(self) then
-				self:StopCompletely()
+				self:CPT_StopCompletely()
 				self:FaceOwner(self.FollowingPlayer)
 			end
 		else
@@ -253,30 +257,30 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFoundEnemy(count,oldcount,ent)
 	if self:Visible(ent) then
-		self:PlaySound("Spot",80)
+		self:CPT_PlaySound("Spot",80)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnKilledEnemy(ent)
-	self:PlaySound("KilledEnemy",80)
+	self:CPT_PlaySound("KilledEnemy",80)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnHearSound(ent)
 	if self.ReactsToSound == false then return end
 	if self.IsPossessed == true then return end
-	local NoisePos = util.RandomVectorAroundPos(self:FindCenter(ent),150,true)
+	local NoisePos = util.RandomVectorAroundPos(self:CPT_FindCenter(ent),150,true)
 	self:SetLastPosition(NoisePos)
 	self:TASKFUNC_LASTPOSITION()
-	self:PlaySound("Hear",80)
+	self:CPT_PlaySound("Hear",80)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:NPCPLY_Chat()
 	if GetConVar("cpt_bot_chat"):GetInt() == 0 then return end
 	if !self.CanUseChat then return end
 	self.IsUsingChat = true
-	if self:GetEnemy() != nil then
+	if IsValid(self:GetEnemy()) then
 		timer.Simple(3,function()
-			if self:IsValid() then
+			if IsValid(self) then
 				self.IsUsingChat = false
 				if self.Team != "No Team" then
 					self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatIdle))
@@ -286,12 +290,12 @@ function ENT:NPCPLY_Chat()
 				-- if CLIENT then
 					-- chat.AddText(Color(0,255,0),self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatIdle))
 				-- end
-				-- self:PlayNPCGesture("gesture_voicechat",2,1)
+				-- self:CPT_PlayNPCGesture("gesture_voicechat",2,1)
 			end
 		end)
 	else
 		timer.Simple(3,function()
-			if self:IsValid() then
+			if IsValid(self) then
 				self.IsUsingChat = false
 				if self.Team != "No Team" then
 					self:PlayerChat(self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatCombat))
@@ -301,7 +305,7 @@ function ENT:NPCPLY_Chat()
 				-- if CLIENT then
 					-- chat.AddText(Color(0,255,0),self.FakeName .. " (" .. self.Team .. "): " .. self:SelectFromTable(self.tbl_ChatCombat))
 				-- end
-				-- self:PlayNPCGesture("gesture_voicechat",2,1)
+				-- self:CPT_PlayNPCGesture("gesture_voicechat",2,1)
 			end
 		end)
 	end
@@ -318,7 +322,7 @@ function ENT:PlayTaunt(override)
 		[6] = {anim="taunt_robot",snd="common/null.wav"},
 	}
 	local selected = self:SelectFromTable(tbl)
-	self:PlaySequence(selected.anim,1)
+	self:CPT_PlaySequence(selected.anim,1)
 	self:EmitSound(Sound(selected.snd),75,100)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -357,13 +361,13 @@ function ENT:FootStepCode()
 	local y = self:GetPoseParameter(ypp)
 	if self:IsOnGround() && self:IsMoving() && self.UseTimedSteps == true then
 		if (x != 0 || y != 0) && (table.HasValue(self.tbl_Animations["Walk"],self:GetMovementAnimation()) || self.OverrideWalkAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Walk then
-			self:PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
+			self:CPT_PlaySound("FootStep",self.WalkSoundVolume,90,self.StepSoundPitch,true)
 			self:DoPlaySound("FootStep")
 			self:OnStep("Walk")
 			self.NextFootSoundT_Walk = CurTime() + self.NextFootSound_Walk
 		end
 		if (x != 0 || y != 0) && (table.HasValue(self.tbl_Animations["Run"],self:GetMovementAnimation()) || self.OverrideRunAnimation == self:GetMovementAnimation()) && CurTime() > self.NextFootSoundT_Run then
-			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
+			self:CPT_PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 			self:DoPlaySound("FootStep")
 			self:OnStep("Run")
 			self.NextFootSoundT_Run = CurTime() + self.NextFootSound_Run
@@ -389,7 +393,7 @@ function ENT:MoveAway(force)
 			self.IsMovingAround = true
 			self.NextMoveAroundT = CurTime() +2
 			timer.Simple(2,function()
-				if self:IsValid() then
+				if IsValid(self) then
 					self.IsMovingAround = false
 				end
 			end)
@@ -400,13 +404,13 @@ end
 function ENT:OnDamage_Pain(dmg,dmginfo,hitbox)
 	self:MoveAway(false)
 	if hitbox == 1 then
-		self:PlayNPCGesture("flinch_head_0" .. math.random(1,2),2,1)
+		self:CPT_PlayNPCGesture("flinch_head_0" .. math.random(1,2),2,1)
 	elseif (hitbox == 2 || hitbox == 3) then
-		self:PlayNPCGesture("flinch_stomach_0" .. math.random(1,2),2,1)
+		self:CPT_PlayNPCGesture("flinch_stomach_0" .. math.random(1,2),2,1)
 	elseif hitbox == 4 then
-		self:PlayNPCGesture("flinch_shoulder_l",2,1)
+		self:CPT_PlayNPCGesture("flinch_shoulder_l",2,1)
 	elseif hitbox == 5 then
-		self:PlayNPCGesture("flinch_shoulder_r",2,1)
+		self:CPT_PlayNPCGesture("flinch_shoulder_r",2,1)
 	end
 	if self.CanUseJump == true && math.random(1,4) == 1 then
 		if self.IsPossessed then return end
@@ -423,7 +427,7 @@ function ENT:JumpRandomly()
 	if self.CanJumpAround == false then return end
 	self:SetGroundEntity(NULL)
 	self:OnJump()
-	self:PlaySequence(self.JumpSequence,3)
+	self:CPT_PlaySequence(self.JumpSequence,3)
 	self:SetLocalVelocity(Vector(math.Rand(-150,150),math.Rand(-150,150),270))
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
@@ -443,7 +447,7 @@ function ENT:Possess_Jump(possessor)
 	if self.CanJumpAround == false then return end
 	if self.CanUseJump == false then return end
 	self:SetGroundEntity(NULL)
-	self:PlaySequence(self.JumpSequence,3)
+	self:CPT_PlaySequence(self.JumpSequence,3)
 	self:SetLocalVelocity(Vector(math.Rand(-150,150),math.Rand(-150,150),270))
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
 	self:EmitSound(Sound("npc/footsteps/hardboot_generic1.wav"),75,100)
@@ -483,14 +487,14 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 				self:JumpRandomly()
 			end
 			if nearest <= wep.NPC_FireDistance then
-				if self.ReloadingWeapon == false && enemy:Visible(self) && self:DoWeaponTrace() /*&& self:FindInCone(enemy,self.ShootCone)*/ then
+				if self.ReloadingWeapon == false && enemy:Visible(self) && self:DoWeaponTrace() /*&& self:CPT_FindInCone(enemy,self.ShootCone)*/ then
 					wep:CanFire(true)
 					if math.random(1,math.random(12,25)) == 1 then
 						self:MoveAway(false)
 					end
-				elseif !self:FindInCone(enemy,self.ShootCone) && !self.IsFollowingPlayer && enemy:Visible(self) && !self.IsMovingAround then
+				elseif !self:CPT_FindInCone(enemy,self.ShootCone) && !self.IsFollowingPlayer && enemy:Visible(self) && !self.IsMovingAround then
 					self:FaceEnemy()
-					if self:IsMoving() then self:StopCompletely() end
+					if self:IsMoving() then self:CPT_StopCompletely() end
 				elseif !enemy:Visible(self) && !self.IsFollowingPlayer then
 					wep:CanFire(false)
 					self:ChaseEnemy()

@@ -193,11 +193,11 @@ function SWEP:PrimaryAttack()
 			return
 		end
 		for i = 0,self.Owner:GetBoneCount() -1 do
-			ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
+			CPT_ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 		for i = 0,tr.Entity:GetBoneCount() -1 do
 			util.ParticleTracerEx("vortigaunt_beam",self.Owner:GetPos(),tr.Entity:GetBonePosition(i),false,self:EntIndex(),4)
-			ParticleEffect("vortigaunt_glow_beam_cp0",tr.Entity:GetBonePosition(i),Angle(0,0,0),nil)
+			CPT_ParticleEffect("vortigaunt_glow_beam_cp0",tr.Entity:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 		-- local possessor = ents.Create("ent_cpt_possessor")
 		-- possessor.Possessor = self.Owner
@@ -252,11 +252,11 @@ function SWEP:SecondaryAttack()
 			return
 		end
 		for i = 0,self.Owner:GetBoneCount() -1 do
-			ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
+			CPT_ParticleEffect("vortigaunt_beam",self.Owner:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 		for i = 0,tr.Entity:GetBoneCount() -1 do
 			util.ParticleTracerEx("vortigaunt_beam",self.Owner:GetPos(),ent:GetBonePosition(i),false,self:EntIndex(),4)
-			ParticleEffect("vortigaunt_glow_beam_cp0",ent:GetBonePosition(i),Angle(0,0,0),nil)
+			CPT_ParticleEffect("vortigaunt_glow_beam_cp0",ent:GetBonePosition(i),Angle(0,0,0),nil)
 		end
 		local possessor = ents.Create("ent_cpt_possessor")
 		possessor.Possessor = self.Owner

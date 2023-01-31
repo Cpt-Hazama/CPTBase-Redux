@@ -7,8 +7,12 @@ function EFFECT:Init(data)
 	self.Angle = self.Forward:Angle()
 	self.Right = self.Angle:Right()
 	self.Up = self.Angle:Up()
-	if !self.WeaponEnt:IsValid() or !self.WeaponEnt:GetOwner():IsValid() then return end
-	local AddVel = self.WeaponEnt:GetOwner():GetVelocity()
+	local isWep = IsValid(self.WeaponEnt) && self.WeaponEnt:IsWeapon()
+	if isWep then
+		self.WeaponEnt = self.WeaponEnt:GetOwner()
+	end
+	if !IsValid(self.WeaponEnt) then return end
+	local AddVel = self.WeaponEnt:GetVelocity()
 	local emitter = ParticleEmitter(self.Position)
 	local particle = emitter:Add("cptbase/muzzles/ar2muzzle",self.Position)
 	particle:SetVelocity(self.Forward *AddVel)

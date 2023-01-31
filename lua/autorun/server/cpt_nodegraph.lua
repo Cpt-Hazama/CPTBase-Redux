@@ -24,6 +24,49 @@ CPTBASE_SV_STARTEDNODEGRAPH = false
 CPTBASE_SV_NODEGRAPH = false
 CPTBASE_SV_FINISHEDNODEGRAPH = false
 -------------------------------------------------------------------------------------------------------------------
+function CPTBase_ReadNodegraph()
+	local FILE = file.Open("maps/graphs/" .. game.GetMap() .. ".ain", "rb", "GAME")
+	local NUM_HULLS = 10
+
+	if FILE:ReadLong() == 37 then
+		local map_ver = FILE:ReadLong()
+
+		local num_nodes = FILE:ReadLong()
+		for i = 0, num_nodes - 1 do
+			local posX = FILE:ReadFloat()
+			local posY = FILE:ReadFloat()
+			local posZ = FILE:ReadFloat()
+			local yaw = FILE:ReadFloat()
+			local flOffsets = {}
+			for _ = 1, NUM_HULLS do
+				table.insert(flOffsets, FILE:ReadFloat())
+			end
+			local nodeType = FILE:ReadByte()
+			local nodeInfo = FILE:ReadUShort()
+			local zone = FILE:ReadShort()
+
+			print("node", i, nodeType)
+		end
+
+		local num_links = FILE:ReadLong()
+		for _ = 1, num_links do
+			local srcId = FILE:ReadShort()
+			local distId = FILE:ReadShort()
+			local moves = {}
+			for _ = 1, NUM_HULLS do
+				table.insert(moves, FILE:ReadByte())
+			end
+		end
+
+		local lookup = {}
+		for _ = 1, num_nodes do
+			table.insert(lookup, FILE:ReadLong())
+		end
+	end
+
+	FILE:Close()
+end
+-------------------------------------------------------------------------------------------------------------------
 hook.Add("EntityRemoved","cpt_DetectRealNodes",function(ent)
 	local nodetype = ent:GetClass()
 	if string.find("node",ent:GetClass()) then print(ent) end

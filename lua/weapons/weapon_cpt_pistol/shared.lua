@@ -45,7 +45,7 @@ SWEP.ReloadAnimation = ACT_VM_RELOAD
 
 SWEP.AdjustViewModel = true
 SWEP.ViewModelAdjust = {
-	Pos = {Right = -3,Forward = 2,Up = 1},
+	Pos = {Right = -1,Forward = 1,Up = 1},
 	Ang = {Right = 0,Up = 0,Forward = 0}
 }
 

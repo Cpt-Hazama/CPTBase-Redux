@@ -20,7 +20,7 @@ function TOOL:LeftClick(tr)
 		if IsValid(ent:GetActiveWeapon()) then
 			ent:GetActiveWeapon():Remove()
 		end
-		ent:GiveNPCWeapon(newWeapon)
+		ent:CPT_GiveNPCWeapon(newWeapon)
 		local wep = ent:GetActiveWeapon()
 		local ht = ent:GetActiveWeapon().DefaultHoldType
 		ent:SetupHoldtypes(wep,ht)

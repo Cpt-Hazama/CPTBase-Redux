@@ -70,14 +70,14 @@ function ENT:Think()
 	end
 	for _,v in ipairs(ents.FindInSphere(self:GetPos() +self:GetForward() *1,self.ViewDistance)) do
 		if v:IsNPC() && v:GetClass() != "npc_bullseye" && v != self && v:GetClass() != self:GetClass() && v:Health() > 0 then // NPCs
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) then
-				if (v:GetFaction() == nil or v:GetFaction() != nil && v.Faction != self:GetFaction()) or self:Disposition(v) != D_LI then
+			if (self:Visible(v) && self:CPT_FindDistance(v) <= self.ViewDistance && self:CPT_FindInCone(v,self.ViewAngle)) then
+				if (v:CPT_GetFaction() == nil or v:CPT_GetFaction() != nil && v.Faction != self:CPT_GetFaction()) or self:Disposition(v) != D_LI then
 					v:AddEntityRelationship(self.NPC_Target,D_HT,99)
 					return true
 				end
 			end
 		elseif v:IsNPC() && v:GetClass() == "npc_bullseye" && v != self.NPC_Target && v.Faction != self.Faction then // Nextbots
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) then
+			if (self:Visible(v) && self:CPT_FindDistance(v) <= self.ViewDistance && self:CPT_FindInCone(v,self.ViewAngle)) then
 				v:AddEntityRelationship(self,D_HT,99)
 				return true
 			end
@@ -88,7 +88,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HaveEnemy()
 	if IsValid(self:GetEnemy()) && self:GetEnemy():IsValid() then
-		if (self:FindDistance(self:GetEnemy()) > self.ViewDistance) then
+		if (self:CPT_FindDistance(self:GetEnemy()) > self.ViewDistance) then
 			return self:FindEnemy()
 		elseif (self:GetEnemy():IsPlayer() && !self:GetEnemy():Alive()) then
 			return self:FindEnemy()
@@ -103,22 +103,22 @@ function ENT:FindEnemy()
 	if GetConVarNumber("ai_disabled") == 1 then return end
 	for _,v in ipairs(ents.FindInSphere(self:GetPos() +self:GetForward() *1,self.ViewDistance)) do
 		if v:IsNPC() && v:GetClass() != "npc_bullseye" && v != self && v:GetClass() != self:GetClass() && v:Health() > 0 then // NPCs
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) then
-				if (v:GetFaction() == nil or v:GetFaction() != nil && v.Faction != self:GetFaction()) or self:Disposition(v) != D_LI then
+			if (self:Visible(v) && self:CPT_FindDistance(v) <= self.ViewDistance && self:CPT_FindInCone(v,self.ViewAngle)) then
+				if (v:CPT_GetFaction() == nil or v:CPT_GetFaction() != nil && v.Faction != self:CPT_GetFaction()) or self:Disposition(v) != D_LI then
 					self:SetEnemy(v)
 					v:AddEntityRelationship(self.NPC_Target,D_HT,99)
 					return true
 				end
 			end
 		elseif v:IsNPC() && v:GetClass() == "npc_bullseye" && v != self.NPC_Target && v.Faction != self.Faction then // Nextbots
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) then
+			if (self:Visible(v) && self:CPT_FindDistance(v) <= self.ViewDistance && self:CPT_FindInCone(v,self.ViewAngle)) then
 				self:SetEnemy(v)
 				v:AddEntityRelationship(self,D_HT,99)
 				return true
 			end
 		elseif GetConVarNumber("ai_ignoreplayers") == 0 && v:IsPlayer() && v:Alive() then // Players
-			if (self:Visible(v) && self:FindDistance(v) <= self.ViewDistance && self:FindInCone(v,self.ViewAngle)) then
-				if self:GetFaction() != "FACTION_PLAYER" or self:Disposition(v) != D_LI then
+			if (self:Visible(v) && self:CPT_FindDistance(v) <= self.ViewDistance && self:CPT_FindInCone(v,self.ViewAngle)) then
+				if self:CPT_GetFaction() != "FACTION_PLAYER" or self:Disposition(v) != D_LI then
 					self:SetEnemy(v)
 					return true
 				end
@@ -134,7 +134,7 @@ function ENT:ChaseEntity(ent,anim,speed,acceleration)
 	local speed = speed or self:GetRunSpeed()
 	local acceleration = acceleration or 1000
 	if type(anim) == "string" then
-		anim = self:TranslateStringToNumber(anim)
+		anim = self:CPT_TranslateStringToNumber(anim)
 	end
 
 	self.loco:FaceTowards(ent:GetPos())
@@ -211,7 +211,7 @@ function ENT:OnRemove()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Disposition(target)
-	if target:GetClass() != self:GetClass() or target:GetFaction() != self.Faction then
+	if target:GetClass() != self:GetClass() or target:CPT_GetFaction() != self.Faction then
 		return D_HT
 	else
 		return D_LI
@@ -223,7 +223,7 @@ function ENT:RunBehaviour()
 	while (true) do
 		if (self:HaveEnemy()) then
 			self:ChaseEntity(self:GetEnemy(),self:SelectFromTable(self.tbl_Animations["Run"]),self:GetRunSpeed(),1000)
-			-- self:HandleSchedules(self:GetEnemy(),self:FindCenterDistance(self:GetEnemy()),self:GetClosestPoint(self:GetEnemy()),self:Disposition(self:GetEnemy()))
+			-- self:HandleSchedules(self:GetEnemy(),self:CPT_FindCenterDistance(self:GetEnemy()),self:GetClosestPoint(self:GetEnemy()),self:Disposition(self:GetEnemy()))
 		else
 			self:OnIdle()
 		end
@@ -253,7 +253,7 @@ function ENT:ChaseEnemy(options)
 		end
 		path:Update(self)
 		if (options.draw) then path:Draw() end
-		self:HandleSchedules(self:GetEnemy(),self:FindCenterDistance(self:GetEnemy()),self:GetClosestPoint(self:GetEnemy()),self:Disposition(self:GetEnemy()))
+		self:HandleSchedules(self:GetEnemy(),self:CPT_FindCenterDistance(self:GetEnemy()),self:GetClosestPoint(self:GetEnemy()),self:Disposition(self:GetEnemy()))
 		if (self.loco:IsStuck()) then
 			self:HandleStuck()
 			return "stuck"
@@ -280,7 +280,7 @@ function ENT:PlayNextbotAnimation(act,animtype,speed)
 		self:RestartGesture(ACT_MP_ATTACK_STAND_MELEE)
 	elseif animtype == "act" then
 		if type(act) == "string" then
-			self:TranslateStringToNumber(act)
+			self:CPT_TranslateStringToNumber(act)
 		else
 			self:StartActivity(act)
 		end
@@ -288,10 +288,10 @@ function ENT:PlayNextbotAnimation(act,animtype,speed)
 	end
 	self.IsPlayingAnimation = true
 	if type(act) == "string" then
-		act = self:TranslateStringToNumber(act)
+		act = self:CPT_TranslateStringToNumber(act)
 	end
 	timer.Simple((self:SequenceDuration(self:SelectWeightedSequence(act)) *self:GetPlaybackRate()),function()
-		if self:IsValid() then
+		if IsValid(self) then
 			self:StartActivity(lastact)
 			self.loco:SetDesiredSpeed(lastspeed)
 			self.IsPlayingAnimation = false
@@ -308,7 +308,7 @@ function ENT:DoDamage(dist,dmg,dmgtype,force,viewPunch,fcOnHit)
 	local center = posSelf +self:OBBCenter()
 	local didhit
 	for _,ent in ipairs(ents.FindInSphere(pos,dist)) do
-		if ent:IsValid() && self:IsValid() && self:Visible(ent) && ent:Health() > 0 then
+		if IsValid(ent) && IsValid(self) && self:Visible(ent) && ent:Health() > 0 then
 			if (ent:IsNPC() && ent != self && ent != self.NPC_Target && self:Disposition(ent) != D_LI && ent:GetModel() != self:GetModel()) or (ent:IsPlayer() && ent:Alive()) && (self:GetForward():Dot(((ent:GetPos() +ent:OBBCenter()) -pos):GetNormalized()) > math.cos(math.rad(self.ViewAngle))) then
 				if force then
 					local forward,right,up = self:GetForward(),self:GetRight(),self:GetUp()
@@ -377,14 +377,14 @@ function ENT:GetDistanceToVector(pos,type)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:FindDistance(ent)
+function ENT:CPT_FindDistance(ent)
 	return self:GetPos():Distance(ent:GetPos())
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:FindCenterDistance(ent)
-	return self:GetPos():Distance(self:FindCenter(ent))
+function ENT:CPT_FindCenterDistance(ent)
+	return self:GetPos():Distance(self:CPT_FindCenter(ent))
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:FindCenter(ent)
+function ENT:CPT_FindCenter(ent)
 	return ent:GetPos() +ent:OBBCenter()
 end

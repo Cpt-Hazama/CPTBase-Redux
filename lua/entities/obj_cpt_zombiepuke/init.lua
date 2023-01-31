@@ -25,8 +25,8 @@ end
 
 function ENT:OnThink()
 	if CurTime() > self.NextParticleT then
-		ParticleEffect("blood_impact_green_01",self:GetPos(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
-		ParticleEffect("blood_impact_red_01",self:GetPos(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_green_01",self:GetPos(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_red_01",self:GetPos(),Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
 		self.NextParticleT = CurTime() +0.1
 	end
 end

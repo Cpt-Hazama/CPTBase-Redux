@@ -10,11 +10,10 @@ function ENT:RunAI(strExp)
 	if (self:DoingEngineSchedule()) then return true end
 	if (self.CurrentSchedule) then self:DoSchedule(self.CurrentSchedule) end
 	if (!self.CurrentSchedule) then self:SelectSchedule() end
-	local __cyc = self:GetCycle() == 1
 	self:MaintainActivity()
 	if (self.IsPlayingSequence) then return end
 	local anim = ai_sched_cpt.New(self:GetIdleAnimation())
-	if(!self.CurrentTask && __cyc && self:GetCycle() == 1) then
+	if(!self.CurrentTask && self:GetCycle() == 1) then
 		if IsValid(self) then
 			anim:EngTask("TASK_PLAY_SEQUENCE",self:GetIdleAnimation())
 			self:StartEngineTask(GetTaskID("TASK_SET_ACTIVITY"),self:GetIdleAnimation())
@@ -49,6 +48,7 @@ function ENT:StartSchedule(schedule)
 	self.CurrentSchedule = schedule
 	self.CurrentSchedule.Name = schedule
 	self.CurrentTaskID = 1
+	self:OnStartTask(schedule)
 	self:SetTask(schedule:GetTask(1))
 end
 
@@ -61,7 +61,7 @@ function ENT:GetSchedule()
 	return 0
 end
 
-function ENT:DoSchedule( schedule )
+function ENT:DoSchedule(schedule)
 	if not IsValid(self) then return end
 	if (self.CurrentTask) then
 		self:RunTask(self.CurrentTask)
@@ -84,27 +84,56 @@ function ENT:SetTask(task)
 	self.CurrentTask = task
 	self.bTaskComplete = false
 	self.TaskStartTime = CurTime()
-	self:StartTask( self.CurrentTask )
+	self:StartTask(self.CurrentTask)
 end
 
 function ENT:NextTask(schedule)
 	if not IsValid(self) then return end
-	self.CurrentTaskID = self.CurrentTaskID + 1 || 1
-	local val = schedule:NumTasks() || 1
-	if ( self.CurrentTaskID > schedule:NumTasks() ) then
-		self:ScheduleFinished( schedule )
+	self.CurrentTaskID = self.CurrentTaskID + 1 or 1
+	local val = schedule:NumTasks() or 1
+	if (self.CurrentTaskID > schedule:NumTasks()) then
+		self:ScheduleFinished(schedule)
 		return
 	end
-	self:SetTask( schedule:GetTask( self.CurrentTaskID ) )
+	self:SetTask(schedule:GetTask(self.CurrentTaskID))
 end
 
-function ENT:StartTask(task) task:Start(self) end
-function ENT:RunTask(task) if !task || !self then return end task:Run(self) end
-function ENT:TaskTime() return CurTime() - self.TaskStartTime end
-function ENT:OnTaskComplete() self.bTaskComplete = true end
-function ENT:TaskFinished() return self.bTaskComplete end
+function ENT:StartTask(task)
+	task:Start(self)
+end
+
+function ENT:RunTask(task)
+	if !task or !self then
+		return
+	end
+	task:Run(self)
+end
+
+function ENT:TaskTime()
+	return CurTime() -self.TaskStartTime
+end
+
+function ENT:OnTaskComplete()
+	self.bTaskComplete = true
+end
+
+function ENT:TaskFinished()
+	return self.bTaskComplete
+end
+
 function ENT:StartEngineTask(iTaskID,TaskData) end
+
 function ENT:RunEngineTask(iTaskID,TaskData) end
-function ENT:StartEngineSchedule(scheduleID) self:ScheduleFinished() self.bDoingEngineSchedule = true end
-function ENT:EngineScheduleFinish() self.bDoingEngineSchedule = nil end
-function ENT:DoingEngineSchedule() return self.bDoingEngineSchedule end
+
+function ENT:StartEngineSchedule(scheduleID)
+	self:ScheduleFinished()
+	self.bDoingEngineSchedule = true
+end
+
+function ENT:EngineScheduleFinish()
+	self.bDoingEngineSchedule = nil
+end
+
+function ENT:DoingEngineSchedule()
+	return self.bDoingEngineSchedule
+end

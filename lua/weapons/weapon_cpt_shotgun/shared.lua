@@ -88,7 +88,7 @@ function SWEP:OnPrimaryAttack()
 			self:NPC_FireGesture(self:SelectFromTable(self.Owner.tbl_Animations["Fire"]))
 		end
 		timer.Simple(0.6,function()
-			if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
+			if IsValid(self) && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 				if self.Owner:IsPlayer() then self:UseDefinedSequence("pump") end
 				self:PlayWeaponSound("Cock",75)
 			end

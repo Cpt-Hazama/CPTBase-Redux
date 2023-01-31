@@ -68,7 +68,7 @@ function ENT:FootStepCode()
 	local y = self:GetPoseParameter(ypp)
 	if self:IsOnGround() && self:IsMoving() && self.UseTimedSteps == true then
 		if (x != 0 || y != 0) && CurTime() > self.NextFootSoundT_Run then
-			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
+			self:CPT_PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 			self:DoPlaySound("FootStep")
 			self:OnStep("Run")
 			self.NextFootSoundT_Run = CurTime() + self.NextFootSound_Run
@@ -82,7 +82,7 @@ function ENT:OnThink()
 	end
 	if !self.IsPossessed && CurTime() > self.NextPropAttackT then
 		for _,ent in ipairs(ents.FindInSphere(self:GetPos() +self:OBBCenter() +self:GetForward() *20,self.MeleeAttackDamageDistance)) do
-			if ent:IsValid() && self:Visible(ent) then
+			if IsValid(ent) && self:Visible(ent) then
 				if table.HasValue(self.tbl_AttackablePropNames,ent:GetClass()) then
 					self:DoAttack()
 				end
@@ -95,11 +95,11 @@ end
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
 	if (!self.IsPossessed && IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:PlaySound("Attack",75,90,85)
-	self:PlayAnimation("Attack")
+	self:CPT_PlaySound("Attack",75,90,85)
+	self:CPT_PlayAnimation("Attack")
 	self.IsAttacking = true
 	timer.Simple(0.6,function()
-		if self:IsValid() then
+		if IsValid(self) then
 			self:DoDamage(self.MeleeAttackDamageDistance,self.MeleeAttackDamage,self.MeleeAttackType,Vector(0,0,0),Angle(0,0,0),function(ent,dmginfo)
 				util.AddAttackEffect(self,ent,5,DMG_POI,1,10)
 				return
@@ -107,7 +107,7 @@ function ENT:DoAttack()
 		end
 	end)
 	timer.Simple(1,function()
-		if self:IsValid() then
+		if IsValid(self) then
 			self.IsAttacking = false
 			self.IsRangeAttacking = false
 			self.HasStoppedMovingToAttack = false
@@ -119,7 +119,7 @@ end
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	if self.IsPossessed == true then return end
 	if(disp == D_HT) then
-		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) then
+		if nearest <= self.MeleeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) then
 			self:DoAttack()
 		end
 		self:ChaseEnemy()

@@ -194,12 +194,12 @@ function SWEP:SelectFromTable(tbl)
 	return tbl[math.random(1,#tbl)]
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:SoundCreate(snd,vol,pitch)
+function SWEP:CPT_SoundCreate(snd,vol,pitch)
 	-- return sound.Play(snd,self:GetPos(),vol,pitch,1)
 	return self:EmitSound(snd,vol,pitch)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:AnimationLength(activity)
+function SWEP:CPT_AnimationLength(activity)
 	return self:SequenceDuration(self:SelectWeightedSequence(activity))
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -216,21 +216,21 @@ function SWEP:PlayWeaponSound(tbl,vol,pitch,usedot)
 	local pitch = pitch or 100
 	-- self.Weapon:EmitSound(Sound(self:SelectFromTable(self.tbl_Sounds[tbl])),vol,100 *GetConVarNumber("host_timescale"))
 	-- if usedot == true then
-		self.CurrentSound = self:SoundCreate(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
+		self.CurrentSound = self:CPT_SoundCreate(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
 	-- else
-		-- return self:CreatePlaySound(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
+		-- return self:CPT_CreatePlaySound(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
 	-- end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayWeaponSoundTimed(tbl,vol,time,usedot)
 	if self.tbl_Sounds[tbl] == nil then return end
 	timer.Simple(time,function()
-		if self:IsValid() && self.Owner:IsValid() && self.Owner:GetActiveWeapon() == self then
+		if IsValid(self) && self.Owner:IsValid() && self.Owner:GetActiveWeapon() == self then
 			-- self.Weapon:EmitSound(Sound(self:SelectFromTable(self.tbl_Sounds[tbl])),vol,100 *GetConVarNumber("host_timescale"))
 			-- if usedot == true then
-				return self:SoundCreate(self:SelectFromTable(self.tbl_Sounds[tbl]),vol)
+				return self:CPT_SoundCreate(self:SelectFromTable(self.tbl_Sounds[tbl]),vol)
 			-- else
-				-- return self:CreatePlaySound(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
+				-- return self:CPT_CreatePlaySound(self:SelectFromTable(self.tbl_Sounds[tbl]),vol,pitch *GetConVarNumber("host_timescale"))
 			-- end
 		end
 	end)
@@ -304,12 +304,13 @@ function SWEP:AcceptInput(name,entActivator,entCaller,data)
 	return false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:PlayWeaponSequence(seq,speed,loop)
-	local anim = self.Owner:GetViewModel():LookupSequence(seq)
-	self.Owner:GetViewModel():ResetSequence(anim)
-	self.Owner:GetViewModel():ResetSequenceInfo()
-	self.Owner:GetViewModel():SetPlaybackRate(speed)
-	self.Owner:GetViewModel():SetCycle(loop)
+function SWEP:PlayWeaponSequence(seq,speed,cycle)
+	local owner = self:GetOwner()
+	local vm = owner:GetViewModel()
+	vm:ResetSequenceInfo()
+	vm:SendViewModelMatchingSequence(vm:LookupSequence(seq))
+	vm:SetPlaybackRate(speed)
+	vm:SetCycle(cycle)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:PlayThirdPersonAnim(anim)
@@ -319,10 +320,10 @@ function SWEP:PlayThirdPersonAnim(anim)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:UseDefinedSequence(seq)
-	return self.Weapon:SendWeaponAnim(self:GetSequenceInfo(self:GetSequenceID(seq)).activity)
+	return self.Weapon:SendWeaponAnim(self:GetSequenceInfo(self:CPT_GetSequenceID(seq)).activity)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:GetSequenceID(sequence)
+function SWEP:CPT_GetSequenceID(sequence)
 	local tb = self:GetSequenceList()
 	local i = 0
 	for k,v in ipairs(tb) do
@@ -352,7 +353,7 @@ function SWEP:NPCShoot_Primary(ShootPos,ShootDir)
 	-- if CurTime() > self.NextFireTime_NPC then
 		-- for i = 1, self.NPC_FireRateAmount do
 			-- timer.Simple(self.NPC_FireTime,function()
-				-- if self:IsValid() && self.Owner:IsValid() then
+				-- if IsValid(self) && self.Owner:IsValid() then
 					-- self:PrimaryAttack(ShootPos,ShootDir)
 				-- end
 			-- end)
@@ -440,7 +441,7 @@ function SWEP:Initialize()
 		self:SetNPCFireRate(self.NPCFireRate)
 	end
 	timer.Simple(0.01,function()
-		if self:IsValid() && self.Owner:IsValid() && self.Owner:IsPlayer() then
+		if IsValid(self) && self.Owner:IsValid() && self.Owner:IsPlayer() then
 			if SERVER then
 				self.Owner:AddToAmmoCount(self.Primary.DefaultClip *self.StartingClips,self.Primary.Ammo)
 			end
@@ -539,13 +540,13 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	if self.Owner:IsNPC() then
 		self:OnPrimaryAttack_NPC()
 	end
-	timer.Simple(self.Primary.Delay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
-	timer.Simple(self.Primary.Delay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
+	timer.Simple(self.Primary.Delay,function() if IsValid(self) then self.IsFiring = false self.CanUseIdle = true end end)
+	timer.Simple(self.Primary.Delay +0.001,function() if IsValid(self) then self:DoIdleAnimation() end end)
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:DoFireAnimation()
 	local anim = self.FireAnimation
-	self:PlayWeaponAnimation(anim,1,0)
+	self:CPT_PlayWeaponAnimation(anim,1,0)
 	self:PlayThirdPersonAnim(PLAYER_ATTACK1)
 	if type(anim) == "number" then
 		self.Weapon:SendWeaponAnim(anim)
@@ -554,7 +555,7 @@ function SWEP:DoFireAnimation()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function SWEP:PlayWeaponAnimation(anim,speed,loop)
+function SWEP:CPT_PlayWeaponAnimation(anim,speed,loop)
 	if type(anim) == "number" then
 		return self.Weapon:SendWeaponAnim(anim)
 	elseif type(anim) == "string" then
@@ -636,9 +637,9 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 		bullet.Num = self.Primary.TotalShots
 		bullet.Src = self:GetBulletPos()
 		if self.Owner:IsNPC() then
-			local aimPos = self.Owner:FindHeadPosition(self.Owner:GetEnemy())
+			local aimPos = self.Owner:CPT_FindHeadPosition(self.Owner:GetEnemy())
 			if math.random(1,math.random(2,3)) == 1 then
-				aimPos = self.Owner:FindCenter(self.Owner:GetEnemy())
+				aimPos = self.Owner:CPT_FindCenter(self.Owner:GetEnemy())
 			end
 			local npcspread = self.Primary.Spread
 			if self.NPC_Spread != nil then
@@ -745,14 +746,14 @@ function SWEP:OnPrimaryAttack_NPC()
 		if self.NPC_AttackGestureSpeedOverride != false then
 			speed = self.NPC_AttackGestureSpeedOverride
 		end
-		self.Owner:PlayNPCGesture(self.NPC_FireAnimation,2,speed)
+		self.Owner:CPT_PlayNPCGesture(self.NPC_FireAnimation,2,speed)
 		self:AfterPrimaryAttack_NPC()
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function SWEP:OnReload_NPC()
 	if self.Owner:IsNPC() && self.NPC_ReloadAnimation != nil then
-		self.Owner:PlayNPCGesture(self.NPC_ReloadAnimation,2,self.ReloadSpeed)
+		self.Owner:CPT_PlayNPCGesture(self.NPC_ReloadAnimation,2,self.ReloadSpeed)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -856,13 +857,13 @@ function SWEP:NPC_Reload()
 		if self.Owner:IsNPC() then
 			self:OnReload_NPC()
 		end
-		-- self.Owner:StopCompletely()
+		-- self.Owner:CPT_StopCompletely()
 		if self.Owner.ForceReloadAnimation == true && self.Owner.tbl_Animations["Reload"] != nil then
-			self.Owner:PlayAnimation("Reload")
+			self.Owner:CPT_PlayAnimation("Reload")
 		end
 		local reloadtime = self.NPC_CurrentReloadTime
 		timer.Simple(reloadtime,function()
-			if self:IsValid() && self.Owner:IsValid() then
+			if IsValid(self) && self.Owner:IsValid() then
 				self.Owner.ReloadingWeapon = false
 				self:SetClip1(self.Primary.DefaultClip)
 			end
@@ -895,7 +896,7 @@ function SWEP:Reload()
 				self.NextReloadHintT = CurTime() +math.random(50,100)
 			end
 			timer.Simple(reloadtime,function()
-				if self:IsValid() then
+				if IsValid(self) then
 					self.Owner:RemoveAmmo(1,self.Primary.Ammo)
 					self:SetClip1(self:Clip1() +1)
 					self.CanUseIdle = true
@@ -905,7 +906,7 @@ function SWEP:Reload()
 			end)
 		else
 			timer.Simple(reloadtime,function()
-				if self:IsValid() then
+				if IsValid(self) then
 					local rClip = self.Owner:GetAmmoCount(self:GetPrimaryAmmoType())
 					if rClip < self.Primary.DefaultClip then
 						self:SetClip1(rClip)
@@ -919,7 +920,7 @@ function SWEP:Reload()
 				end
 			end)
 		end
-		timer.Simple(reloadtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
+		timer.Simple(reloadtime +0.001,function() if IsValid(self) then self:DoIdleAnimation() end end)
 		self.Weapon:SetNextPrimaryFire(reloadtime)
 	end
 	return true
@@ -935,7 +936,7 @@ function SWEP:DoReloadAnimation()
 	end
 	if reloadtime == false then
 		if type(anim) == "number" then
-			reloadtime = self.Weapon:AnimationLength(anim)
+			reloadtime = self.Weapon:CPT_AnimationLength(anim)
 		end
 	end
 	self.Owner:SetAnimation(PLAYER_RELOAD)
@@ -994,10 +995,10 @@ function SWEP:Deploy()
 		self:OnDeploy()
 		local drawtime = self.DrawTime
 		if drawtime == false then
-			drawtime = self.Weapon:AnimationLength(anim)
+			drawtime = self.Weapon:CPT_AnimationLength(anim)
 		end
-		timer.Simple(drawtime,function() if self:IsValid() then self.CanUseIdle = true self.IsDrawing = false end end)
-		timer.Simple(drawtime +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
+		timer.Simple(drawtime,function() if IsValid(self) then self.CanUseIdle = true self.IsDrawing = false end end)
+		timer.Simple(drawtime +0.001,function() if IsValid(self) then self:DoIdleAnimation() end end)
 		self.Weapon:SetNextPrimaryFire(drawtime)
 	else
 		self:DoIdleAnimation()

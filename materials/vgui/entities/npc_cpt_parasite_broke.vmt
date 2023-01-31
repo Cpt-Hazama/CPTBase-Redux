@@ -1,6 +1,6 @@
 "UnlitGeneric"
 {
-	"$basetexture" "vgui/entities/npc_cpt_parasite"
+	"$basetexture" "vgui/entities/npc_cpt_parasite_broke"
 	"$nolod" 1
 	"$vertexalpha" 1
 	"$vertexcolor" 1

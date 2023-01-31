@@ -55,7 +55,7 @@ SWEP.WorldModelAdjust = {
 
 SWEP.AdjustViewModel = true
 SWEP.ViewModelAdjust = {
-	Pos = {Right = -4,Forward = 12,Up = -4},
+	Pos = {Right = -1,Forward = 3,Up = -1},
 	Ang = {Right = 0,Up = 0,Forward = 0}
 }
 
@@ -92,9 +92,9 @@ function SWEP:Deploy()
 		if loop == nil then loop = 0 end
 		self.Weapon:SetCycle(loop)
 	end
-	timer.Simple(1,function() if self:IsValid() then self.Weapon:SendWeaponAnim(self.ReloadAnimation) self:PlayWeaponSound("Charge",75) end end)
-	timer.Simple(self.DrawTime,function() if self:IsValid() then self.CanUseIdle = true self.IsDrawing = false end end)
-	timer.Simple(self.DrawTime +0.03,function() if self:IsValid() then self:DoIdleAnimation() end end)
+	timer.Simple(1,function() if IsValid(self) then self.Weapon:SendWeaponAnim(self.ReloadAnimation) self:PlayWeaponSound("Charge",75) end end)
+	timer.Simple(self.DrawTime,function() if IsValid(self) then self.CanUseIdle = true self.IsDrawing = false end end)
+	timer.Simple(self.DrawTime +0.03,function() if IsValid(self) then self:DoIdleAnimation() end end)
 	self.Weapon:SetNextPrimaryFire(self.DrawTime)
 	return true
 end

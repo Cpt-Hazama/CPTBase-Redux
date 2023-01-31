@@ -46,80 +46,26 @@ function SWEP:ViewModelDrawn()
 	end
 end
 
-// Credit to zombine, I am not taking credit for this I just prefer his viewmodel movement more than mine :v
-local function CalculateVector(start,scale,direction,dest)
-	dest.x = start.x +direction.x *scale
-	dest.y = start.y +direction.y *scale
-	dest.z = start.z +direction.z *scale
-end
-
-hook.Add("CalcViewModelView","CPTBase_WeaponBase_Viewmodel",function(weapon,vm,oldpos,oldang,pos,ang)
-	if weapon.CPTBase_Weapon != true then return end
-	if weapon.UseLuaMovement == false then return end
-	local Weapon_OriginalPos = Vector(pos.x,pos.y,pos.z)
-	local Weapon_OriginalAngles = Angle(ang.x,ang.y,ang.z)
-	local Scale_Forward = weapon.LuaMovementScale_Forward
-	local Scale_Right = weapon.LuaMovementScale_Right
-	local Scale_Up = weapon.LuaMovementScale_Up
-	local Shift_Speed = 8
-	vm.LastFacingAngle = vm.LastFacingAngle or ang:Forward()
-	local forward = ang:Forward()
-	if FrameTime() != 0 then
-		local difference = forward -vm.LastFacingAngle
-		local totaldifference = difference:Length()
-		if totaldifference > 1.5 then
-			local scale = totaldifference /1.5
-			Shift_Speed = Shift_Speed *scale
-		end
-		CalculateVector(vm.LastFacingAngle,Shift_Speed *FrameTime(),difference,vm.LastFacingAngle)
-		vm.LastFacingAngle:Normalize()
-		CalculateVector(pos,5,difference * -1,pos)
-	end
-	local right,up
-	right = oldang:Right()
-	up = oldang:Up()
-	local pitch = oldang[1]
-	if (pitch > 180) then
-		pitch = pitch -360
-	elseif (pitch < -180) then
-		pitch = pitch +360
-	end
-
-	CalculateVector(pos,-pitch *Scale_Forward,forward,pos)
-	CalculateVector(pos,-pitch *Scale_Right,right,pos)
-	CalculateVector(pos,-pitch *Scale_Up,up,pos)
-end)
-
 function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 	local opos = pos *1
 	local frameMultiply = self.IdleFPS
 	local jump = 0
 	local move1 = 0
 	local move2 =  0
+	local ironsights = self:GetNW2Bool("cptbase_UseIronsights")
 	if self.AdjustViewModel == true then
-		if self:GetNW2Bool("cptbase_UseIronsights") == false then
-			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
-			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
-			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
-		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
-			opos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-			opos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-			opos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-			pos:Add(ang:Right() *(self.ViewModelAdjust.Pos.Right))
-			pos:Add(ang:Forward() *(self.ViewModelAdjust.Pos.Forward))
-			pos:Add(ang:Up() *(self.ViewModelAdjust.Pos.Up))
-			ang:RotateAroundAxis(ang:Right(),self.ViewModelAdjust.Ang.Right)
-			ang:RotateAroundAxis(ang:Up(),self.ViewModelAdjust.Ang.Up)
-			ang:RotateAroundAxis(ang:Forward(),self.ViewModelAdjust.Ang.Forward)
-		end
+		local adjustData = self.ViewModelAdjust
+		opos:Add(ang:Right() *(adjustData.Pos.Right))
+		opos:Add(ang:Forward() *(adjustData.Pos.Forward))
+		opos:Add(ang:Up() *(adjustData.Pos.Up))
+		pos:Add(ang:Right() *(adjustData.Pos.Right))
+		pos:Add(ang:Forward() *(adjustData.Pos.Forward))
+		pos:Add(ang:Up() *(adjustData.Pos.Up))
+		ang:RotateAroundAxis(ang:Right(),adjustData.Ang.Right)
+		ang:RotateAroundAxis(ang:Up(),adjustData.Ang.Up)
+		ang:RotateAroundAxis(ang:Forward(),adjustData.Ang.Forward)
 	else
-		if self:GetNW2Bool("cptbase_UseIronsights") == false then
+		if ironsights == false then
 			opos:Add(ang:Right() *0)
 			opos:Add(ang:Forward() *0)
 			opos:Add(ang:Up() *0)
@@ -129,61 +75,108 @@ function SWEP:GetViewModelPosition(pos,ang) // Refer to the hook for movement
 			ang:RotateAroundAxis(ang:Right(),0)
 			ang:RotateAroundAxis(ang:Up(),0)
 			ang:RotateAroundAxis(ang:Forward(),0)
-		elseif self:GetNW2Bool("cptbase_UseIronsights") == true then
-			-- opos:Add(ang:Right() *(self.Ironsights.Pos.Right))
-			-- opos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
-			-- opos:Add(ang:Up() *(self.Ironsights.Pos.Up))
-			opos:Add(Lerp(1,ang:Right(),ang:Right() *(self.Ironsights.Pos.Right)))
-			opos:Add(Lerp(1,ang:Forward(),ang:Forward() *(self.Ironsights.Pos.Forward)))
-			opos:Add(Lerp(1,ang:Up(),ang:Up() *(self.Ironsights.Pos.Up)))
-			pos:Add(Lerp(1,ang:Right(),ang:Right() *(self.Ironsights.Pos.Right)))
-			pos:Add(Lerp(1,ang:Forward(),ang:Forward() *(self.Ironsights.Pos.Forward)))
-			pos:Add(Lerp(1,ang:Up(),ang:Up() *(self.Ironsights.Pos.Up)))
-			-- ang:RotateAroundAxis(Lerp(1,ang:Right(),ang:Right(),self.Ironsights.Ang.Right))
-			-- ang:RotateAroundAxis(Lerp(1,ang:Up(),ang:Up(),self.Ironsights.Ang.Up))
-			-- ang:RotateAroundAxis(Lerp(1,ang:Forward(),ang:Forward(),self.Ironsights.Ang.Forward))
-			-- pos:Add(ang:Right() *(self.Ironsights.Pos.Right))
-			-- pos:Add(ang:Forward() *(self.Ironsights.Pos.Forward))
-			-- pos:Add(ang:Up() *(self.Ironsights.Pos.Up))
-			ang:RotateAroundAxis(ang:Right(),self.Ironsights.Ang.Right)
-			ang:RotateAroundAxis(ang:Up(),self.Ironsights.Ang.Up)
-			ang:RotateAroundAxis(ang:Forward(),self.Ironsights.Ang.Forward)
+		elseif ironsights == true then
+			local adjustData = self.Ironsights
+			-- opos:Add(ang:Right() *(adjustData.Pos.Right))
+			-- opos:Add(ang:Forward() *(adjustData.Pos.Forward))
+			-- opos:Add(ang:Up() *(adjustData.Pos.Up))
+			opos:Add(Lerp(1,ang:Right(),ang:Right() *(adjustData.Pos.Right)))
+			opos:Add(Lerp(1,ang:Forward(),ang:Forward() *(adjustData.Pos.Forward)))
+			opos:Add(Lerp(1,ang:Up(),ang:Up() *(adjustData.Pos.Up)))
+			pos:Add(Lerp(1,ang:Right(),ang:Right() *(adjustData.Pos.Right)))
+			pos:Add(Lerp(1,ang:Forward(),ang:Forward() *(adjustData.Pos.Forward)))
+			pos:Add(Lerp(1,ang:Up(),ang:Up() *(adjustData.Pos.Up)))
+			-- ang:RotateAroundAxis(Lerp(1,ang:Right(),ang:Right(),adjustData.Ang.Right))
+			-- ang:RotateAroundAxis(Lerp(1,ang:Up(),ang:Up(),adjustData.Ang.Up))
+			-- ang:RotateAroundAxis(Lerp(1,ang:Forward(),ang:Forward(),adjustData.Ang.Forward))
+			-- pos:Add(ang:Right() *(adjustData.Pos.Right))
+			-- pos:Add(ang:Forward() *(adjustData.Pos.Forward))
+			-- pos:Add(ang:Up() *(adjustData.Pos.Up))
+			ang:RotateAroundAxis(ang:Right(),adjustData.Ang.Right)
+			ang:RotateAroundAxis(ang:Up(),adjustData.Ang.Up)
+			ang:RotateAroundAxis(ang:Forward(),adjustData.Ang.Forward)
 		end
 	end
 
-	if self.UseLuaMovement == true then
-		if !self:GetNW2Bool("cptbase_UseIronsights") then
-			ang = ang +Angle(math.cos(CurTime() *frameMultiply),math.cos(CurTime() *frameMultiply) /2,math.cos(CurTime() *frameMultiply))
-		end
-		if self.Owner:IsOnGround() then
-			if jump > 0 then
-				jump = jump -0.5
-			end
-		else
-			if jump < 6 then
-				jump = jump +0.1
-			end
-		end
-		ang:RotateAroundAxis(ang:Right(),jump)
-		ang:RotateAroundAxis(ang:Up(),(jump *-0.3))
-		ang:RotateAroundAxis(ang:Forward(),0)
-		local walkspeed = self.Owner:GetVelocity():Length() 
-		if walkspeed > 0 then
-			if !self.Owner:KeyDown(IN_WALK) && !self.Owner:KeyDown(IN_SPEED) && !self.Owner:KeyDown(IN_DUCK) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
-				move1 = 17
-				move2 = 3
-			elseif (self.Owner:KeyDown(IN_WALK) or self.Owner:KeyDown(IN_DUCK)) && !self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
-				move1 = 15
-				move2 = 10
-			elseif self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
-				move1 = 20
-				move2 = 1 +(self.WeaponWeight /75)
-			else
-				move1 = 0
-				move2 = 100
-			end
-			ang = ang +Angle(math.cos(CurTime() *move1) /move2,math.cos(CurTime() *move1 /2) /move2,0)
-		end
-	end
+	-- if self.UseLuaMovement == true then
+	-- 	if !self:GetNW2Bool("cptbase_UseIronsights") then
+	-- 		ang = ang +Angle(math.cos(CurTime() *frameMultiply),math.cos(CurTime() *frameMultiply) /2,math.cos(CurTime() *frameMultiply))
+	-- 	end
+	-- 	if self.Owner:IsOnGround() then
+	-- 		if jump > 0 then
+	-- 			jump = jump -0.5
+	-- 		end
+	-- 	else
+	-- 		if jump < 6 then
+	-- 			jump = jump +0.1
+	-- 		end
+	-- 	end
+	-- 	ang:RotateAroundAxis(ang:Right(),jump)
+	-- 	ang:RotateAroundAxis(ang:Up(),(jump *-0.3))
+	-- 	ang:RotateAroundAxis(ang:Forward(),0)
+	-- 	local walkspeed = self.Owner:GetVelocity():Length() 
+	-- 	if walkspeed > 0 then
+	-- 		if !self.Owner:KeyDown(IN_WALK) && !self.Owner:KeyDown(IN_SPEED) && !self.Owner:KeyDown(IN_DUCK) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+	-- 			move1 = 17
+	-- 			move2 = 3
+	-- 		elseif (self.Owner:KeyDown(IN_WALK) or self.Owner:KeyDown(IN_DUCK)) && !self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+	-- 			move1 = 15
+	-- 			move2 = 10
+	-- 		elseif self.Owner:KeyDown(IN_SPEED) && self.Owner:IsOnGround() && (self.Owner:KeyDown(IN_FORWARD) or self.Owner:KeyDown(IN_BACK) or self.Owner:KeyDown(IN_MOVELEFT) or self.Owner:KeyDown(IN_MOVERIGHT)) then
+	-- 			move1 = 20
+	-- 			move2 = 1 +(self.WeaponWeight /75)
+	-- 		else
+	-- 			move1 = 0
+	-- 			move2 = 100
+	-- 		end
+	-- 		ang = ang +Angle(math.cos(CurTime() *move1) /move2,math.cos(CurTime() *move1 /2) /move2,0)
+	-- 	end
+	-- end
 	return pos,ang
+end
+
+function SWEP:CalcViewModelView(vm, OldEyePos, OldEyeAng, EyePos, EyeAng)
+	if self.UseLuaMovement == true then
+		local ironsights = self:GetNW2Bool("cptbase_UseIronsights")
+		local EyePos, EyeAng = self:GetViewModelPosition(OldEyePos, OldEyeAng)
+		local ply = self:GetOwner()
+		local EyePos = OldEyePos
+		local EyeAng = OldEyeAng
+
+		local realspeed = ply:GetVelocity():Length2D() /ply:GetRunSpeed()
+		local speed = math.Clamp(ply:GetVelocity():Length2DSqr() /ply:GetRunSpeed(), 0.25, 1)
+
+		local bob_x_val = CurTime() *(ironsights && 2 or 8)
+		local bob_y_val = CurTime() *(ironsights && 4 or 16)
+		
+		local bob_x = math.sin(bob_x_val*0.1)*0.5
+		local bob_y = math.sin(bob_y_val*0.15)*0.05
+		EyePos = EyePos + EyeAng:Right()*bob_x
+		EyePos = EyePos + EyeAng:Up()*bob_y
+		EyeAng:RotateAroundAxis(EyeAng:Forward(), 5 *bob_x)
+		
+		local speed_mul = 2
+		if self:GetOwner():IsOnGround() && realspeed > 0.1 then
+			local bobspeed = math.Clamp(realspeed*1.1, 0, 1)
+			local bob_x = math.sin(bob_x_val*1*speed) *0.1 *bobspeed
+			local bob_y = math.cos(bob_y_val*1*speed) *0.125 *bobspeed
+			EyePos = EyePos + EyeAng:Right()*bob_x*speed_mul *0.65
+			EyePos = EyePos + EyeAng:Up() *bob_y *speed_mul *1.5
+		end
+
+		if FrameTime() < 0.04 then
+			if !self.SwayPos then self.SwayPos = Vector() end
+			local vel = ply:GetVelocity()
+			vel.x = math.Clamp(vel.x/300, -0.5, 0.5)
+			vel.y = math.Clamp(vel.y/300, -0.5, 0.5)
+			vel.z = math.Clamp(vel.z/750, -1, 0.5)
+			
+			self.SwayPos = LerpVector(FrameTime()*25, self.SwayPos, -vel)
+			EyePos = EyePos + self.SwayPos
+		end
+
+		local EyePos, EyeAng = self:GetViewModelPosition(EyePos, EyeAng)
+		return EyePos, EyeAng
+	end
+	return EyePos, EyeAng
 end

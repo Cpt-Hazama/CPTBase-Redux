@@ -56,7 +56,7 @@
 -- 	self.Possessor:GodEnable()
 -- 	self.Possessor:Spectate(OBS_MODE_CHASE)
 -- 	self.Possessor:SpectateEntity(self.PossessorView)
--- 	self.Possessor:SetNoTarget(true)
+-- 	self.Possessor:CPT_SetNoTarget(true)
 -- 	self.Possessor:DrawShadow(false)
 -- 	self.Possessor:SetNoDraw(true)
 -- 	self.Possessor:SetMoveType(MOVETYPE_OBSERVER)
@@ -93,7 +93,7 @@
 -- 		self.PossessedNPC:RemoveFromMemory(v)
 -- 	end
 -- 	if self.PossessedNPC:IsMoving() then
--- 		self.PossessedNPC:StopProcessing()
+-- 		self.PossessedNPC:CPT_StopProcessing()
 -- 	end
 -- 	self.PossessedNPC:Possess_OnPossessed(self.Possessor)
 -- end
@@ -101,7 +101,7 @@
 -- function ENT:FaceForward()
 -- 	if self.PossessedNPC.Possessor_CanMove == true then
 -- 		if self.PossessedNPC:GetForward():Dot((self.PossessorBlock:GetPos() -self.PossessedNPC:GetPos() +self.PossessedNPC:GetForward() *15):GetNormalized()) < math.cos(math.rad(self.TurnRadius)) then
--- 		-- if self:CheckCanSee(self.PossessorBlock,10) then
+-- 		-- if self:CPT_CheckCanSee(self.PossessorBlock,10) then
 -- 			-- self:PlayerChat("TURN")
 -- 			self.PossessedNPC:TASKFUNC_FACEPOSITION(self.PossessorBlock:GetPos())
 -- 		-- else
@@ -111,7 +111,7 @@
 -- end
 
 -- function ENT:Think()
--- 	if !self:IsValid() then self:StopPossessing() return end
+-- 	if !IsValid(self) then self:StopPossessing() return end
 -- 	if self.PossessorView == nil then self:StopPossessing() return end
 -- 	if (!self.PossessorView:IsValid()) then self:StopPossessing() return end
 -- 	if !IsValid(self.PossessedNPC) then self:StopPossessing() end
@@ -189,13 +189,13 @@
 -- 		self.Possessor:GodDisable()
 -- 		self.Possessor:SetNoDraw(false)
 -- 		self.Possessor:DrawShadow(true)
--- 		self.Possessor:SetNoTarget(false)
+-- 		self.Possessor:CPT_SetNoTarget(false)
 -- 		self.Possessor:DrawViewModel(true)
 -- 		self.Possessor:DrawWorldModel(true)
 -- 		self.Possessor:SetHealth(self.Possessor.DefaultHealth)
 -- 		self.Possessor:SetArmor(self.Possessor.DefaultArmor)
 -- 		for i = 0,self.Possessor:GetBoneCount() -1 do
--- 			ParticleEffect("vortigaunt_glow_beam_cp0",self.Possessor:GetBonePosition(i),Angle(0,0,0),nil)
+-- 			CPT_ParticleEffect("vortigaunt_glow_beam_cp0",self.Possessor:GetBonePosition(i),Angle(0,0,0),nil)
 -- 		end
 -- 	end
 -- 	if IsValid(self.PossessedNPC) then
@@ -203,7 +203,7 @@
 -- 		self.PossessedNPC.IsPossessed = false
 -- 		self.PossessedNPC.Possessor = NULL
 -- 		for i = 0,self.PossessedNPC:GetBoneCount() -1 do
--- 			ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
+-- 			CPT_ParticleEffect("vortigaunt_glow_beam_cp0",self.PossessedNPC:GetBonePosition(i),Angle(0,0,0),nil)
 -- 		end
 -- 		self.PossessedNPC:ClearSchedule()
 -- 		self.PossessedNPC:Possess_OnStopPossessing(self.Possessor)
@@ -212,7 +212,7 @@
 -- 	-- if remove == true then
 -- 		-- if self.PossessedNPC:IsValid() then
 -- 			-- if self.PossessedNPC:Health() > 0 then
--- 				-- ParticleEffect("portal_rift_flash_01",self.PossessedNPC:GetPos() +self.PossessedNPC:OBBCenter(),Angle(0,0,0),nil)
+-- 				-- CPT_ParticleEffect("portal_rift_flash_01",self.PossessedNPC:GetPos() +self.PossessedNPC:OBBCenter(),Angle(0,0,0),nil)
 -- 				-- self.PossessedNPC:Remove()
 -- 			-- end
 -- 		-- end

@@ -25,34 +25,34 @@ function ENT:OnStateChanged(laststate,currentstate)
 	-- print(laststate,currentstate)
 	if laststate == NPC_STATE_IDLE then
 		if currentstate == NPC_STATE_ALERT then
-			self:PlaySound("NormalToAlert")
+			self:CPT_PlaySound("NormalToAlert")
 			self.StringState = "Is Alerted"
 		elseif currentstate == NPC_STATE_COMBAT then
-			self:PlaySound("NormalToCombat")
+			self:CPT_PlaySound("NormalToCombat")
 			self.StringState = "Is In Combat"
 		end
 	elseif laststate == NPC_STATE_COMBAT then
 		if currentstate == NPC_STATE_IDLE then
-			self:PlaySound("CombatToNormal")
+			self:CPT_PlaySound("CombatToNormal")
 			self.StringState = "Is Idle"
 		elseif currentstate == NPC_STATE_LOST then
-			self:PlaySound("CombatToLost") 
+			self:CPT_PlaySound("CombatToLost") 
 			self.StringState = "Lost Enemy"
 		end
 	elseif laststate == NPC_STATE_ALERT then
 		if currentstate == NPC_STATE_COMBAT then
-			self:PlaySound("AlertToCombat")
+			self:CPT_PlaySound("AlertToCombat")
 			self.StringState = "Is In Combat"
 		elseif currentstate == NPC_STATE_IDLE then
-			self:PlaySound("AlertToNormal")
+			self:CPT_PlaySound("AlertToNormal")
 			self.StringState = "Is Idle"
 		end
 	elseif laststate == NPC_STATE_LOST then
 		if currentstate == NPC_STATE_COMBAT then
-			self:PlaySound("LostToCombat")
+			self:CPT_PlaySound("LostToCombat")
 			self.StringState = "Is In Combat"
 		elseif currentstate == NPC_STATE_IDLE then
-			self:PlaySound("LostToNormal")
+			self:CPT_PlaySound("LostToNormal")
 			self.StringState = "Is Idle"
 		end
 	end

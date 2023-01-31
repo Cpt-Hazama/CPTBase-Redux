@@ -99,17 +99,17 @@ end
 function ENT:OnPlaySound(sound,tbl)
 	if tbl == "Spot" then
 		self:EmitSound("npc/combine_soldier/vo/on2.wav",60,110)
-		timer.Simple(SoundDuration(sound),function() if self:IsValid() then self:EmitSound("npc/combine_soldier/vo/off3.wav",60,110) end end)
+		timer.Simple(SoundDuration(sound),function() if IsValid(self) then self:EmitSound("npc/combine_soldier/vo/off3.wav",60,110) end end)
 	elseif tbl == "FootStep" then
 		self:EmitSound(self:SelectFromTable(self.tbl_Sounds["Click"]),70,130)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFoundEnemy(count,oldcount,ent)
-	self:PlaySound("Spot",70,90,108)
+	self:CPT_PlaySound("Spot",70,90,108)
 	if self.eye then
 		self.eye:SetKeyValue("rendercolor","255 0 0")
-		timer.Simple(0.5,function() if self:IsValid() then self.eye:SetKeyValue("rendercolor","0 85 0") end end)
+		timer.Simple(0.5,function() if IsValid(self) then self.eye:SetKeyValue("rendercolor","0 85 0") end end)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ function ENT:HandleEvents(...)
 	local spread = math.random(10,20)
 	if(event == "emit") then
 		if(arg1 == "Foot") then
-			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
+			self:CPT_PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 		end
 		return true
 	end
@@ -137,9 +137,9 @@ function ENT:HandleEvents(...)
 			bullet.Dir = self:Possess_AimTarget() -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		else
 			if !IsValid(self:GetEnemy()) then return true end
-			local aimPos = self:FindHeadPosition(self:GetEnemy())
+			local aimPos = self:CPT_FindHeadPosition(self:GetEnemy())
 			if math.random(1,math.random(2,3)) == 1 then
-				aimPos = self:FindCenter(self:GetEnemy())
+				aimPos = self:CPT_FindCenter(self:GetEnemy())
 			end
 			bullet.Dir = aimPos -muzzle.Pos +Vector(math.Rand(-spread,spread),math.Rand(-spread,spread),math.Rand(-spread,spread))
 		end
@@ -149,13 +149,13 @@ function ENT:HandleEvents(...)
 		bullet.Damage = math.random(4,8)
 		bullet.AmmoType = "Pistol"
 		self:FireBullets(bullet)
-		self:SoundCreate(self:SelectFromTable(self.tbl_Sounds["Fire"]),90)
+		self:CPT_SoundCreate(self:SelectFromTable(self.tbl_Sounds["Fire"]),90)
 		local effectdata = EffectData()
-		effectdata:SetStart(muzzle.Pos)
+		effectdata:SetEntity(self)
 		effectdata:SetOrigin(muzzle.Pos)
-		effectdata:SetScale(1)
-		effectdata:SetAngles(muzzle.Ang)
-		util.Effect("MuzzleEffect",effectdata)
+		effectdata:SetNormal(bullet.Dir)
+		effectdata:SetAttachment(self:LookupAttachment(arg1 == "right" && "RightMuzzle" || "LeftMuzzle"))
+		util.Effect("cpt_muzzle",effectdata)
 		return true
 	end
 end
@@ -164,21 +164,21 @@ function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
 	if self.IsDodging then return end
 	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:StopCompletely()
-	self:PlayAnimation("Attack",2)
-	self:PlaySound("Attack")
+	self:CPT_StopCompletely()
+	self:CPT_PlayAnimation("Attack",2)
+	self:CPT_PlaySound("Attack")
 	self.IsAttacking = true
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoRangeAttack()
 	if self:CanPerformProcess() == false then return end
 	if self.IsDodging then return end
 	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:StopCompletely()
-	self:PlayAnimation("RangeAttack",2)
+	self:CPT_StopCompletely()
+	self:CPT_PlayAnimation("RangeAttack",2)
 	self.IsRangeAttacking = true
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Cloak()
@@ -221,9 +221,9 @@ function ENT:OnThink()
 	end
 	if self.IsCloaked then
 		if self.AlphaColor <= 30 then
-			self:SetNoTarget(true)
+			self:CPT_SetNoTarget(true)
 		else
-			self:SetNoTarget(false)
+			self:CPT_SetNoTarget(false)
 		end
 		if self.AlphaColor != 15 then
 			self.AlphaColor = self.AlphaColor -self.AlphaRate
@@ -263,10 +263,10 @@ function ENT:DoDodge(forceanim)
 	if forceanim != nil then
 		if tryact == BACK then trypos = self:GetForward() *-400 elseif tryact == LEFT then trypos = self:GetRight() *-400 elseif tryact == RIGHT then trypos = self:GetRight() *400 end
 			if !self:DoCustomTrace(self:GetPos(),self:GetPos() +trypos,{self},true).Hit then
-				self:StopCompletely()
+				self:CPT_StopCompletely()
 				self:PlayActivity(tryact,0)
 				self.IsDodging = true
-				timer.Simple(self:AnimationLength(tryact),function() if self:IsValid() then self.IsDodging = false end end)
+				timer.Simple(self:CPT_AnimationLength(tryact),function() if IsValid(self) then self.IsDodging = false end end)
 				self.NextJumpT = CurTime() +math.random(1,3)
 			end
 		return
@@ -276,36 +276,36 @@ function ENT:DoDodge(forceanim)
 	local tryact = self:SelectFromTable(act)
 	if tryact == BACK then trypos = self:GetForward() *-400 elseif tryact == FORWARD then trypos = self:GetForward() *400 elseif tryact == LEFT then trypos = self:GetRight() *-400 elseif tryact == RIGHT then trypos = self:GetRight() *400 end
 	if !self:DoCustomTrace(self:GetPos(),self:GetPos() +trypos,{self},true).Hit then
-		self:StopCompletely()
+		self:CPT_StopCompletely()
 		self:PlayActivity(tryact,0)
 		self.IsDodging = true
-		timer.Simple(self:AnimationLength(tryact),function() if self:IsValid() then self.IsDodging = false end end)
-		self.NextJumpT = CurTime() +self:AnimationLength(tryact) +math.Rand(0,1.5)
+		timer.Simple(self:CPT_AnimationLength(tryact),function() if IsValid(self) then self.IsDodging = false end end)
+		self.NextJumpT = CurTime() +self:CPT_AnimationLength(tryact) +math.Rand(0,1.5)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:Possess_Jump(possessor)
 	if CurTime() > self.NextJumpT && self.IsDodging == false then
-		self:StopCompletely()
+		self:CPT_StopCompletely()
 		if possessor:KeyDown(IN_MOVELEFT) then
 			self:PlayActivity(LEFT,0)
-			animtime = self:AnimationLength(LEFT)
+			animtime = self:CPT_AnimationLength(LEFT)
 		elseif possessor:KeyDown(IN_MOVERIGHT) then
 			self:PlayActivity(RIGHT,0)
-			animtime = self:AnimationLength(RIGHT)
+			animtime = self:CPT_AnimationLength(RIGHT)
 		elseif possessor:KeyDown(IN_FORWARD) then
 			self:PlayActivity(FORWARD,0)
-			animtime = self:AnimationLength(FORWARD)
+			animtime = self:CPT_AnimationLength(FORWARD)
 		elseif possessor:KeyDown(IN_BACK) then
 			self:PlayActivity(BACK,0)
-			animtime = self:AnimationLength(BACK)
+			animtime = self:CPT_AnimationLength(BACK)
 		else
 			self:PlayActivity(BACK,0)
-			animtime = self:AnimationLength(BACK)
+			animtime = self:CPT_AnimationLength(BACK)
 		end
 		self.IsDodging = true
 		self.IsRangeAttacking = true
-		timer.Simple(animtime,function() if self:IsValid() then self.IsRangeAttacking = false self.IsDodging = false end end)
+		timer.Simple(animtime,function() if IsValid(self) then self.IsRangeAttacking = false self.IsDodging = false end end)
 		self.NextJumpT = CurTime() +animtime +math.Rand(0,1.5)
 	end
 end
@@ -319,13 +319,13 @@ end
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	if self.IsPossessed then return end
 	if(disp == D_HT) then
-		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) then
+		if nearest <= self.MeleeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) then
 			self:DoAttack()
 		end
 		if nearest < self.RangeAttackStopDistance && nearest > self.MeleeAttackDistance && CurTime() > self.NextJumpT && self.IsDodging == false then
 			self:DoDodge(true)
 		end
-		if nearest <= self.RangeAttackDistance && nearest >= self.RangeAttackStopDistance && self:FindInCone(enemy,40) then
+		if nearest <= self.RangeAttackDistance && nearest >= self.RangeAttackStopDistance && self:CPT_FindInCone(enemy,40) then
 			self:DoRangeAttack()
 			if math.random(1,18) == 1 && CurTime() > self.NextJumpT && self.IsDodging == false then
 				self:DoDodge()

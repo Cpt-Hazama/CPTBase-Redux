@@ -55,6 +55,12 @@ SWEP.WorldModelAdjust = {
 	Ang = {Right = -10,Up = 180,Forward = 0}
 }
 
+SWEP.AdjustViewModel = true
+SWEP.ViewModelAdjust = {
+	Pos = {Right = -1,Forward = 2,Up = 0},
+	Ang = {Right = 0,Up = 0,Forward = 0}
+}
+
 SWEP.tbl_Sounds = {
 	["DryFire"] = {"weapons/ar2/ar2_empty.wav"},
 	["Fire"] = {"^weapons/ar1/ar1_dist1.wav","^weapons/ar1/ar1_dist2.wav"},

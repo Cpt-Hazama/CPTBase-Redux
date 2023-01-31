@@ -51,53 +51,53 @@ local chance = 0
 function ENT:OnThink()
 	if self:IsMoving() then chance = 30 elseif self.IsAttacking == true then chance = 10 else chance = 50 end
 	if math.random(1,chance) == 1 then
-		ParticleEffect("blood_impact_green_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
-		ParticleEffect("blood_impact_red_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_green_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_red_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
 		self:EmitSound(Sound("physics/flesh/flesh_bloody_impact_hard1.wav"),75,100)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoPlaySound(tbl)
 	if tbl != "FootStep" then
-		ParticleEffect("blood_impact_green_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
-		ParticleEffect("blood_impact_red_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_green_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
+		CPT_ParticleEffect("blood_impact_red_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self)
 		self:EmitSound(Sound("physics/flesh/flesh_bloody_impact_hard1.wav"),75,100)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnRagdollRecover()
-	self:PlayAnimation("Recover")
+	self:CPT_PlayAnimation("Recover")
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
 	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:StopCompletely()
-	self:PlayAnimation("Attack",2)
-	self:PlaySound("Attack")
+	self:CPT_StopCompletely()
+	self:CPT_PlayAnimation("Attack",2)
+	self:CPT_PlaySound("Attack")
 	self.IsAttacking = true
 	timer.Simple(self.MeleeAttackHitTime *self:GetPlaybackRate(),function()
-		if self:IsValid() then
+		if IsValid(self) then
 			self:DoDamage(self.MeleeAttackDamageDistance,self.MeleeAttackDamage,self.MeleeAttackType)
 		end
 	end)
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoRangeAttack()
 	if CurTime() > self.NextRangeAttackT then
 		if self:CanPerformProcess() == false then return end
 		if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-		self:StopCompletely()
-		self:PlayAnimation("RangeAttack",2)
+		self:CPT_StopCompletely()
+		self:CPT_PlayAnimation("RangeAttack",2)
 		self.IsRangeAttacking = true
-		timer.Simple(0.1 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.3 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.5 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.7 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
-		timer.Simple(0.8 *self:GetPlaybackRate(),function() if self:IsValid() then self:EmitSound(Sound("physics/flesh/flesh_bloody_break.wav"),75,100) ParticleEffect("blood_impact_yellow_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self) end end)
+		timer.Simple(0.1 *self:GetPlaybackRate(),function() if IsValid(self) then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.3 *self:GetPlaybackRate(),function() if IsValid(self) then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.5 *self:GetPlaybackRate(),function() if IsValid(self) then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.7 *self:GetPlaybackRate(),function() if IsValid(self) then self:EmitSound(Sound("physics/flesh/flesh_squishy_impact_hard" .. math.random(1,4) .. ".wav"),75,100) end end)
+		timer.Simple(0.8 *self:GetPlaybackRate(),function() if IsValid(self) then self:EmitSound(Sound("physics/flesh/flesh_bloody_break.wav"),75,100) CPT_ParticleEffect("blood_impact_yellow_01",self:GetAttachment(self:LookupAttachment("head")).Pos,Angle(math.random(0,360),math.random(0,360),math.random(0,360)),self) end end)
 		timer.Simple(self.RangeAttackThrowTime *self:GetPlaybackRate(),function()
-			if self:IsValid() then
+			if IsValid(self) then
 				if self:GetBodygroup(1) == 1 then
 					self:SetBodygroup(1,0)
 					local crab = ents.Create("prop_ragdoll")
@@ -127,7 +127,7 @@ function ENT:DoRangeAttack()
 				end
 			end
 		end)
-		self:AttackFinish()
+		self:CPT_AttackFinish()
 		self.NextRangeAttackT = CurTime() +math.random(2,6)
 	end
 end
@@ -159,10 +159,10 @@ end
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	-- print(self:CanPerformProcess())
 	if(disp == D_HT) then
-		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
+		if nearest <= self.MeleeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) && self.IsAttacking == false then
 			self:DoAttack()
 		end
-		if nearest <= self.RangeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) && self.IsRangeAttacking == false then
+		if nearest <= self.RangeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) && self.IsRangeAttacking == false then
 			self:DoRangeAttack()
 		end
 		if nearest <= 200 then self.tbl_Animations["Run"] = {ACT_RUN} else self.tbl_Animations["Run"] = {ACT_WALK} end

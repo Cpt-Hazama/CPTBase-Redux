@@ -32,7 +32,7 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 		self.NPC_NextFireT = CurTime() +self:GetNPCFireRate()
 	end
 	timer.Simple(self.NPCMeleeHitTime,function()
-		if self:IsValid() && IsValid(self.Owner) then
+		if IsValid(self) && IsValid(self.Owner) then
 			self.Owner:DoDamage(80,self.Primary.Damage,DMG_SLASH)
 		end
 	end)
@@ -40,6 +40,6 @@ function SWEP:PrimaryAttack(ShootPos,ShootDir)
 	if self.Owner:IsNPC() then
 		self:OnPrimaryAttack_NPC()
 	end
-	timer.Simple(self.Primary.Delay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
-	timer.Simple(self.Primary.Delay +0.001,function() if self:IsValid() then self:DoIdleAnimation() end end)
+	timer.Simple(self.Primary.Delay,function() if IsValid(self) then self.IsFiring = false self.CanUseIdle = true end end)
+	timer.Simple(self.Primary.Delay +0.001,function() if IsValid(self) then self:DoIdleAnimation() end end)
 end

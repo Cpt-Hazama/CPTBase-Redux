@@ -53,7 +53,7 @@ SWEP.WorldModelAdjust = {
 
 SWEP.AdjustViewModel = true
 SWEP.ViewModelAdjust = {
-	Pos = {Right = -2,Forward = 3,Up = -1},
+	Pos = {Right = -2,Forward = 1,Up = 0},
 	Ang = {Right = 0,Up = 0,Forward = 0}
 }
 

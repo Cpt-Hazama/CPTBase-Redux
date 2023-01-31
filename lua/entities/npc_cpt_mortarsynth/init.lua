@@ -58,17 +58,17 @@ function ENT:Possess_Jump(possessor) self:SetLocalVelocity(Vector(0,0,0)) end
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
 	if !self.IsPossessed && (IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:StopCompletely()
-	self:PlayAnimation("RangeAttack")
-	self:PlaySound("Charge",80,90,120)
+	self:CPT_StopCompletely()
+	self:CPT_PlayAnimation("RangeAttack")
+	self:CPT_PlaySound("Charge",80,90,120)
 	self.IsRangeAttacking = true
 	timer.Simple(self.RangeAttackHitTime,function()
-		if self:IsValid() then
-			self:PlaySound("Fire",80,90,170)
+		if IsValid(self) then
+			self:CPT_PlaySound("Fire",80,90,170)
 			self:DoTraceAttack(self.RangeAttackDistance,self.RangeAttackDamage,self.RangeAttackDamageType,self.RangeAttackDamageDistance,nil,-75)
 		end
 	end)
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnTraceRun(traceHit)
@@ -86,7 +86,7 @@ end
 function ENT:OnTraceHit(ent,traceHit)
 	ent:EmitSound(ent:SelectFromTable(self.tbl_Sounds["TraceHit"]),50,100)
 	for i = 0,ent:GetBoneCount() -1 do
-		ParticleEffect("mortarsynth_beam_charge_glow_cp0b",ent:GetBonePosition(i),Angle(0,0,0),nil)
+		CPT_ParticleEffect("mortarsynth_beam_charge_glow_cp0b",ent:GetBonePosition(i),Angle(0,0,0),nil)
 	end
 	util.CreateWorldLight(ent,traceHit.HitPos,"255 42 0 250","2","150","0","0.2")
 end

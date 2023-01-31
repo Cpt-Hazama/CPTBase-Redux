@@ -37,7 +37,7 @@ function ENT:SetInit()
 	self.ArmorDeduction = 0.65
 	self.NumGrenades = math.random(2,5)
 	local wep = self:SelectFromTable(self.tbl_PrimaryWeapons)
-	self:GiveNPCWeapon(wep,false)
+	self:CPT_GiveNPCWeapon(wep,false)
 	if wep == "weapon_cpt_shotgun" then
 		self:SetSkin(1)
 	end
@@ -115,7 +115,7 @@ function ENT:OnThink()
 				self:GetActiveWeapon():SetNoDraw(false)
 				self:GetActiveWeapon():DrawShadow(true)
 				self:GetActiveWeapon():EmitSound("physics/metal/weapon_impact_soft1.wav",60,100)
-				self:StopCompletely()
+				self:CPT_StopCompletely()
 			end
 		end
 	end
@@ -144,7 +144,7 @@ function ENT:MoveAway(force)
 			local time = self:GetPathTimeToGoal()
 			self.NextMoveAroundT = CurTime() +time
 			timer.Simple(time,function()
-				if self:IsValid() then
+				if IsValid(self) then
 					self.IsMovingAround = false
 				end
 			end)
@@ -192,7 +192,7 @@ function ENT:ThrowGrenade()
 	if self.NumGrenades <= 0 then return end
 	if CurTime() > self.NextGrenadeT then
 		if self:CanPerformProcess() == false then return end
-		self:StopCompletely()
+		self:CPT_StopCompletely()
 		self:PlayActivity("grenThrow",2)
 		self.IsRangeAttacking = true
 		timer.Simple(0.6,function()
@@ -216,7 +216,7 @@ function ENT:ThrowGrenade()
 				self.NumGrenades = self.NumGrenades -1
 			end
 		end)
-		self:AttackFinish()
+		self:CPT_AttackFinish()
 		local dif = math.Round(GetConVarNumber("cpt_aidifficulty"))
 		local time
 		if dif == 1 then
@@ -254,7 +254,7 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 				end
 			end
 			if nearest <= wep.NPC_FireDistance then
-				if self.ReloadingWeapon == false && enemy:Visible(self) && self:DoWeaponTrace() && self:FindInCone(enemy,40) then
+				if self.ReloadingWeapon == false && enemy:Visible(self) && self:DoWeaponTrace() && self:CPT_FindInCone(enemy,40) then
 					wep:CanFire(true)
 					if wep.NPC_MoveRandomlyChance == nil then
 						wep.NPC_MoveRandomlyChance = 30
@@ -262,16 +262,16 @@ function ENT:HandleSchedules(enemy,nearest,nearest,disp)
 					if math.random(1,wep.NPC_MoveRandomlyChance) == 1 then
 						self:MoveAway(false)
 					end
-				elseif !self:FindInCone(enemy,40) && enemy:Visible(self) && !self.IsMovingAround then
+				elseif !self:CPT_FindInCone(enemy,40) && enemy:Visible(self) && !self.IsMovingAround then
 					self:FaceEnemy()
-					if self:IsMoving() then self:StopCompletely() end
+					if self:IsMoving() then self:CPT_StopCompletely() end
 				elseif !enemy:Visible(self) then
 					wep:CanFire(false)
 					self:ChaseEnemy()
 				end
 				if nearest <= wep.NPC_FireDistanceStop && !self.IsMovingAround then
 					self:SetAngles(Angle(0,(enemy:GetPos() -self:GetPos()):Angle().y,0))
-					-- if self:IsMoving() then self:StopCompletely() end
+					-- if self:IsMoving() then self:CPT_StopCompletely() end
 					if nearest <= wep.NPC_FireDistanceMoveAway then
 						self:MoveAway(false)
 					end

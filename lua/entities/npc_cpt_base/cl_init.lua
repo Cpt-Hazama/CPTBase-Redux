@@ -8,6 +8,7 @@ function ENT:Initialize()
 end
 
 function ENT:Draw()
+	if self:GetRagdolled() then return end
 	self:DrawModel()
 	if self.OnDraw then
 		self:OnDraw()

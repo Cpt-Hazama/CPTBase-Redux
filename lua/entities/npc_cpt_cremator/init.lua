@@ -58,13 +58,13 @@ function ENT:HandleEvents(...)
 	if(event == "rattack") then
 		if arg1 == "loop" then
 			self.IsLoopRangeAttacking = true
-			self:PlaySound("Ignite",75,90,100,true)
+			self:CPT_PlaySound("Ignite",75,90,100,true)
 		end
 		return true
 	end
 	if(event == "emit") then
 		if arg1 == "step" then
-			self:PlaySound("FootStep",75,90,100,true)
+			self:CPT_PlaySound("FootStep",75,90,100,true)
 		end
 		return true
 	end
@@ -113,14 +113,14 @@ function ENT:OnThink()
 		self:SetIdleAnimation(ACT_RANGE_ATTACK2)
 		if !self.HasFlameParticle then
 			self.HasFlameParticle = true
-			ParticleEffectAttach("cpt_flamethrower",PATTACH_POINT_FOLLOW,self,1)
+			ParticleEffectAttach("cpt_flamethrow_combine",PATTACH_POINT_FOLLOW,self,1)
 		end
 		if CurTime() > self.NextDamageT then
 			for _,ent in pairs(ents.FindInSphere(self:GetPos() +(self:GetForward() *self:OBBMaxs().y),self.RangeAttackDamageDistance)) do
 				if IsValid(ent) && (ent:IsNPC() || ent:IsPlayer() && GetConVarNumber("ai_ignoreplayers") == 0) && ent != self && self:Disposition(ent) != D_LI && self:Visible(ent) then
-					local yaw = self:FindAngleOfPosition(ent:GetPos(),self:GetAngles()).y
+					local yaw = self:CPT_FindAngleOfPosition(ent:GetPos(),self:GetAngles()).y
 					if (yaw <= 70 && yaw >= 0) || (yaw <= 360 && yaw >= 290) then
-					-- if self:FindInCone(ent,10) then
+					-- if self:CPT_FindInCone(ent,10) then
 						local dif = GetConVarNumber("cpt_aidifficulty")
 						local dmg
 						local time
@@ -153,9 +153,9 @@ function ENT:OnThink()
 		self:SetIdleAnimation(ACT_IDLE)
 		if self.HasFlameParticle then
 			if !self.IsPossessed then
-				self:StopCompletely()
+				self:CPT_StopCompletely()
 			end
-			self:PlayAnimation("RangeAttackStop")
+			self:CPT_PlayAnimation("RangeAttackStop")
 			self.HasFlameParticle = false
 			self.FireLoop:Stop()
 			self:StopParticles()
@@ -173,16 +173,16 @@ function ENT:DoRangeAttack()
 	if self:CanPerformProcess() == false then return end
 	if self.IsLoopRangeAttacking == true then return end
 	if (!self.IsPossessed && IsValid(self:GetEnemy()) && !self:GetEnemy():Visible(self)) then return end
-	self:StopCompletely()
-	self:PlayAnimation("RangeAttack")
+	self:CPT_StopCompletely()
+	self:CPT_PlayAnimation("RangeAttack")
 	self.IsRangeAttacking = true
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	if self.IsPossessed then return end
 	if(disp == D_HT) then
-		if nearest <= self.RangeAttackDistance && !self.IsLoopRangeAttacking && self:FindInCone(enemy,self.MeleeAngle) then
+		if nearest <= self.RangeAttackDistance && !self.IsLoopRangeAttacking && self:CPT_FindInCone(enemy,self.MeleeAngle) then
 			self:DoRangeAttack()
 		end
 		if nearest > self.RangeAttackDistance && self.IsLoopRangeAttacking then
@@ -196,7 +196,7 @@ function ENT:HandleSchedules(enemy,dist,nearest,disp)
 			self:SetAngles(Angle(0,(enemy:GetPos() -self:GetPos()):Angle().y,0))
 			self.CanChaseEnemy = false
 			if self:IsMoving() then
-				self:StopCompletely()
+				self:CPT_StopCompletely()
 			end
 		end
 	end

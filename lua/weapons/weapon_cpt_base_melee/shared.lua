@@ -27,14 +27,14 @@ function SWEP:PrimaryAttack()
 	local hit,tr = self:DoMeleeDamage(self.MeleeDamageDistance,self.MeleeDamage)
 	// 0 = miss, 1 = hit entity, 2 = hit world
 	timer.Simple(self.MeleeHitTime /1.25,function()
-		if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
+		if IsValid(self) && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 			if self.Owner:IsPlayer() then
 				self.Owner:ViewPunch(Angle(-self.Primary.Force,math.random(-self.Primary.Force /2,self.Primary.Force /2),0))
 			end
 		end
 	end)
 	timer.Simple(self.MeleeHitTime,function()
-		if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
+		if IsValid(self) && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 			-- print(hit)
 			if hit == 0 then
 				self:PlayWeaponSound("Miss",80)
@@ -64,8 +64,8 @@ function SWEP:PrimaryAttack()
 		end
 		self.Weapon:SetNextSecondaryFire(CurTime() +self.MeleeDelay)
 		self.Weapon:SetNextPrimaryFire(CurTime() +self.MeleeDelay)
-		timer.Simple(self.MeleeDelay,function() if self:IsValid() then self.IsFiring = false self.CanUseIdle = true end end)
-		timer.Simple(self.MeleeDelay +0.03,function() if self:IsValid() then self:DoIdleAnimation() end end)
+		timer.Simple(self.MeleeDelay,function() if IsValid(self) then self.IsFiring = false self.CanUseIdle = true end end)
+		timer.Simple(self.MeleeDelay +0.03,function() if IsValid(self) then self:DoIdleAnimation() end end)
 	end)
 	self.IsFiring = true
 	self.CanUseIdle = false
@@ -100,7 +100,7 @@ end
 
 function SWEP:CreateMeleeDamage(inflictor,attacker,pos,radius,dmg,filter,dmgtype)
 	-- timer.Simple(self.MeleeHitTime,function()
-		-- if self:IsValid() && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
+		-- if IsValid(self) && self.Owner:GetActiveWeapon():GetClass() == self:GetClass() then
 			local foundents = {}
 			local didhit = false
 			for _, v in pairs(ents.FindInSphere(pos,radius)) do

@@ -46,7 +46,7 @@ function ENT:HandleEvents(...)
 	local arg2 = select(3,...)
 	if(event == "emit") then
 		if(arg1 == "step") then
-			self:PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
+			self:CPT_PlaySound("FootStep",self.RunSoundVolume,90,self.StepSoundPitch,true)
 		end
 		return true
 	end
@@ -58,28 +58,28 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoAttack()
 	if self:CanPerformProcess() == false then return end
-	self:PlayAnimation("Attack",2)
-	self:PlaySound("Attack")
+	self:CPT_PlayAnimation("Attack",2)
+	self:CPT_PlaySound("Attack")
 	self.IsAttacking = true
-	self:AttackFinish()
+	self:CPT_AttackFinish()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:DoRangeAttack()
 	if CurTime() > self.NextRangeAttackT then
 		if self:CanPerformProcess() == false then return end
-		self:PlayAnimation("RangeAttack",2)
+		self:CPT_PlayAnimation("RangeAttack",2)
 		self.IsRangeAttacking = true
-		self:AttackFinish()
+		self:CPT_AttackFinish()
 		self.NextRangeAttackT = CurTime() +math.random(2,6)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:HandleSchedules(enemy,dist,nearest,disp)
 	if(disp == D_HT) then
-		if nearest <= self.MeleeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) then
+		if nearest <= self.MeleeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) then
 			self:DoAttack()
 		end
-		if nearest <= self.RangeAttackDistance && self:FindInCone(enemy,self.MeleeAngle) then
+		if nearest <= self.RangeAttackDistance && self:CPT_FindInCone(enemy,self.MeleeAngle) then
 			self:DoRangeAttack()
 		end
 		if self:CanPerformProcess() then

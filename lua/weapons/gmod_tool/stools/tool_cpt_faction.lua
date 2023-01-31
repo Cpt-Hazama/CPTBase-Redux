@@ -28,7 +28,7 @@ function TOOL:LeftClick(tr)
 		local newFaction = self.ClientConVar["cpt_tool_faction"]
 		ent:SetNW2String("CPTBase_NPCFaction",newFaction)
 		if ent.UpdateNPCFaction then
-			ent:UpdateNPCFaction()
+			ent:CPT_UpdateNPCFaction()
 		end
 		if CLIENT then
 			self:DisplayNotification("Set " .. language.GetPhrase(ent:GetClass()) .. "'s faction to " .. newFaction .. ". It used to be " .. oldFaction .. ".")

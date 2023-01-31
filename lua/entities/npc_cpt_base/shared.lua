@@ -27,6 +27,10 @@ function ENT:SetupDataTables()
 
 	self:NetworkVar("Entity",0,"Possessor")
 	self:NetworkVar("Entity",1,"CurrentEnemy")
+
+	self:NetworkVar("String",0,"SpriteAnim")
+
+	self:NetworkVar("Bool",0,"Ragdolled")
 end
 
 if SERVER then
@@ -59,7 +63,7 @@ if CLIENT then
 				return
 			end
 			local view = {}
-			local targetPos = self:GetCenter() + self:GetUp() * self:OBBMaxs().z * 0.5
+			local targetPos = self:CPT_GetCenter() + self:GetUp() * self:OBBMaxs().z * 0.5
 			local tr = util.TraceHull({
 				start = targetPos,
 				endpos = targetPos +ply:EyeAngles():Forward() *-math.max(ply.CPTBase_Possessor_Zoom or 100,self:BoundingRadius()),

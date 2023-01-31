@@ -5,6 +5,9 @@
 --------------------------------------------------*/
 include('server/cpt_utilities.lua')
 
+angle_0 = Angle(0,0,0)
+vec_0 = Vector(0,0,0)
+
 local buttonsounds = {"buttons/blip1.wav","buttons/button14.wav","buttons/button17.wav","buttons/button24.wav","buttons/button3.wav","buttons/button9.wav","buttons/combine_button7.wav","buttons/lightswitch2.wav","common/warning.wav","ambient/materials/smallwire_pluck3.wav","ambient/voices/citizen_beaten1.wav"}
 local killsounds = {"music/stingers/industrial_suspense1.wav","music/stingers/industrial_suspense2.wav","music/stingers/hl1_stinger_song16.mp3","music/stingers/hl1_stinger_song27.mp3","music/stingers/hl1_stinger_song28.mp3","music/stingers/hl1_stinger_song7.mp3","music/stingers/hl1_stinger_song8.mp3"}
 local volume = 45

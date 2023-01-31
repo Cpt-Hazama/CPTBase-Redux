@@ -7,7 +7,7 @@ SWEP.SelectedConjure = "npc_cpt_pukerzombie"
 	-- SWEP Stuff --
 SWEP.PrintName		= "Conjure Puker Zombie"
 SWEP.Author 		= "Cpt. Hazama"
--- SWEP.Category		= "CPTBase - Spells"
+SWEP.Category		= "CPTBase"
 SWEP.Base = "weapon_cpt_spell_base"
 SWEP.AdminSpawnable = true
 SWEP.Spawnable = true
