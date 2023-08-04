@@ -7,8 +7,8 @@ ENT.StartHealth = 150
 
 ENT.Faction = "FACTION_ZOMBIE"
 
-ENT.MeleeAttackDistance = 90
-ENT.MeleeAttackDamageDistance = 90
+ENT.MeleeAttackDistance = 60
+ENT.MeleeAttackDamageDistance = 80
 ENT.MeleeAttackType = DMG_SLASH
 ENT.MeleeAttackDamage = 18
 ENT.MeleeAttackHitTime = 0.7

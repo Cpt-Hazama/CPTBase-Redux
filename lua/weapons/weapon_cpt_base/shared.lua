@@ -667,7 +667,7 @@ function SWEP:PrimaryAttackCode(ShootPos,ShootDir)
 			bullet.Spread = Vector(self.Primary.Spread,self.Primary.Spread,0)
 		end
 		bullet.Tracer = self.Primary.Tracer
-		if self.Owner:IsPlayer() && self.Primary.TracerEffect != false then
+		if self.Primary.TracerEffect != false then
 			bullet.TracerName = self.Primary.TracerEffect
 		end
 		bullet.Force = self.Primary.Force

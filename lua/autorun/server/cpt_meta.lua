@@ -304,25 +304,19 @@ end
 
 function NPC_Meta:CPT_SetNoTarget(nt)
 	self.UseNotarget = nt
-	self.VJ_NoTarget = nt
-	-- if nt then
-		-- for _,v in ipairs(ents.GetAll()) do
-			-- if (v:GetClass() != ent:GetClass() && v:GetClass() != "npc_grenade_frag") && v:IsNPC() && ent:Visible(v) then
-				-- v:AddEntityRelationship(ent,D_NU,99)
-				-- if IsValid(v:GetEnemy()) && v:GetEnemy() == self then
-					-- if v.IsVJBaseSNPC then
-						-- v.MyEnemy = NULL
-						-- v:SetEnemy(NULL)
-						-- v:ClearEnemyMemory()
-					-- elseif v.CPTBase_SNPC then
-						-- v.Enemy = NULL
-						-- v:SetEnemy(NULL)
-						-- v:ClearEnemyMemory()
-					-- end
-				-- end
-			-- end
-		-- end
-	-- end
+	if nt then
+		self:AddFlags(FL_NOTARGET)
+	else
+		self:RemoveFlags(FL_NOTARGET)
+	end
+end
+
+function PLY_Meta:CPT_SetNoTarget(nt)
+	if nt then
+		self:AddFlags(FL_NOTARGET)
+	else
+		self:RemoveFlags(FL_NOTARGET)
+	end
 end
 
 function PLY_Meta:SpawnCPTBaseRagdoll(ent,velocity,caller)

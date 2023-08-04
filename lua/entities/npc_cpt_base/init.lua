@@ -2260,7 +2260,7 @@ function ENT:OnRemove()
 		if self.tbl_Sounds["Death"] && table_HasValue(self.tbl_Sounds["Death"],self.CurrentPlayingSound) then return end
 		self.CurrentSound:Stop()
 	end
-	self:ControlNPC(false,self:GetPossessor())
+	self:ControlNPC(false,self:GetPossessor(),true)
 	self:WhenRemoved()
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

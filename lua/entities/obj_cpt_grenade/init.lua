@@ -97,42 +97,40 @@ end
 function ENT:Explode()
 	if self.IsDead == false then
 		self.IsDead = true
-		-- util.CreateCustomExplosion(self:GetPos(),400,350,self,"hefg_explosion","cptbase/explode.wav",false,90)
+		for _,v in ipairs(ents.FindInSphere(self:GetPos(),350)) do
+			if v:IsOnFire() then continue end
+			if v:Visible(self) && v:Health() != nil && v:Health() > 0 && !v:IsWeapon() then
+				v:Extinguish()
+				v:Ignite(8)
+			end
+			if IsValid(v) && (v:GetClass() == "prop_door_rotating" || v:GetClass() == "prop_door" || v:GetClass() == "func_door_rotating" || v:GetClass() == "func_door") && v:Visible(self) then
+				local door = ents.Create("prop_physics")
+				door:SetModel(v:GetModel())
+				door:SetPos(v:GetPos())
+				door:SetAngles(v:GetAngles())
+				door:Spawn()
+				door:Activate()
+				if v:GetSkin() != nil then
+					door:SetSkin(v:GetSkin())
+				end
+				door:SetMaterial(v:GetMaterial())
+				v:Remove()
+				timer.Simple(3,function()
+					if IsValid(door) then
+						door:SetCollisionGroup(1)
+					end
+				end)
+				local phys = door:GetPhysicsObject()
+				if phys:IsValid() then
+					phys:SetVelocity(((door:GetPos() -self:GetPos()) *500 +(door:GetPos() +door:GetForward() *400 -self:GetPos()) +(door:GetPos() +door:GetUp() *200 -self:GetPos()) *140))
+				end
+			end
+		end
 		util.CreateCustomExplosion(self:GetPos(),400,350,self,"hefg_explosion","cptbase/explode_heavy.mp3",false,140)
 		local epos = self:GetPos()
 		timer.Simple(0.6,function()
 			sound.Play("cptbase/explode_shockwave.wav",epos,120,100 *GetConVarNumber("host_timescale"))
 		end)
-		if self.AlreadyIgnited == false then
-			self.AlreadyIgnited = true
-			for _,v in ipairs(ents.FindInSphere(self:GetPos(),350)) do
-				if IsValid(v) && v:Visible(self) &&  v:Health() != nil && !v:IsOnFire() then
-					v:Ignite(8,10)
-				end
-				if IsValid(v) && (v:GetClass() == "prop_door_rotating" || v:GetClass() == "prop_door" || v:GetClass() == "func_door_rotating" || v:GetClass() == "func_door") && v:Visible(self) then
-					local door = ents.Create("prop_physics")
-					door:SetModel(v:GetModel())
-					door:SetPos(v:GetPos())
-					door:SetAngles(v:GetAngles())
-					door:Spawn()
-					door:Activate()
-					if v:GetSkin() != nil then
-						door:SetSkin(v:GetSkin())
-					end
-					door:SetMaterial(v:GetMaterial())
-					v:Remove()
-					timer.Simple(3,function()
-						if IsValid(door) then
-							door:SetCollisionGroup(1)
-						end
-					end)
-					local phys = door:GetPhysicsObject()
-					if phys:IsValid() then
-						phys:SetVelocity(((door:GetPos() -self:GetPos()) *500 +(door:GetPos() +door:GetForward() *400 -self:GetPos()) +(door:GetPos() +door:GetUp() *200 -self:GetPos()) *140))
-					end
-				end
-			end
-		end
 		self:Remove()
 	end
 end

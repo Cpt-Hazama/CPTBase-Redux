@@ -47,7 +47,7 @@ function ENT:ControlKeys(ent,keys)
 	end
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
-function ENT:ControlNPC(setControlled,ply)
+function ENT:ControlNPC(setControlled,ply,isRemoved)
 	if setControlled then
 		self.IsPossessed = true
 		self:SetPossessor(ply)
@@ -79,13 +79,16 @@ function ENT:ControlNPC(setControlled,ply)
 		cont:CPT_SetNoTarget(false)
 		cont:DrawViewModel(true)
 		cont:DrawWorldModel(true)
-		if ePlayer != 0 then
+		local ang = self:GetAngles()
+		cont:SetEyeAngles(Angle(cont:EyeAngles().p,ang.y,0))
+		if isRemoved != true then
 			local vec1,vec2 = self:GetCollisionBounds()
 			cont:SetPos(self:GetPos() +Vector(0,0,vec2.z +10))
 		else
 			cont:SetPos(self:GetPos())
 		end
 	end
+	self:SetPossessor(NULL)
 	self.IsPossessed = false
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------

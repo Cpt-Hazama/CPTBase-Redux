@@ -1,90 +1,66 @@
-	-- World Settings --
-TRACER_FLAG_USEATTACHMENT	= 0x0002
-SOUND_FROM_WORLD			= 0
-CHAN_STATIC					= 6
-
-	-- Main Settings --
-EFFECT.Speed				= 7000
-EFFECT.Length				= 200
-EFFECT.WhizSound			= Sound("weapons/airboat/airboat_gun_energy1.wav")
-EFFECT.WhizVolume			= 60
-EFFECT.WhizDistance			= 200
-EFFECT.NextWhizT = 0
-
-	-- Texture Settings --
-local cpt_MainTexture		= Material("cptbase/muzzles/pulse_flutter") // mat_texture_list 1
-local cpt_FrontTexture		= Material("cptbase/muzzles/ar2muzzle")
-local cpt_MainTextureSize 	= 4
-local cpt_FrontTextureSize 	= 6
-local cpt_MainTextureColor 	= Color(255,255,255)
-local cpt_FrontTextureColor = Color(255,255,255)
-
-function EFFECT:GetTracerOrigin(data)
-	local start = data:GetStart()
-	if(bit.band(data:GetFlags(),TRACER_FLAG_USEATTACHMENT) == TRACER_FLAG_USEATTACHMENT) then
-		local entity = data:GetEntity()
-		if(not IsValid(entity)) then return start end
-		if(not game.SinglePlayer() && entity:IsEFlagSet(EFL_DORMANT)) then return start end
-		if(entity:IsWeapon()) then
-			local ply = entity:GetOwner()
-			if(IsValid(ply) && ply:IsPlayer()) then
-				local vm = ply:GetViewModel()
-				if(IsValid(vm) && not LocalPlayer():ShouldDrawLocalPlayer()) then
-					entity = vm
-				else
-					if(entity.WorldModel) then
-						entity:SetModel(entity.WorldModel)
-					end
-				end
-			end
-		end
-		local attachment = entity:GetAttachment(data:GetAttachment())
-		if(attachment) then
-			start = attachment.Pos
-		end
-	end
-	return start
-end
-
+if !CPTBase then return end
+---------------------------------------------------------------------------------------------------------------------------------------------
+local Tracer = Material("trails/smoke")
+local Tracer2  = Material("cpthazama/tracer")
+local Width = 4
+local Width2 = 16
+local Speed = 7000
+local Length = 200
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Init(data)
-	self.StartPos = self:GetTracerOrigin(data)
+	self.Position = data:GetStart()
 	self.EndPos = data:GetOrigin()
-	self.Entity:SetRenderBoundsWS(self.StartPos,self.EndPos)
+	self.WeaponEnt = data:GetEntity()
+	if !IsValid(self.WeaponEnt) then self.DieTime = 0 return end
+	self.WeaponOwner = self.WeaponEnt:GetOwner()
+	self.Attachment = data:GetAttachment()
+	self.ModelEnt = self.WeaponOwner:IsPlayer() && (self.WeaponEnt._CModel or self.WeaponOwner:GetViewModel()) or self.WeaponEnt
+
+	local muzEnt = self.WeaponOwner:IsPlayer() && (((self.WeaponOwner != LocalPlayer()) or self.WeaponOwner:ShouldDrawLocalPlayer()) && self.WeaponEnt) or self.ModelEnt
+	self.StartPos = muzEnt:GetAttachment(self.Attachment).Pos
+	self:SetRenderBoundsWS(self.StartPos,self.EndPos)
+
 	local diff = (self.EndPos -self.StartPos)
-	self.Normal = diff:GetNormal()
+	self.Dir = diff:GetNormal()
+	self.Dist = self.StartPos:Distance(self.EndPos)
+	
 	self.StartTime = 0
-	self.LifeTime = (diff:Length() +self.Length) /self.Speed
-	local weapon = data:GetEntity()
-	if(IsValid(weapon) && (not weapon:IsWeapon())) then
-		local dist, pos, time = util.DistanceToLine(self.StartPos,self.EndPos,EyePos())
-	end
-end
+	self.LifeTime = (diff:Length() +Length) /Speed
+	self.LifeTime2 = 0.1 *self.LifeTime
+	self.DieTime = CurTime() +self.LifeTime
+	self.DieTime2 = CurTime() +self.LifeTime2
 
+	self.ShouldDrawSmoke = math.random(1,3) == 1
+end
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Think()
-	self.LifeTime = self.LifeTime -FrameTime()
 	self.StartTime = self.StartTime +FrameTime()
-	local doplaysound = false
-	for _,v in ipairs(ents.FindInSphere(self:GetPos(),self.WhizDistance)) do
-		if v:IsValid() && v:IsPlayer() then
-			doplaysound = true
-		end
+	if CurTime() > self.DieTime then
+		return false
 	end
-	if doplaysound == true && CurTime() > self.NextWhizT then
-		sound.Play(self.WhizSound,self:GetPos(),self.WhizVolume,100 *GetConVarNumber("host_timescale"))
-		self.NextWhizT = CurTime() +SoundDuration(self.WhizSound)
-	end
-	return self.LifeTime > 0
+	return true
 end
-
+---------------------------------------------------------------------------------------------------------------------------------------------
 function EFFECT:Render()
-	local endDistance = self.Speed *self.StartTime
-	local startDistance = endDistance -self.Length
+	if CurTime() > self.DieTime then return end
+	local r = 0
+	local g = 178
+	local b = 255
+	
+	local v = (self.DieTime -CurTime()) /self.LifeTime
+	local v2 = (self.DieTime2 -CurTime()) /self.LifeTime2
+
+	local endDistance = Speed *self.StartTime
+	local startDistance = endDistance -Length
 	startDistance = math.max(0,startDistance)
 	endDistance = math.max(0,endDistance)
-	local startPos = self.StartPos +self.Normal *startDistance
-	local endPos = self.StartPos +self.Normal *endDistance
-	render.SetMaterial(cpt_FrontTexture)
-	render.DrawBeam(startPos,endPos,cpt_FrontTextureSize,0,1,cpt_FrontTextureColor)
-	render.SetMaterial(cpt_MainTexture)
-	render.DrawBeam(startPos,endPos,cpt_MainTextureSize,0,1,cpt_MainTextureColor)
+	local startPos = self.StartPos +self.Dir *startDistance
+	local endPos = self.StartPos +self.Dir *endDistance
+
+	if self.ShouldDrawSmoke then
+		render.SetMaterial(Tracer)
+		render.DrawBeam(startPos,endPos,Width,0,1,Color(37,53,107,v *90))
+	end
+	render.SetMaterial(Tracer2)
+	render.DrawBeam(startPos,endPos,Width2,0,1,Color(r,g,b,(v2 *95) *0.5))
 end
