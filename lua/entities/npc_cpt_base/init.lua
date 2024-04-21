@@ -263,12 +263,7 @@ function ENT:SetEntityPriority(ent,relationship) -- Override this to change the 
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:GetRelationship(entity)
-	local LI = self.MemoryTable[D_LI][entity]
-	local HT = self.MemoryTable[D_HT][entity]
-	local NU = self.MemoryTable[D_NU][entity]
-	local FR = self.MemoryTable[D_FR][entity]
-
-	return LI && D_LI or HT && D_HT or NU && D_NU or FR && D_FR or 0
+	return self.MemoryTable[D_LI][entity] && D_LI or self.MemoryTable[D_HT][entity] && D_HT or self.MemoryTable[D_NU][entity] && D_NU or self.MemoryTable[D_FR][entity] && D_FR or 0
 end
 ---------------------------------------------------------------------------------------------------------------------------------------------
 function ENT:OnFoundNewEntity(ent,relationship,priority)
@@ -1692,6 +1687,13 @@ function ENT:SetRelationship(entity,relationship,priority,dontLoop)
 		self.MemoryTable[relationship][entity].ShouldForget = CurTime() +20
 		return
 	end
+
+	for k,v in pairs(self.MemoryTable) do
+		if k != relationship && self.MemoryTable[k][entity] then
+			self.MemoryTable[k][entity] = nil
+		end
+	end
+
     self.MemoryTable[relationship][entity] = {
         Priority = priority,
         SetTime = CurTime(),
