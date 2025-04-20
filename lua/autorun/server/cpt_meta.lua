@@ -955,24 +955,24 @@ function NPC_Meta:CPT_SetClearPos(origin) // Credits to Silverlan
 	self:SetPos(pos)
 end
 
-hook.Add("Think","CPTBase_MutationEffects",function()
-	for _,v in ipairs(ents.GetAll()) do
-		if v:IsNPC() && v.CPTBase_NPC == true then
-			if v.HasMutated == true then
-				if CurTime() > v.NextMutT then
-					v:StopParticles()
-					for i = 0, v:GetBoneCount() -1 do
-						if v:GetBonePosition(i) != v:GetPos() then
-							CPT_ParticleEffect(v.MutationEmbers,v:GetBonePosition(i),Angle(0,0,0),v)
-							CPT_ParticleEffect(v.MutationGlow,v:GetBonePosition(i),Angle(0,0,0),v)
-						end
-					end
-					v.NextMutT = CurTime() +0.4
-				end
-			end
-		end
-	end
-end)
+-- hook.Add("Think","CPTBase_MutationEffects",function()
+	-- for _,v in ipairs(ents.GetAll()) do
+	-- 	if v:IsNPC() && v.CPTBase_NPC == true then
+	-- 		if v.HasMutated == true then
+	-- 			if CurTime() > v.NextMutT then
+	-- 				v:StopParticles()
+	-- 				for i = 0, v:GetBoneCount() -1 do
+	-- 					if v:GetBonePosition(i) != v:GetPos() then
+	-- 						CPT_ParticleEffect(v.MutationEmbers,v:GetBonePosition(i),Angle(0,0,0),v)
+	-- 						CPT_ParticleEffect(v.MutationGlow,v:GetBonePosition(i),Angle(0,0,0),v)
+	-- 					end
+	-- 				end
+	-- 				v.NextMutT = CurTime() +0.4
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
+-- end)
 
 function RunTrace(start,endpos,filter,options)
 	local tr = {}
@@ -1739,9 +1739,9 @@ function ENT_Meta:CPT_GetSequenceID(anim)
 	return i
 end
 
-function NPC_Meta:Alive()
-	return self:Health() < 0
-end
+-- function NPC_Meta:Alive()
+-- 	return self:Health() < 0
+-- end
 
 function ENT_Meta:CPT_CreateSpriteTrail(call,ent,mat,color,att,sWid,eWid,trans)
 	call = util.SpriteTrail(ent,att,color,false,sWid,eWid,trans,1 /(sWid +eWid) *0.5,mat)
